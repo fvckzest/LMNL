@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import GenericPage from './pages/GenericPage';
 import SpaceLandingPage from './pages/SpaceLandingPage';
+import Events from './pages/Events';
 import './index.css';
 
 function App() {
@@ -9,7 +10,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/events" element={<GenericPage title="EVENTS" color="#004ffa" />} />
+        <Route path="/events" element={<Events />} />
         <Route path="/services" element={<GenericPage title="SERVICES" color="#6222d8" />} />
         <Route path="/community" element={<GenericPage title="COMMUNITY" color="#ff5bb8" />} />
         <Route path="/shop" element={<GenericPage title="SHOP" color="#ff0000" />} />
