@@ -14,6 +14,7 @@ const routes = [
   { path: 'blog', title: 'LMNL | BLOG', image: '/seo/blog-seo.png' },
   { path: 'contact', title: 'LMNL | CONTACT', image: '/seo/contact-seo.png' },
   { path: 'prsm', title: 'LMNL | PRSM', image: '/seo/prsm-seo.png' },
+  { path: 'space', title: 'LMNL | SPACE', image: '/seo/space-seo.png' },
 ];
 
 async function generateSeoPages() {
