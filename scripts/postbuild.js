@@ -37,8 +37,8 @@ async function generateSeoPages() {
       .replace(/<meta name="title" content=".*?" \/>/, `<meta name="title" content="${route.title}" />`)
       .replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${route.title}" />`)
       .replace(/<meta property="twitter:title" content=".*?" \/>/, `<meta property="twitter:title" content="${route.title}" />`)
-      .replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="https://lmnl.art${route.image}" />`)
-      .replace(/<meta property="twitter:image" content=".*?" \/>/, `<meta property="twitter:image" content="https://lmnl.art${route.image}" />`);
+      .replace(/<meta property="og:image" content=".*?" \/>/, `<meta property="og:image" content="https://www.lmnl.art${route.image}" />`)
+      .replace(/<meta property="twitter:image" content=".*?" \/>/, `<meta property="twitter:image" content="https://www.lmnl.art${route.image}" />`);
 
     fs.writeFileSync(path.join(routeDir, 'index.html'), modifiedHtml);
     console.log(`Generated SEO HTML for /${route.path}`);
