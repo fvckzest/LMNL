@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/\\*",
+      "destination": "/space/index.html"
+    },
+    {
       "source": "/%2A",
       "destination": "/space/index.html"
     },
