@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
 
-export default function Circle({ images, className, links }) {
+export default function Circle({ images, className, links, onHoverChange }) {
   const renderDot = (index) => {
-    const img = <img alt="" src={images[index]} style={links ? { cursor: 'pointer' } : {}} />;
+    const imgProps = {
+      alt: "",
+      src: images[index],
+      style: links ? { cursor: 'pointer' } : {},
+      onMouseEnter: () => onHoverChange && onHoverChange(index),
+      onMouseLeave: () => onHoverChange && onHoverChange(null)
+    };
+    
+    const img = <img {...imgProps} />;
     return links && links[index] ? (
       <Link to={links[index]} style={{ display: 'block', width: '100%', height: '100%' }}>
         {img}

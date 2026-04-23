@@ -16,21 +16,21 @@ export default function Events() {
           <div className="events-node">
             <h2 className="events-space-title">[SPACE]</h2>
           </div>
-          
+
           <div className="events-divider" />
-          
+
           <div className="events-node">
             <img src="/cz1.png" alt="Camp Zest" className="events-img-cz" />
           </div>
-          
+
           <div className="events-divider" />
-          
+
           <div className="events-node">
             <img src="/title1.png" alt="Bloom" className="events-img-bloom" />
           </div>
-          
+
           <div className="events-divider" />
-          
+
           <div className="events-node">
             <img src="/genesis-logo.png" alt="Genesis" className="events-img-genesis" />
           </div>

@@ -13,12 +13,13 @@
   gap: 0;
   padding: 46px 8px;
   width: 100%;
-  margin-top: 150px;
+  margin-top: 50px;
 }
 
 .events-title {
-  font-size: 96px;
-  font-weight: 600;
+  font-size: 115px;
+  line-height: 115px;
+  font-weight: 500;
 }
 
 .events-node {
@@ -30,7 +31,7 @@
 .events-space-title {
   font-family: 'Gantari', sans-serif;
   font-weight: 600;
-  font-size: 152px;
+  font-size: 76px;
   line-height: normal;
   color: black;
   margin: 0;
@@ -38,30 +39,30 @@
 }
 
 .events-divider {
-  width: 4px;
-  height: 226px;
+  width: 2px;
+  height: 113px;
   background-color: #004ffa;
   flex-shrink: 0;
   margin: 20px 0;
 }
 
 .events-img-cz {
-  width: 377px;
-  height: 141px;
+  width: 188px;
+  height: auto;
   object-fit: contain;
   display: block;
 }
 
 .events-img-bloom {
-  width: 375px;
-  height: 71px;
+  width: 188px;
+  height: auto;
   object-fit: contain;
   display: block;
 }
 
 .events-img-genesis {
-  width: 376px;
-  height: 107px;
+  width: 188px;
+  height: auto;
   object-fit: contain;
   display: block;
 }
@@ -71,26 +72,31 @@
     margin-top: 100px;
   }
   
+  .events-title {
+    font-size: 53px;
+    line-height: 53px;
+  }
+  
   .events-space-title {
-    font-size: 70px;
+    font-size: 40px;
   }
 
   .events-divider {
-    height: 120px;
+    height: 60px;
   }
 
   .events-img-cz {
-    width: 250px;
+    width: 125px;
     height: auto;
   }
 
   .events-img-bloom {
-    width: 250px;
+    width: 125px;
     height: auto;
   }
 
   .events-img-genesis {
-    width: 250px;
+    width: 125px;
     height: auto;
   }
 }

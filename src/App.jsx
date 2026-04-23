@@ -14,7 +14,11 @@ function App() {
         <Route path="/services" element={<GenericPage title="SERVICES" color="#6222d8" />} />
         <Route path="/community" element={<GenericPage title="COMMUNITY" color="#ff5bb8" />} />
         <Route path="/shop" element={<GenericPage title="SHOP" color="#ff0000" />} />
-        <Route path="/about" element={<GenericPage title="ABOUT" color="#ff9300" />} />
+        <Route path="/about" element={
+          <GenericPage title="ABOUT" color="#ff9300">
+            <img src="/rules.png" alt="Rules" className="about-rules-img" />
+          </GenericPage>
+        } />
         <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
         <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
         <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />

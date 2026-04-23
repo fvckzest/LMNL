@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
 import {
@@ -21,19 +23,49 @@ const homeCircleLinks = [
   '/services'   // 23
 ];
 
+const homePageInfo = [
+  { title: 'COMMUNITY', color: '#ff5bb8' },
+  { title: 'SHOP', color: '#ff0000' },
+  { title: 'ABOUT', color: '#ff9300' },
+  { title: 'BLOG', color: '#ffde00' },
+  { title: 'CONTACT', color: '#90e937' },
+  { title: 'PRSM', color: '#000000' },
+  { title: 'EVENTS', color: '#004ffa' },
+  { title: 'SERVICES', color: '#6222d8' }
+];
+
 export default function Home() {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
   return (
     <div className="home-container">
       <div className="home-hero">
         <div className="home-circle-wrapper">
           <div className="circle-flip">
-            <Circle images={homeCircleImages} links={homeCircleLinks} className="home-circle" />
+            <Circle 
+              images={homeCircleImages} 
+              links={homeCircleLinks} 
+              className="home-circle" 
+              onHoverChange={setHoveredIndex}
+            />
           </div>
         </div>
         <div className="home-logo-wrapper">
           <LmnlLogoBlack className="home-logo" />
         </div>
       </div>
+      
+      {hoveredIndex !== null && (
+        <div className="home-page-preview">
+          <div className="page-header-rect" style={{ backgroundColor: homePageInfo[hoveredIndex].color }} />
+          <h1 className="page-title">{homePageInfo[hoveredIndex].title}</h1>
+        </div>
+      )}
+      
+      <Link to="/*" className="space-notification">
+        <div className="space-notification-dot"></div>
+        <span>1 new invite</span>
+      </Link>
     </div>
   );
 }
