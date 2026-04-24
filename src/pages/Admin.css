@@ -32,29 +32,32 @@
   font-weight: 600;
 }
 
-.requests-table-container {
+.requests-table-container, .events-table-container {
   border: 2px solid black;
   background: white;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 20px;
 }
 
-.requests-table {
+.requests-table, .admin-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 14px;
 }
 
-.requests-table th {
+.requests-table th, .admin-table th {
   background: black;
   color: white;
   padding: 15px 20px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-size: 12px;
 }
 
-.requests-table td {
+.requests-table td, .admin-table td {
   padding: 15px 20px;
   border-bottom: 1px solid #eee;
 }
@@ -77,6 +80,9 @@
 .status-pill.pending { background: #eee; color: #666; }
 .status-pill.approved { background: #dcfce7; color: #166534; }
 .status-pill.rejected { background: #fee2e2; color: #991b1b; }
+.status-pill.draft { background: #f1f5f9; color: #475569; }
+.status-pill.sold_out { background: #fef3c7; color: #92400e; }
+.status-pill.archived { background: #f3f4f6; color: #9ca3af; }
 
 .action-buttons {
   display: flex;
@@ -93,6 +99,7 @@
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .admin-btn.approve:hover { background: #000; color: #fff; }
@@ -178,27 +185,6 @@
   grid-template-columns: 1fr 350px;
   gap: 40px;
   align-items: start;
-}
-
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  border: 2px solid black;
-  background: white;
-}
-
-.admin-table th {
-  background: black;
-  color: white;
-  padding: 12px 20px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-}
-
-.admin-table td {
-  padding: 12px 20px;
-  border-bottom: 1px solid #eee;
 }
 
 .event-name-link {
@@ -351,10 +337,6 @@
   margin-bottom: 20px;
 }
 
-.status-pill.draft { background: #f1f5f9; color: #475569; }
-.status-pill.sold_out { background: #fef3c7; color: #92400e; }
-.status-pill.archived { background: #f3f4f6; color: #9ca3af; }
-
 /* Admin Modal Styles */
 .admin-modal-overlay {
   position: fixed;
@@ -501,6 +483,97 @@
 
 .remove-trait:hover {
   color: #ef4444;
+}
+
+/* Mobile Responsive Improvements */
+@media (max-width: 768px) {
+  .admin-body {
+    padding: 0 15px;
+    margin-top: 120px;
+  }
+
+  .admin-stats {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .stat-item {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 120px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .section-header-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .section-header-flex .action-buttons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-btn {
+    padding: 8px 16px;
+    font-size: 10px;
+  }
+
+  .requests-table th, .admin-table th,
+  .requests-table td, .admin-table td {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .admin-modal {
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 15px 20px;
+  }
+
+  .modal-form {
+    padding: 20px;
+  }
+
+  .trait-input-row {
+    flex-direction: column;
+  }
+
+  .toggle-archived {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .toggle-archived button {
+    width: 100%;
+  }
+
+  .requests-table-container::after, .events-table-container::after {
+    content: '← SCROLL TO VIEW MORE →';
+    display: block;
+    text-align: center;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    padding: 10px;
+    color: #999;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+  }
+
+  /* Make status pills smaller on mobile to save space */
+  .status-pill {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .actions-wrapper {
+    gap: 10px;
+  }
 }
 
 @media (max-width: 600px) {
