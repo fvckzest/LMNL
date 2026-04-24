@@ -434,7 +434,7 @@ function PriceIndicator({ price, eventStatus, onInvite, onDonate }) {
               request invite
             </button>
           )}
-          <button className="space-button secondary" onClick={onDonate}>
+          <button className="space-button" onClick={onDonate}>
             feed the horse
           </button>
         </div>
