@@ -1,0 +1,597 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import HeaderBar from '../components/HeaderBar';
+import './Admin.css';
+
+export default function Admin() {
+  const [requests, setRequests] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [eventLoading, setEventLoading] = useState(true);
+  const [tableMissing, setTableMissing] = useState(false);
+  
+  // New Event Form State
+  const [newEventName, setNewEventName] = useState('');
+  const [newEventPrice, setNewEventPrice] = useState('');
+  
+  // Edit State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventForm, setEventForm] = useState({
+    name: '',
+    price: '',
+    event_date: '',
+    event_time: '',
+    location_name: '',
+    address: '',
+    description: '',
+    capacity: '',
+    image_url: '',
+    spotify_id: '',
+    is_private: true,
+    status: 'active',
+    square_variation_id: '',
+    metadata: {}
+  });
+  
+  const [squareItems, setSquareItems] = useState([]);
+  const [fetchingCatalog, setFetchingCatalog] = useState(false);
+  const [squareError, setSquareError] = useState(null);
+  
+  // New Trait UI state
+  const [newTraitKey, setNewTraitKey] = useState('');
+  const [newTraitValue, setNewTraitValue] = useState('');
+
+  useEffect(() => {
+    fetchRequests();
+    fetchEvents();
+    fetchSquareCatalog();
+  }, []);
+
+  async function fetchSquareCatalog() {
+    setFetchingCatalog(true);
+    setSquareError(null);
+    try {
+      const response = await fetch('/api/list-square-catalog');
+      const result = await response.json();
+      if (result.error) {
+        setSquareError(result.error);
+      } else {
+        setSquareItems(result.items || []);
+        if (result.items?.length === 0) {
+          console.log('Square catalog is empty in ' + result.environment + ' mode.');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch Square catalog:', err);
+      setSquareError('Failed to connect to API');
+    }
+    setFetchingCatalog(false);
+  }
+
+  async function enableSquareTracking(variationId) {
+    if (!confirm('Turn on inventory tracking for this item in Square?')) return;
+    
+    try {
+      const response = await fetch('/api/enable-square-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variationId })
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert('Tracking enabled! Now set your stock count in Square.');
+        fetchSquareCatalog();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function createTestItem() {
+    if (!confirm('This will create a real item called "API TEST TICKET" in your Square account. Proceed?')) return;
+    
+    try {
+      const response = await fetch('/api/create-test-item', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
+        fetchSquareCatalog();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      alert('Error creating test item: ' + err.message);
+    }
+  }
+
+  async function fetchRequests() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) console.error('Error fetching requests:', error);
+    else setRequests(data);
+    setLoading(false);
+  }
+
+  async function fetchEvents() {
+    setEventLoading(true);
+    setTableMissing(false);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching events:', error);
+      if (error.code === '42P01' || error.message?.includes('not found')) {
+        setTableMissing(true);
+      }
+      setEvents([]);
+    } else {
+      setEvents(data);
+    }
+    setEventLoading(false);
+  }
+
+  async function updateStatus(id, newStatus, requestData) {
+    if (newStatus === 'approved') {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/approve-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestId: id,
+            customerEmail: requestData.customer_email,
+            customerName: requestData.customer_name,
+            eventName: requestData.event_name
+          })
+        });
+
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        
+        alert('APPROVE SUCCESS: Square link generated and email sent.');
+      } catch (err) {
+        console.error('Approval failed:', err);
+        alert('ERROR: ' + err.message);
+      }
+      fetchRequests();
+    } else {
+      const { error } = await supabase
+        .from('requests')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) console.error('Error updating status:', error);
+      else fetchRequests();
+    }
+  }
+
+  function openEditModal(event = null) {
+    setNewTraitKey('');
+    setNewTraitValue('');
+    if (event) {
+      setEditingEvent(event);
+      setEventForm({
+        ...event,
+        price: (event.price / 100).toFixed(2),
+        capacity: event.capacity || '',
+        location_name: event.location_name || '',
+        address: event.address || '',
+        description: event.description || '',
+        image_url: event.image_url || '',
+        spotify_id: event.spotify_id || '',
+        is_private: event.is_private ?? true,
+        status: event.status || 'active',
+        square_variation_id: event.square_variation_id || '',
+        metadata: event.metadata || {}
+      });
+    } else {
+      setEditingEvent(null);
+      setEventForm({
+        name: '',
+        price: '',
+        event_date: '',
+        event_time: '',
+        location_name: '',
+        address: '',
+        description: '',
+        capacity: '',
+        image_url: '',
+        spotify_id: '',
+        is_private: true,
+        status: 'active',
+        square_variation_id: '',
+        metadata: {}
+      });
+    }
+    setIsModalOpen(true);
+  }
+
+  function addTrait() {
+    if (!newTraitKey || !newTraitValue) return;
+    setEventForm({
+      ...eventForm,
+      metadata: {
+        ...eventForm.metadata,
+        [newTraitKey.toUpperCase()]: newTraitValue
+      }
+    });
+    setNewTraitKey('');
+    setNewTraitValue('');
+  }
+
+  function removeTrait(key) {
+    const newMetadata = { ...eventForm.metadata };
+    delete newMetadata[key];
+    setEventForm({ ...eventForm, metadata: newMetadata });
+  }
+
+  async function handleEventSubmit(e) {
+    e.preventDefault();
+    const priceCents = Math.round(parseFloat(eventForm.price) * 100);
+    if (!eventForm.name || isNaN(priceCents)) return alert('Invalid name or price');
+
+    const data = {
+      ...eventForm,
+      price: priceCents,
+      capacity: eventForm.capacity ? parseInt(eventForm.capacity) : null
+    };
+
+    let error;
+    if (editingEvent) {
+      const { error: err } = await supabase.from('events').update(data).eq('id', editingEvent.id);
+      error = err;
+      
+      if (!error && eventForm.name !== editingEvent.name) {
+        await supabase.from('requests').update({ event_name: eventForm.name }).eq('event_name', editingEvent.name);
+        fetchRequests();
+      }
+    } else {
+      const { error: err } = await supabase.from('events').insert([data]);
+      error = err;
+    }
+
+    if (error) {
+      alert('Error saving event: ' + error.message);
+    } else {
+      setIsModalOpen(false);
+      fetchEvents();
+    }
+  }
+
+  return (
+    <div className="page-container">
+      <HeaderBar />
+      <div className="page-content admin-content">
+        <div className="page-header">
+          <div className="page-header-rect" style={{ backgroundColor: '#ff0000' }} />
+          <h1 className="page-title">ADMIN</h1>
+        </div>
+
+        <div className="admin-body">
+          <section className="admin-section">
+            <div className="section-header-flex">
+              <h2 className="section-title">EVENT MANAGEMENT</h2>
+              {!tableMissing && (
+                <div className="action-buttons">
+                  <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
+                  <button className="admin-btn" onClick={() => supabase.auth.signOut()}>SIGN OUT</button>
+                </div>
+              )}
+            </div>
+            
+            {tableMissing ? (
+              <div className="setup-guide">
+                <div className="guide-header">
+                  <span className="warning-icon">⚠️</span>
+                  <h3>DATABASE SETUP REQUIRED</h3>
+                </div>
+                <p>Please run the full upgrade SQL in your Supabase SQL Editor.</p>
+                <button className="admin-btn" onClick={fetchEvents}>REFRESH</button>
+              </div>
+            ) : (
+              <div className="events-table-container">
+                {eventLoading ? (
+                  <p className="loading-text">RETRIVING EVENTS...</p>
+                ) : (
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>STATUS</th>
+                        <th>NAME</th>
+                        <th>PRICE</th>
+                        <th>DATE</th>
+                        <th>LOCATION</th>
+                        <th>ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => (
+                        <tr key={event.id}>
+                          <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
+                          <td><strong>{event.name}</strong></td>
+                          <td>${(event.price / 100).toFixed(2)}</td>
+                          <td>{event.event_date || 'TBD'}</td>
+                          <td>{event.location_name || 'TBD'}</td>
+                          <td>
+                            <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* EVENT MODAL */}
+          {isModalOpen && (
+            <div className="admin-modal-overlay">
+              <div className="admin-modal">
+                <div className="modal-header">
+                  <h3>{editingEvent ? 'EDIT EVENT' : 'NEW EVENT'}</h3>
+                  <button className="close-modal" onClick={() => setIsModalOpen(false)}>×</button>
+                </div>
+                
+                <form onSubmit={handleEventSubmit} className="modal-form">
+                  <div className="form-grid">
+                    <div className="form-group full">
+                      <label>EVENT NAME</label>
+                      <input required type="text" value={eventForm.name} onChange={e => setEventForm({...eventForm, name: e.target.value})} />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>PRICE (USD)</label>
+                      <input required type="number" step="0.01" value={eventForm.price} onChange={e => setEventForm({...eventForm, price: e.target.value})} />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>CAPACITY</label>
+                      <input type="number" value={eventForm.capacity} onChange={e => setEventForm({...eventForm, capacity: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>DATE</label>
+                      <input required type="date" value={eventForm.event_date} onChange={e => setEventForm({...eventForm, event_date: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>TIME</label>
+                      <input required type="time" value={eventForm.event_time} onChange={e => setEventForm({...eventForm, event_time: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>LOCATION NAME</label>
+                      <input type="text" value={eventForm.location_name} onChange={e => setEventForm({...eventForm, location_name: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>STATUS</label>
+                      <select value={eventForm.status} onChange={e => setEventForm({...eventForm, status: e.target.value})}>
+                        <option value="active">ACTIVE</option>
+                        <option value="sold_out">SOLD OUT</option>
+                        <option value="draft">DRAFT</option>
+                        <option value="archived">ARCHIVED</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group full">
+                      <label>LINK TO SQUARE ITEM (FOR STOCK TRACKING)</label>
+                      <select 
+                        disabled={fetchingCatalog}
+                        value={eventForm.square_variation_id} 
+                        onChange={e => {
+                          const variationId = e.target.value;
+                          const selectedItem = squareItems.find(item => 
+                            item.variations.some(v => v.id === variationId)
+                          );
+                          const selectedVariation = selectedItem?.variations.find(v => v.id === variationId);
+                          
+                          setEventForm({
+                            ...eventForm, 
+                            square_variation_id: variationId,
+                            // Autofill price if it's a new event or user wants to sync
+                            price: selectedVariation ? (selectedVariation.price / 100).toFixed(2) : eventForm.price
+                          });
+                        }}
+                      >
+                        {fetchingCatalog ? (
+                          <option>LOADING CATALOG...</option>
+                        ) : squareError ? (
+                          <option>ERROR: {squareError}</option>
+                        ) : squareItems.length === 0 ? (
+                          <option>-- NO SQUARE ITEMS FOUND (CLICK DEBUG BELOW) --</option>
+                        ) : (
+                          <>
+                            <option value="">-- SELECT SQUARE ITEM (OPTIONAL) --</option>
+                            {squareItems.map(item => (
+                              <optgroup key={item.id} label={item.name.toUpperCase()}>
+                                {item.variations.map(v => (
+                                  <option key={v.id} value={v.id}>
+                                    {v.name} (${(v.price / 100).toFixed(2)})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                      <p className="form-help">Linking to Square enables automated stock management.</p>
+                      
+                      {eventForm.square_variation_id && (() => {
+                        const v = squareItems.flatMap(i => i.variations).find(v => v.id === eventForm.square_variation_id);
+                        if (v && !v.trackInventory) {
+                          return (
+                            <div className="tracking-warning">
+                              <span>⚠️ Square inventory tracking is OFF for this item.</span>
+                              <button 
+                                type="button" 
+                                className="admin-btn approve small" 
+                                onClick={() => enableSquareTracking(v.id)}
+                              >
+                                TURN ON TRACKING
+                              </button>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      <div className="debug-actions" style={{ marginTop: '10px' }}>
+                        <button type="button" className="admin-btn small" onClick={fetchSquareCatalog}>RELOAD CATALOG</button>
+                        <button type="button" className="admin-btn small" onClick={createTestItem}>CREATE TEST ITEM</button>
+                      </div>
+                    </div>
+
+                    <div className="form-group full">
+                      <label>ADDRESS</label>
+                      <input type="text" value={eventForm.address} onChange={e => setEventForm({...eventForm, address: e.target.value})} />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>DESCRIPTION</label>
+                      <textarea rows="4" value={eventForm.description} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>IMAGE URL</label>
+                      <input type="text" value={eventForm.image_url} onChange={e => setEventForm({...eventForm, image_url: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>SPOTIFY PLAYLIST ID</label>
+                      <input type="text" value={eventForm.spotify_id} onChange={e => setEventForm({...eventForm, spotify_id: e.target.value})} />
+                    </div>
+
+                    <div className="form-group checkbox">
+                      <input type="checkbox" id="is_private" checked={eventForm.is_private} onChange={e => setEventForm({...eventForm, is_private: e.target.checked})} />
+                      <label htmlFor="is_private">PRIVATE (REQUEST ONLY)</label>
+                    </div>
+
+                    <div className="form-group full trait-builder-section">
+                      <label>CUSTOM TRAITS (METADATA)</label>
+                      <div className="trait-input-row">
+                        <input 
+                          type="text" 
+                          placeholder="TRAIT (e.g. VIBE)" 
+                          value={newTraitKey} 
+                          onChange={e => setNewTraitKey(e.target.value)} 
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="VALUE (e.g. DARK)" 
+                          value={newTraitValue} 
+                          onChange={e => setNewTraitValue(e.target.value)} 
+                        />
+                        <button type="button" className="admin-btn" onClick={addTrait}>ADD</button>
+                      </div>
+                      
+                      <div className="traits-list">
+                        {Object.entries(eventForm.metadata || {}).map(([key, val]) => (
+                          <div key={key} className="trait-pill">
+                            <span className="trait-key">{key}:</span>
+                            <span className="trait-val">{val}</span>
+                            <button type="button" className="remove-trait" onClick={() => removeTrait(key)}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-actions">
+                    <button type="submit" className="admin-btn approve wide">SAVE EVENT</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          <section className="admin-section">
+            <h2 className="section-title">INVITE REQUESTS</h2>
+            <div className="admin-stats">
+              <div className="stat-item">
+                <span className="stat-label">TOTAL REQUESTS</span>
+                <span className="stat-value">{requests.length}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">PENDING</span>
+                <span className="stat-value">{requests.filter(r => r.status === 'pending').length}</span>
+              </div>
+            </div>
+
+            <div className="requests-table-container">
+              {loading ? (
+                <p className="loading-text">RETRIVING DATA...</p>
+              ) : (
+                <table className="requests-table">
+                  <thead>
+                    <tr>
+                      <th>DATE</th>
+                      <th>EVENT</th>
+                      <th>NAME</th>
+                      <th>EMAIL</th>
+                      <th>STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((req) => (
+                      <tr key={req.id} className={`status-${req.status}`}>
+                        <td>{new Date(req.created_at).toLocaleDateString()}</td>
+                        <td>{req.event_name}</td>
+                        <td>{req.customer_name}</td>
+                        <td>{req.customer_email}</td>
+                        <td>
+                          <span className={`status-pill ${req.status}`}>
+                            {req.status}
+                          </span>
+                        </td>
+                        <td>
+                          {req.status === 'pending' && (
+                            <div className="action-buttons">
+                              <button
+                                className="admin-btn approve"
+                                onClick={() => updateStatus(req.id, 'approved', req)}
+                              >
+                                APPROVE
+                              </button>
+                              <button
+                                className="admin-btn reject"
+                                onClick={() => updateStatus(req.id, 'rejected', req)}
+                              >
+                                REJECT
+                              </button>
+                            </div>
+                          )}
+                          {req.status !== 'pending' && (
+                            <button
+                              className="admin-btn reset"
+                              onClick={() => updateStatus(req.id, 'pending', req)}
+                            >
+                              RESET
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

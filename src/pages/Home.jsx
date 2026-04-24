@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
+import SocialLinks from '../components/SocialLinks';
 import {
   homeImgEllipse16, homeImgEllipse17, homeImgEllipse18, homeImgEllipse19,
   homeImgEllipse20, homeImgEllipse21, homeImgEllipse22, homeImgEllipse23
@@ -62,6 +63,8 @@ export default function Home() {
         </div>
       )}
       
+      <SocialLinks className="home-socials" />
+
       <Link to="/*" className="space-notification">
         <div className="space-notification-dot"></div>
         <span>1 new invite</span>
