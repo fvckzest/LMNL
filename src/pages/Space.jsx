@@ -2,13 +2,21 @@ import { useEffect, useState } from "react";
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
-import './SpaceLandingPage.css';
+import './Space.css';
 
-export default function SpaceLandingPage() {
+export default function Space() {
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [eventData, setEventData] = useState({ name: 'SPACE.', price: 10000 });
+
+  const DONATION_LINKS = {
+    10: 'https://square.link/u/wS5ae9vZ',
+    20: 'https://square.link/u/CNarEY3J',
+    50: 'https://square.link/u/koJMBswI',
+    100: 'https://square.link/u/p7Z5v7zW',
+  };
 
   useEffect(() => {
     fetchEvent();
@@ -106,6 +114,22 @@ export default function SpaceLandingPage() {
             />
           </div>
 
+          <div className="space-description">
+            <p className="description-label">brief</p>
+            <div className="description-content">
+              {eventData.description ? (
+                eventData.description.split('\n').map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))
+              ) : (
+                <p>
+                  System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere. 
+                  All nodes are currently in the building phase. Request access to participate in the physical manifestation.
+                </p>
+              )}
+            </div>
+          </div>
+
           <NodeSystem nodes={nodes} soundCovered={soundCovered} currency={currency} />
 
           <div className="space-actions">
@@ -118,7 +142,7 @@ export default function SpaceLandingPage() {
                 request invite
               </button>
             )}
-            <button className="space-button">
+            <button className="space-button" onClick={() => setShowDonationModal(true)}>
               feed the horse
             </button>
           </div>
@@ -177,6 +201,35 @@ export default function SpaceLandingPage() {
                   </form>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {showDonationModal && (
+          <div className="request-modal-overlay" onClick={() => setShowDonationModal(false)}>
+            <div className="request-modal donation-modal" onClick={e => e.stopPropagation()}>
+              <button className="close-modal" onClick={() => setShowDonationModal(false)}>×</button>
+              <h2>FEED THE HORSE</h2>
+              <p className="request-subtitle">SELECT DONATION AMOUNT</p>
+              
+              <div className="donation-choices">
+                <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                  <span className="amount">$10</span>
+                  <span className="label">SUPPORT</span>
+                </a>
+                <a href={DONATION_LINKS[20]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                  <span className="amount">$20</span>
+                  <span className="label">SUSTAIN</span>
+                </a>
+                <a href={DONATION_LINKS[50]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                  <span className="amount">$50</span>
+                  <span className="label">EXPAND</span>
+                </a>
+                <a href={DONATION_LINKS[100]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                  <span className="amount">$100</span>
+                  <span className="label">COUNCIL</span>
+                </a>
+              </div>
             </div>
           </div>
         )}

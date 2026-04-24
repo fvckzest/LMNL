@@ -65,7 +65,7 @@ export default function Home() {
       
       <SocialLinks className="home-socials" />
 
-      <Link to="/*" className="space-notification">
+      <Link to="/space" className="space-notification">
         <div className="space-notification-dot"></div>
         <span>1 new invite</span>
       </Link>
