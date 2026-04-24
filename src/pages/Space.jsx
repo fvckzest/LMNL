@@ -20,6 +20,7 @@ export default function Space() {
 
   useEffect(() => {
     fetchEvent();
+    document.title = "SPACE | LMNL";
   }, []);
 
   async function fetchEvent() {
@@ -32,13 +33,13 @@ export default function Space() {
 
     if (data && !error) {
       let finalData = { ...data };
-      
+
       // If linked to Square, check real inventory
       if (data.square_variation_id) {
         try {
           const invRes = await fetch(`/api/check-inventory?variationId=${data.square_variation_id}`);
           const invData = await invRes.json();
-          
+
           if (invData.count !== undefined && invData.count <= 0) {
             finalData.status = 'sold_out';
           }
@@ -46,7 +47,7 @@ export default function Space() {
           console.error('Failed to check inventory:', err);
         }
       }
-      
+
       setEventData(finalData);
     }
   }
@@ -78,10 +79,10 @@ export default function Space() {
     const { data, error } = await supabase
       .from('requests')
       .insert([
-        { 
-          event_name: eventData.name, 
-          customer_name: formData.name, 
-          customer_email: formData.email 
+        {
+          event_name: eventData.name,
+          customer_name: formData.name,
+          customer_email: formData.email
         }
       ]);
 
@@ -100,7 +101,7 @@ export default function Space() {
       <div className="page-content space-content">
         <div className="page-header">
           <div className="page-header-rect" style={{ backgroundColor: '#000000' }} />
-          <h1 className="page-title">[{eventData.name}]</h1>
+          <h1 className="page-title">[SPACE]</h1>
         </div>
 
         <div className="space-body">
@@ -123,7 +124,7 @@ export default function Space() {
                 ))
               ) : (
                 <p>
-                  System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere. 
+                  System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere.
                   All nodes are currently in the building phase. Request access to participate in the physical manifestation.
                 </p>
               )}
@@ -155,7 +156,7 @@ export default function Space() {
                 setShowRequestForm(false);
                 setRequestStatus('idle');
               }}>×</button>
-              
+
               {requestStatus === 'success' ? (
                 <div className="request-success">
                   <h2>REQUEST SENT.</h2>
@@ -168,31 +169,31 @@ export default function Space() {
                   <p className="request-subtitle">
                     PRIVATE EVENT // {eventData.location_name && `${eventData.location_name.toUpperCase()} // `} {eventData.event_date ? new Date(eventData.event_date + 'T00:00:00').toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : 'TBD'}
                   </p>
-                  
+
                   <form onSubmit={handleRequestSubmit} className="request-form">
-                    <input 
-                      type="text" 
-                      placeholder="NAME" 
-                      required 
+                    <input
+                      type="text"
+                      placeholder="NAME"
+                      required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="request-input"
                     />
-                    <input 
-                      type="email" 
-                      placeholder="EMAIL" 
-                      required 
+                    <input
+                      type="email"
+                      placeholder="EMAIL"
+                      required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="request-input"
                     />
-                    
+
                     {requestStatus === 'error' && (
                       <p className="error-message">System error. Please try again.</p>
                     )}
-                    
-                    <button 
-                      type="submit" 
+
+                    <button
+                      type="submit"
                       className="space-button submit-request"
                       disabled={requestStatus === 'loading'}
                     >
@@ -211,7 +212,7 @@ export default function Space() {
               <button className="close-modal" onClick={() => setShowDonationModal(false)}>×</button>
               <h2>FEED THE HORSE</h2>
               <p className="request-subtitle">SELECT DONATION AMOUNT</p>
-              
+
               <div className="donation-choices">
                 <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
                   <span className="amount">$10</span>
@@ -266,10 +267,10 @@ function NodeSystem({ nodes, soundCovered, currency }) {
 }
 
 function Timer({ eventDate, eventTime }) {
-  const targetStr = (eventDate && eventTime) 
+  const targetStr = (eventDate && eventTime)
     ? `${eventDate}T${eventTime}`
     : "2026-07-03T20:00:00";
-    
+
   const target = new Date(targetStr);
   const [time, setTime] = useState(getTimeLeft(target));
 
