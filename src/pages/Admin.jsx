@@ -615,7 +615,7 @@ export default function Admin() {
                       <th>PRODUCT NAME</th>
                       <th>VARIATION</th>
                       <th>PRICE</th>
-                      <th>TRACKING</th>
+                      <th>STOCK</th>
                       <th>ID (FOR REFERENCE)</th>
                     </tr>
                   </thead>
@@ -629,9 +629,7 @@ export default function Admin() {
                           <td>{v.name}</td>
                           <td>${(v.price / 100).toFixed(2)}</td>
                           <td>
-                            <span className={`status-pill ${v.trackInventory ? 'approved' : 'pending'}`}>
-                              {v.trackInventory ? 'ENABLED' : 'DISABLED'}
-                            </span>
+                            {v.trackInventory ? v.quantity : 'N/A'}
                           </td>
                           <td style={{ fontSize: '10px', color: '#999', fontFamily: 'monospace' }}>{v.id}</td>
                         </tr>

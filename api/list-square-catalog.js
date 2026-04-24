@@ -35,6 +35,29 @@ export default async function handler(req, res) {
     const allObjects = response.objects || [];
     const items = allObjects.filter(obj => obj.type === 'ITEM');
     
+    // Extract all variation IDs to fetch inventory counts in one batch
+    const variationIds = items.flatMap(item => 
+      item.itemData.variations?.map(v => v.id) || []
+    );
+
+    let inventoryMap = {};
+    if (variationIds.length > 0) {
+      try {
+        const invRes = await squareClient.inventory.batchGetCounts({
+          catalogObjectIds: variationIds
+        });
+        
+        const counts = invRes.data || invRes.response?.counts || [];
+        counts.forEach(count => {
+          const vid = count.catalogObjectId;
+          const qty = Number(count.quantity) || 0;
+          inventoryMap[vid] = (inventoryMap[vid] || 0) + qty;
+        });
+      } catch (invErr) {
+        console.error('Inventory Fetch Error:', invErr);
+      }
+    }
+    
     const formattedItems = items.map(item => ({
       id: item.id,
       name: item.itemData.name,
@@ -42,7 +65,8 @@ export default async function handler(req, res) {
         id: v.id,
         name: v.itemVariationData.name,
         price: v.itemVariationData.priceMoney?.amount ? Number(v.itemVariationData.priceMoney.amount) : 0,
-        trackInventory: v.itemVariationData.trackInventory || false
+        trackInventory: v.itemVariationData.trackInventory || false,
+        quantity: inventoryMap[v.id] ?? 0
       })) || []
     }));
 
