@@ -9,7 +9,12 @@ export default function Space() {
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error
   const [formData, setFormData] = useState({ name: '', email: '' });
-  const [eventData, setEventData] = useState({ name: 'SPACE.', price: 10000 });
+  const [eventData, setEventData] = useState({ 
+    name: 'SPACE', 
+    price: undefined, 
+    sold_tickets: 0, 
+    capacity: 0 
+  });
 
   const DONATION_LINKS = {
     10: 'https://square.link/u/wS5ae9vZ',
@@ -32,23 +37,57 @@ export default function Space() {
       .single();
 
     if (data && !error) {
-      let finalData = { ...data };
+      console.log('Fetched event data:', data);
       
-      // If linked to Square, check real inventory
+      // Update immediately with database data
+      let initialSyncData = { ...data, sold_tickets: 0 };
+      setEventData(initialSyncData);
+      
+      // 1. Fetch Approved Requests Count
+      const { count: approvedCount, error: countError } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_name', data.name)
+        .eq('status', 'approved');
+
+      if (!countError) {
+        setEventData(prev => ({ ...prev, sold_tickets: approvedCount || 0 }));
+      }
+
+      // 2. If linked to Square, check real inventory & price
       if (data.square_variation_id) {
         try {
           const invRes = await fetch(`/api/check-inventory?variationId=${data.square_variation_id}`);
-          const invData = await invRes.json();
+          if (!invRes.ok) throw new Error('Inventory API error');
           
-          if (invData.count !== undefined && invData.count <= 0) {
-            finalData.status = 'sold_out';
-          }
+          const invData = await invRes.json();
+          console.log('Inventory data:', invData);
+          
+          setEventData(prev => {
+            let updated = { ...prev };
+            
+            if (invData.count !== undefined) {
+              updated.available_tickets = invData.count;
+              const squareSold = Math.max(0, (data.capacity || 0) - invData.count);
+              updated.sold_tickets = Math.max(updated.sold_tickets || 0, squareSold);
+              
+              if (invData.count <= 0) {
+                updated.status = 'sold_out';
+              }
+            }
+            
+            if (invData.price !== undefined) {
+              updated.price = invData.price;
+            }
+            
+            return updated;
+          });
         } catch (err) {
-          console.error('Failed to check inventory:', err);
+          console.error('Failed to sync with Square:', err);
         }
       }
-      
-      setEventData(finalData);
+    } else if (error) {
+      console.error('Supabase fetch error:', error);
     }
   }
 
@@ -96,7 +135,7 @@ export default function Space() {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container space-page">
       <HeaderBar />
       <div className="page-content space-content">
         <div className="page-header">
@@ -106,46 +145,47 @@ export default function Space() {
 
         <div className="space-body">
           <div className="space-grid">
-            <Timer eventDate={eventData.event_date} eventTime={eventData.event_time} />
+            <div className="space-metrics-stack">
+              <Timer eventDate={eventData.event_date} eventTime={eventData.event_time} />
+              <OccupancyCounter 
+                sold={eventData.sold_tickets} 
+                capacity={eventData.capacity} 
+              />
+            </div>
+
             <SystemPanel
               totalRaised={totalRaised}
               totalGoal={totalGoal}
               totalPct={totalPct}
               currency={currency}
+              nodes={nodes}
+              soundCovered={soundCovered}
             />
           </div>
 
-          <div className="space-description">
-            <p className="description-label">brief</p>
-            <div className="description-content">
-              {eventData.description ? (
-                eventData.description.split('\n').map((line, i) => (
-                  <p key={i}>{line}</p>
-                ))
-              ) : (
-                <p>
-                  System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere. 
-                  All nodes are currently in the building phase. Request access to participate in the physical manifestation.
-                </p>
-              )}
+          <div className="space-details-row">
+            <PriceIndicator 
+              price={eventData.price} 
+              eventStatus={eventData.status}
+              onInvite={() => setShowRequestForm(true)}
+              onDonate={() => setShowDonationModal(true)}
+            />
+              
+              <div className="space-description">
+                <p className="description-label">brief</p>
+              <div className="description-content">
+                {eventData.description ? (
+                  eventData.description.split('\n').map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))
+                ) : (
+                  <p>
+                    System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere. 
+                    All nodes are currently in the building phase. Request access to participate in the physical manifestation.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-
-          <NodeSystem nodes={nodes} soundCovered={soundCovered} currency={currency} />
-
-          <div className="space-actions">
-            {eventData.status === 'sold_out' ? (
-              <button className="space-button sold-out" disabled>
-                sold out
-              </button>
-            ) : (
-              <button className="space-button" onClick={() => setShowRequestForm(true)}>
-                request invite
-              </button>
-            )}
-            <button className="space-button" onClick={() => setShowDonationModal(true)}>
-              feed the horse
-            </button>
           </div>
         </div>
 
@@ -240,31 +280,6 @@ export default function Space() {
   );
 }
 
-function NodeSystem({ nodes, soundCovered, currency }) {
-  return (
-    <div className="space-nodes-container">
-      <div className="space-nodes-status">
-        <span className="space-pulse-dot" />
-        sound online ({currency(soundCovered)})
-      </div>
-
-      <div className="space-nodes-grid">
-        {nodes.map((n) => {
-          const pct = Math.round((n.raised / n.goal) * 100);
-          return (
-            <div key={n.name} className="space-node-item">
-              <p className="space-node-name">{n.name}</p>
-              <div className="space-node-bar-bg">
-                <div className="space-node-bar-fill" style={{ width: `${pct}%` }} />
-              </div>
-              <p className="space-node-pct">{pct}%</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function Timer({ eventDate, eventTime }) {
   const targetStr = (eventDate && eventTime) 
@@ -313,26 +328,49 @@ function pad(n) {
   return String(n).padStart(2, "0");
 }
 
-function SystemPanel({ totalRaised, totalGoal, totalPct, currency }) {
+function SystemPanel({ totalRaised, totalGoal, totalPct, currency, nodes, soundCovered }) {
   return (
     <div className="space-system-container">
-      <p className="space-system-header">system</p>
+      <p className="space-system-header">system diagnostics</p>
 
       <div className="space-system-progress">
         <div className="space-system-amounts">
-          <span>{currency(totalRaised)}</span>
-          <span>{currency(totalGoal)}</span>
+          <span>{currency(totalRaised)} raised</span>
+          <span>goal: {currency(totalGoal)}</span>
         </div>
         <div className="space-system-bar-bg">
           <div className="space-system-bar-fill" style={{ width: `${totalPct}%` }} />
         </div>
       </div>
 
-      <div className="space-system-statuses">
-        <Status label="sound" value="online" online />
-        <Status label="form" value="building" />
-        <Status label="energy" value="building" />
-        <Status label="atmosphere" value="building" />
+      <div className="space-system-nodes">
+        <div className="space-system-node-item sound-node">
+          <div className="space-node-info">
+            <span className="space-node-name">
+              <span className="space-pulse-dot" />
+              SOUND
+            </span>
+            <span className="space-node-status">ONLINE ({currency(soundCovered)})</span>
+          </div>
+          <div className="space-node-bar-bg">
+            <div className="space-node-bar-fill completed" style={{ width: `100%` }} />
+          </div>
+        </div>
+        
+        {nodes.map((n) => {
+          const pct = Math.round((n.raised / n.goal) * 100);
+          return (
+            <div key={n.name} className="space-system-node-item">
+              <div className="space-node-info">
+                <span className="space-node-name">{n.name}</span>
+                <span className="space-node-pct">{pct}%</span>
+              </div>
+              <div className="space-node-bar-bg">
+                <div className="space-node-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -347,14 +385,60 @@ function TimeUnit({ value, label }) {
   );
 }
 
-function Status({ label, value, online }) {
+
+function OccupancyCounter({ sold, capacity }) {
+  const isLoaded = sold !== undefined && capacity !== undefined;
+  const pct = isLoaded && capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0;
+  
   return (
-    <div className="space-status-item">
-      <span className="space-status-label">{label}</span>
-      <span className="space-status-value">
-        {online && <span className="space-pulse-dot" />}
-        {value}
-      </span>
+    <div className="space-occupancy-container">
+      <p className="space-occupancy-label">tickets sold</p>
+      <div className="space-occupancy-content">
+        <div className="space-occupancy-number">
+          {isLoaded ? String(sold).padStart(3, '0') : '---'} 
+          <span className="separator">/</span> 
+          {isLoaded ? String(capacity).padStart(3, '0') : '---'}
+        </div>
+        <div className="space-occupancy-bar-bg">
+          <div className="space-occupancy-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriceIndicator({ price, eventStatus, onInvite, onDonate }) {
+  const isLoaded = price !== undefined;
+  const formattedPrice = isLoaded ? (price / 100).toFixed(2) : '---';
+
+  return (
+    <div className="space-price-container">
+      <p className="space-price-label">admission</p>
+      <div className="space-price-content">
+        <div className="space-price-value">
+          <span className="currency-symbol">$</span>
+          {formattedPrice}
+        </div>
+        <div className="space-price-status">
+          <span className="pulse-dot active" />
+          LIVE FROM SQUARE
+        </div>
+
+        <div className="space-price-actions">
+          {eventStatus === 'sold_out' ? (
+            <button className="space-button sold-out" disabled>
+              sold out
+            </button>
+          ) : (
+            <button className="space-button" onClick={onInvite}>
+              request invite
+            </button>
+          )}
+          <button className="space-button secondary" onClick={onDonate}>
+            feed the horse
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

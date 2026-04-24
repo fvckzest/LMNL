@@ -3,12 +3,29 @@ import { supabase } from '../lib/supabase';
 import HeaderBar from '../components/HeaderBar';
 import './Admin.css';
 
+const ArchiveIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+    <rect x="1" y="3" width="22" height="5"></rect>
+    <line x1="10" y1="12" x2="14" y2="12"></line>
+  </svg>
+);
+
+const UnarchiveIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 8h10l4 4v9H3V8z"></path>
+    <path d="M13 8V4H7v4"></path>
+    <line x1="12" y1="15" x2="12" y2="15"></line>
+  </svg>
+);
+
 export default function Admin() {
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eventLoading, setEventLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   
   // New Event Form State
   const [newEventName, setNewEventName] = useState('');
@@ -27,7 +44,7 @@ export default function Admin() {
     description: '',
     capacity: '',
     image_url: '',
-    spotify_id: '',
+    partiful_url: '',
     is_private: true,
     status: 'active',
     square_variation_id: '',
@@ -189,7 +206,7 @@ export default function Admin() {
         address: event.address || '',
         description: event.description || '',
         image_url: event.image_url || '',
-        spotify_id: event.spotify_id || '',
+        partiful_url: event.spotify_id || '',
         is_private: event.is_private ?? true,
         status: event.status || 'active',
         square_variation_id: event.square_variation_id || '',
@@ -207,7 +224,7 @@ export default function Admin() {
         description: '',
         capacity: '',
         image_url: '',
-        spotify_id: '',
+        partiful_url: '',
         is_private: true,
         status: 'active',
         square_variation_id: '',
@@ -243,9 +260,13 @@ export default function Admin() {
 
     const data = {
       ...eventForm,
+      spotify_id: eventForm.partiful_url, // Map back to DB column
       price: priceCents,
       capacity: eventForm.capacity ? parseInt(eventForm.capacity) : null
     };
+    
+    // Remove the temporary partiful_url field before sending
+    delete data.partiful_url;
 
     let error;
     if (editingEvent) {
@@ -319,7 +340,13 @@ export default function Admin() {
                       {events.map((event) => (
                         <tr key={event.id}>
                           <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
-                          <td><strong>{event.name}</strong></td>
+                          <td>
+                            {event.name.toUpperCase() === 'SPACE' ? (
+                              <a href="/space" target="_blank" className="event-name-link">{event.name}</a>
+                            ) : (
+                              <strong>{event.name}</strong>
+                            )}
+                          </td>
                           <td>${(event.price / 100).toFixed(2)}</td>
                           <td>{event.event_date || 'TBD'}</td>
                           <td>{event.location_name || 'TBD'}</td>
@@ -470,8 +497,8 @@ export default function Admin() {
                     </div>
 
                     <div className="form-group">
-                      <label>SPOTIFY PLAYLIST ID</label>
-                      <input type="text" value={eventForm.spotify_id} onChange={e => setEventForm({...eventForm, spotify_id: e.target.value})} />
+                      <label>PARTIFUL LINK</label>
+                      <input type="text" placeholder="https://partiful.com/e/..." value={eventForm.partiful_url} onChange={e => setEventForm({...eventForm, partiful_url: e.target.value})} />
                     </div>
 
                     <div className="form-group checkbox">
@@ -528,6 +555,14 @@ export default function Admin() {
                 <span className="stat-label">PENDING</span>
                 <span className="stat-value">{requests.filter(r => r.status === 'pending').length}</span>
               </div>
+              <div className="stat-item toggle-archived">
+                <button 
+                  className={`admin-btn small ${showArchived ? 'active' : ''}`}
+                  onClick={() => setShowArchived(!showArchived)}
+                >
+                  {showArchived ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({requests.filter(r => r.status === 'archived').length})
+                </button>
+              </div>
             </div>
 
             <div className="requests-table-container">
@@ -546,10 +581,18 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.map((req) => (
+                    {requests
+                      .filter(req => showArchived ? true : req.status !== 'archived')
+                      .map((req) => (
                       <tr key={req.id} className={`status-${req.status}`}>
                         <td>{new Date(req.created_at).toLocaleDateString()}</td>
-                        <td>{req.event_name}</td>
+                        <td>
+                          {req.event_name.toUpperCase() === 'SPACE' ? (
+                            <a href="/space" target="_blank" className="event-name-link">{req.event_name}</a>
+                          ) : (
+                            req.event_name
+                          )}
+                        </td>
                         <td>{req.customer_name}</td>
                         <td>{req.customer_email}</td>
                         <td>
@@ -557,31 +600,63 @@ export default function Admin() {
                             {req.status}
                           </span>
                         </td>
-                        <td>
-                          {req.status === 'pending' && (
-                            <div className="action-buttons">
-                              <button
-                                className="admin-btn approve"
-                                onClick={() => updateStatus(req.id, 'approved', req)}
-                              >
-                                APPROVE
-                              </button>
-                              <button
-                                className="admin-btn reject"
-                                onClick={() => updateStatus(req.id, 'rejected', req)}
-                              >
-                                REJECT
-                              </button>
+                        <td className="actions-cell">
+                          <div className="actions-wrapper">
+                            <div className="main-actions">
+                              {req.status === 'pending' && (
+                                <div className="action-buttons">
+                                  <button
+                                    className="admin-btn approve"
+                                    onClick={() => updateStatus(req.id, 'approved', req)}
+                                  >
+                                    APPROVE
+                                  </button>
+                                  <button
+                                    className="admin-btn reject"
+                                    onClick={() => updateStatus(req.id, 'rejected', req)}
+                                  >
+                                    REJECT
+                                  </button>
+                                </div>
+                              )}
+                              {(req.status === 'approved' || req.status === 'rejected') && (
+                                <button
+                                  className="admin-btn reset"
+                                  onClick={() => updateStatus(req.id, 'pending', req)}
+                                >
+                                  RESET
+                                </button>
+                              )}
+                              {req.status === 'archived' && (
+                                <button
+                                  className="admin-btn reset"
+                                  onClick={() => updateStatus(req.id, 'pending', req)}
+                                >
+                                  UNARCHIVE
+                                </button>
+                              )}
                             </div>
-                          )}
-                          {req.status !== 'pending' && (
-                            <button
-                              className="admin-btn reset"
-                              onClick={() => updateStatus(req.id, 'pending', req)}
-                            >
-                              RESET
-                            </button>
-                          )}
+                            
+                            <div className="secondary-actions">
+                              {req.status !== 'archived' ? (
+                                <button
+                                  className="icon-btn archive-btn"
+                                  title="Archive Request"
+                                  onClick={() => updateStatus(req.id, 'archived', req)}
+                                >
+                                  <ArchiveIcon />
+                                </button>
+                              ) : (
+                                <button
+                                  className="icon-btn unarchive-btn"
+                                  title="Unarchive Request"
+                                  onClick={() => updateStatus(req.id, 'pending', req)}
+                                >
+                                  <UnarchiveIcon />
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))}

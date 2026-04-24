@@ -20,17 +20,31 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await squareClient.inventory.retrieveCounts({
-      catalogObjectId: variationId
+    // 1. Get Inventory Count
+    const invResponse = await squareClient.inventory.batchGetCounts({
+      catalogObjectIds: [variationId]
     });
-    
-    const counts = response.counts || [];
-    // Sum up counts across all locations or just use the first one
+    const counts = invResponse.counts || invResponse.data || invResponse.result?.counts || [];
     const totalCount = counts.reduce((acc, count) => acc + Number(count.quantity), 0);
 
-    return res.status(200).json({ count: totalCount });
+    // 2. Get Price from Catalog
+    const catResponse = await squareClient.catalog.batchGet({
+      objectIds: [variationId]
+    });
+    
+    // The price is in the catalog_object.item_variation_data.price_money
+    const objects = catResponse.objects || catResponse.result?.objects || [];
+    const variation = objects[0];
+    const priceAmount = variation?.itemVariationData?.priceMoney?.amount 
+      ? Number(variation.itemVariationData.priceMoney.amount) 
+      : 0;
+
+    return res.status(200).json({ 
+      count: totalCount,
+      price: Number(priceAmount)
+    });
   } catch (error) {
-    console.error('Square Inventory Error:', error);
+    console.error('Square Sync Error:', error);
     return res.status(500).json({ error: error.message });
   }
 }
