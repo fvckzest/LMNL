@@ -1,12 +1,20 @@
 import { SquareClient, SquareEnvironment } from 'square';
 
-const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
-const squareClient = new SquareClient({
-  token: isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN,
-  environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-});
-
 export default async function handler(req, res) {
+  const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
+  const token = isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN;
+  
+  if (!token) {
+    return res.status(500).json({ 
+      error: `Square access token is missing. Please set SQUARE_PROD_ACCESS_TOKEN or SQUARE_ACCESS_TOKEN in your environment variables. Current environment: ${isProd ? 'production' : 'sandbox'}`
+    });
+  }
+
+  const squareClient = new SquareClient({
+    token: token,
+    environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

@@ -1,12 +1,18 @@
 import { SquareClient, SquareEnvironment } from 'square';
 
-const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
-const squareClient = new SquareClient({
-  token: isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN,
-  environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-});
-
 export default async function handler(req, res) {
+  const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
+  const token = isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN;
+
+  if (!token) {
+    return res.status(500).json({ error: 'Square access token is missing.' });
+  }
+
+  const squareClient = new SquareClient({
+    token: token,
+    environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+
   const { variationId } = req.query;
 
   if (!variationId) {

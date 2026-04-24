@@ -6,15 +6,27 @@ import crypto from 'crypto';
 console.log('--- BACKEND LOADED ---');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-
-const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
-const squareClient = new SquareClient({
-  token: isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN,
-  environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-});
+// Use Service Role Key for backend operations to bypass RLS
+const supabase = createClient(
+  process.env.SUPABASE_URL, 
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+);
 
 export default async function handler(req, res) {
+  const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
+  const token = isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN;
+
+  if (!token) {
+    return res.status(500).json({ 
+      error: `Square access token is missing. Please set SQUARE_PROD_ACCESS_TOKEN or SQUARE_ACCESS_TOKEN in your environment variables.`
+    });
+  }
+
+  const squareClient = new SquareClient({
+    token: token,
+    environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+
   console.log('--- Approval Request Started ---');
   
   if (req.method !== 'POST') {
