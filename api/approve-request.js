@@ -5,39 +5,45 @@ import crypto from 'crypto';
 
 console.log('--- BACKEND LOADED ---');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-// Use Service Role Key for backend operations to bypass RLS
-const supabase = createClient(
-  process.env.SUPABASE_URL, 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-);
-
 export default async function handler(req, res) {
   const isProd = process.env.SQUARE_ENVIRONMENT === 'production';
-  const token = isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN;
-
-  if (!token) {
-    return res.status(500).json({ 
-      error: `Square access token is missing. Please set SQUARE_PROD_ACCESS_TOKEN or SQUARE_ACCESS_TOKEN in your environment variables.`
-    });
-  }
-
-  const squareClient = new SquareClient({
-    token: token,
-    environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-  });
-
-  console.log('--- Approval Request Started ---');
+  const squareToken = isProd ? (process.env.SQUARE_PROD_ACCESS_TOKEN || process.env.SQUARE_ACCESS_TOKEN) : process.env.SQUARE_ACCESS_TOKEN;
   
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { requestId, customerEmail, customerName, eventName } = req.body;
-  console.log(`Processing ${eventName} for ${customerEmail}`);
-
   try {
-    // 1. Get Square Locations
+    // 1. Validate Environment
+    const missingVars = [];
+    if (!squareToken) missingVars.push('SQUARE_ACCESS_TOKEN');
+    if (!process.env.RESEND_API_KEY) missingVars.push('RESEND_API_KEY');
+    if (!process.env.SUPABASE_URL) missingVars.push('SUPABASE_URL');
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_ANON_KEY) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (missingVars.length > 0) {
+      return res.status(500).json({ 
+        error: `Missing environment variables: ${missingVars.join(', ')}. Please check your Vercel Dashboard.`
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const { requestId, customerEmail, customerName, eventName } = req.body;
+    console.log(`Processing ${eventName} for ${customerEmail}`);
+
+    // 2. Initialize Clients
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const supabase = createClient(
+      process.env.SUPABASE_URL, 
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+    );
+    const squareClient = new SquareClient({
+      token: squareToken,
+      environment: isProd ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+    });
+
+    console.log('--- Approval Request Started ---');
+
+    // 3. Get Square Locations
     console.log('Fetching Square locations...');
     const locationsResponse = await squareClient.locations.list();
     const locations = locationsResponse.locations;
@@ -49,7 +55,7 @@ export default async function handler(req, res) {
     const locationId = locations[0].id;
     console.log(`Using Location ID: ${locationId}`);
 
-    // 2. Fetch Event Data from Supabase
+    // 4. Fetch Event Data from Supabase
     console.log(`Fetching data for event: ${eventName}...`);
     let priceCents = 100; // Default $1.00 fallback
     let squareVariationId = null;
@@ -72,7 +78,7 @@ export default async function handler(req, res) {
       console.error('Error fetching event data:', e);
     }
 
-    // 3. Create Square Link
+    // 5. Create Square Link
     console.log('Creating Square payment link...');
     
     let checkoutOptions = {
@@ -109,10 +115,8 @@ export default async function handler(req, res) {
     const checkoutUrl = paymentLinkResponse.paymentLink.url;
     console.log(`Square link created: ${checkoutUrl}`);
 
-    // 4. Send Email
+    // 6. Send Email
     console.log('Sending email via Resend...');
-    // Resend is strict: if the domain isn't verified, it will fail.
-    // Try using the verified domain if possible, otherwise fallback to onboarding
     const fromEmail = process.env.RESEND_API_KEY?.startsWith('re_') ? 'LMNL <tickets@lmnl.art>' : 'onboarding@resend.dev';
     
     const { data: emailData, error: emailError } = await resend.emails.send({
@@ -124,7 +128,6 @@ export default async function handler(req, res) {
 
     if (emailError) {
       console.error('Resend Error:', emailError);
-      // If it's a domain verification issue, try onboarding@resend.dev once as a fallback
       if (emailError.message?.includes('domain') || emailError.name === 'validation_error') {
         console.log('Retrying with onboarding@resend.dev...');
         const retry = await resend.emails.send({
@@ -134,15 +137,12 @@ export default async function handler(req, res) {
           html: `<p>Your invite to ${eventName} is approved. Pay here: <a href="${checkoutUrl}">${checkoutUrl}</a></p>`
         });
         if (retry.error) throw new Error(`Email failed: ${retry.error.message}`);
-        console.log('Email sent via fallback.');
       } else {
         throw new Error(`Email failed: ${emailError.message}`);
       }
-    } else {
-      console.log('Email sent successfully:', emailData);
     }
 
-    // 5. Update Supabase
+    // 7. Update Supabase
     console.log('Updating Supabase status...');
     const { error: sbError } = await supabase
       .from('requests')
