@@ -46,21 +46,7 @@
   margin: 20px 0;
 }
 
-.events-img-cz {
-  width: 188px;
-  height: auto;
-  object-fit: contain;
-  display: block;
-}
-
-.events-img-bloom {
-  width: 188px;
-  height: auto;
-  object-fit: contain;
-  display: block;
-}
-
-.events-img-genesis {
+.events-img {
   width: 188px;
   height: auto;
   object-fit: contain;
@@ -85,18 +71,7 @@
     height: 60px;
   }
 
-  .events-img-cz {
+  .events-img {
     width: 125px;
-    height: auto;
-  }
-
-  .events-img-bloom {
-    width: 125px;
-    height: auto;
-  }
-
-  .events-img-genesis {
-    width: 125px;
-    height: auto;
   }
 }

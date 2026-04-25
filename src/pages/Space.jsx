@@ -115,7 +115,7 @@ export default function Space() {
     e.preventDefault();
     setRequestStatus('loading');
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('requests')
       .insert([
         { 

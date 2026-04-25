@@ -180,13 +180,6 @@
   padding-bottom: 5px;
 }
 
-.events-grid {
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 40px;
-  align-items: start;
-}
-
 .event-name-link {
   color: black;
   text-decoration: none;
@@ -198,70 +191,6 @@
 .event-name-link:hover {
   border-bottom: 1px solid black;
   opacity: 0.7;
-}
-
-.inline-price-input {
-  border: 1px solid #ddd;
-  padding: 5px 10px;
-  width: 100px;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.inline-price-input:focus {
-  border-color: black;
-  outline: none;
-}
-
-.inline-edit-input {
-  border: 1px solid #ddd;
-  padding: 5px 10px;
-  width: 100%;
-  font-family: inherit;
-  font-size: 14px;
-  background: transparent;
-}
-
-.inline-edit-input:focus, .inline-edit-input.active {
-  border-color: black;
-  outline: none;
-  background: white;
-}
-
-.inline-price-input.active {
-  border-color: black;
-  background: white;
-}
-
-.small-hint {
-  font-size: 10px;
-  color: #999;
-  font-style: italic;
-}
-
-.add-event-form-container {
-  border: 2px solid black;
-  padding: 30px;
-  background: #f9f9f9;
-}
-
-.add-event-form-container h3 {
-  font-size: 14px;
-  letter-spacing: 0.1em;
-  margin-bottom: 20px;
-}
-
-.add-event-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.admin-input {
-  padding: 12px;
-  border: 1px solid black;
-  font-family: inherit;
-  font-size: 14px;
 }
 
 .admin-btn.wide {
@@ -318,17 +247,6 @@
   font-size: 24px;
 }
 
-.sql-code {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 20px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 20px 0;
-  overflow-x: auto;
-  border-radius: 4px;
-}
 
 .section-header-flex {
   display: flex;

@@ -20,19 +20,19 @@ export default function Events() {
           <div className="events-divider" />
 
           <div className="events-node">
-            <img src="/cz1.png" alt="Camp Zest" className="events-img-cz" />
+            <img src="/cz1.png" alt="Camp Zest" className="events-img" />
           </div>
 
           <div className="events-divider" />
 
           <div className="events-node">
-            <img src="/title1.png" alt="Bloom" className="events-img-bloom" />
+            <img src="/title1.png" alt="Bloom" className="events-img" />
           </div>
 
           <div className="events-divider" />
 
           <div className="events-node">
-            <img src="/genesis-logo.png" alt="Genesis" className="events-img-genesis" />
+            <img src="/genesis-logo.png" alt="Genesis" className="events-img" />
           </div>
         </div>
       </div>

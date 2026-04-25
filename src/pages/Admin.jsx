@@ -26,10 +26,7 @@ export default function Admin() {
   const [eventLoading, setEventLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  
-  // New Event Form State
-  const [newEventName, setNewEventName] = useState('');
-  const [newEventPrice, setNewEventPrice] = useState('');
+
   
   // Edit State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -206,7 +203,7 @@ export default function Admin() {
         address: event.address || '',
         description: event.description || '',
         image_url: event.image_url || '',
-        partiful_url: event.spotify_id || '',
+        partiful_url: event.spotify_id || '', // DB column is still `spotify_id`, repurposed for Partiful
         is_private: event.is_private ?? true,
         status: event.status || 'active',
         square_variation_id: event.square_variation_id || '',
@@ -323,7 +320,7 @@ export default function Admin() {
             ) : (
               <div className="events-table-container">
                 {eventLoading ? (
-                  <p className="loading-text">RETRIVING EVENTS...</p>
+                  <p className="loading-text">RETRIEVING EVENTS...</p>
                 ) : (
                   <table className="admin-table">
                     <thead>
@@ -567,7 +564,7 @@ export default function Admin() {
 
             <div className="requests-table-container">
               {loading ? (
-                <p className="loading-text">RETRIVING DATA...</p>
+                <p className="loading-text">RETRIEVING DATA...</p>
               ) : (
                 <table className="requests-table">
                   <thead>
