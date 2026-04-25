@@ -86,29 +86,35 @@ export default async function handler(req, res) {
       locationId: locationId
     };
 
+    checkoutOptions.order = {
+      locationId: locationId,
+      metadata: {
+        requestId: requestId
+      }
+    };
+
     if (squareVariationId) {
       // Use Catalog Item for Stock Tracking
-      checkoutOptions.order = {
-        locationId: locationId,
-        lineItems: [
-          {
-            quantity: '1',
-            catalogObjectId: squareVariationId
-          }
-        ]
-      };
+      checkoutOptions.order.lineItems = [
+        {
+          quantity: '1',
+          catalogObjectId: squareVariationId
+        }
+      ];
       console.log('Using catalog variation for stock tracking.');
     } else {
-      // Use QuickPay (One-off item, no stock tracking)
-      checkoutOptions.quickPay = {
-        name: `${eventName} - Access Ticket`,
-        priceMoney: {
-          amount: BigInt(priceCents), 
-          currency: 'USD'
-        },
-        locationId: locationId
-      };
-      console.log('Using QuickPay fallback.');
+      // Use ad-hoc line item (no stock tracking)
+      checkoutOptions.order.lineItems = [
+        {
+          quantity: '1',
+          name: `${eventName} - Access Ticket`,
+          basePriceMoney: {
+            amount: BigInt(priceCents), 
+            currency: 'USD'
+          }
+        }
+      ];
+      console.log('Using ad-hoc line item.');
     }
 
     const paymentLinkResponse = await squareClient.checkout.paymentLinks.create(checkoutOptions);
@@ -144,9 +150,10 @@ export default async function handler(req, res) {
 
     // 7. Update Supabase
     console.log('Updating Supabase status...');
+    const orderId = paymentLinkResponse.paymentLink.orderId;
     const { error: sbError } = await supabase
       .from('requests')
-      .update({ status: 'approved' })
+      .update({ status: 'approved', square_order_id: orderId })
       .eq('id', requestId);
 
     if (sbError) throw sbError;

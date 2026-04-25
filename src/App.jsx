@@ -7,6 +7,7 @@ import Space from './pages/Space';
 import Events from './pages/Events';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
+import Ticket from './pages/Ticket';
 import './index.css';
 
 // Protected Route Component
@@ -33,7 +34,7 @@ function App() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
   const isAdminSubdomain = hostname.startsWith('admin.');
-  
+
   // Admin is accessible if we are on the admin subdomain OR working locally
   const showAdmin = isLocal || isAdminSubdomain;
 
@@ -41,6 +42,7 @@ function App() {
     <Router>
       <Routes>
         {/* SHARED / PUBLIC CONTENT */}
+        <Route path="/ticket/:ticketId" element={<Ticket />} />
         <Route path="/events" element={<Events />} />
         <Route path="/space" element={<Space />} />
         <Route path="/about" element={
@@ -79,7 +81,7 @@ function App() {
         <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
         <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
         <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
-        
+
         <Route path="*" element={<Space />} />
       </Routes>
     </Router>
