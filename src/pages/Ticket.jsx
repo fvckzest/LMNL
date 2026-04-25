@@ -16,34 +16,27 @@ export default function Ticket() {
   useEffect(() => {
     async function fetchTicket() {
       try {
-        const { data: ticketData, error: ticketError } = await supabase
-          .from('tickets')
-          .select('*')
-          .eq('id', ticketId)
-          .single();
-
-        if (ticketError) throw ticketError;
-        setTicket(ticketData);
-
-        if (ticketData.event_id) {
-          const { data: eData, error: eError } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', ticketData.event_id)
-            .single();
-
-          if (eError) throw eError;
-          setEventData(eData);
+        const response = await fetch(`/api/get-ticket?ticketId=${ticketId}`);
+        if (!response.ok) {
+          throw new Error('System error: Ticket not found or invalid.');
         }
+        const data = await response.json();
+        setTicket(data.ticket);
+        setEventData(data.event);
       } catch (err) {
         console.error('Error fetching ticket:', err);
-        setError('System error: Ticket not found or invalid.');
+        setError(err.message || 'System error: Ticket not found or invalid.');
       } finally {
         setLoading(false);
       }
     }
 
-    fetchTicket();
+    if (ticketId) {
+      fetchTicket();
+    } else {
+      setError('Missing ticket ID.');
+      setLoading(false);
+    }
   }, [ticketId]);
 
   return (
