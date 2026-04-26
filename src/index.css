@@ -552,7 +552,7 @@ html {
 
 @media (max-width: 768px) {
   .space-notification {
-    bottom: 70px;
+    bottom: 25px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
