@@ -787,9 +787,9 @@ export default function Admin() {
                       <th>NAME</th>
                       <th>EMAIL</th>
                       <th>STATUS</th>
+                      <th>ACTIONS</th>
                       <th style={{ textAlign: 'center' }}>BOUGHT?</th>
 
-                      <th>ACTIONS</th>
 
                     </tr>
                   </thead>
@@ -813,15 +813,9 @@ export default function Admin() {
                             {req.status}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          {hasBoughtTicket(req) ? (
-                            <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
-                          ) : (
-                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
-                          )}
-                        </td>
 
                         <td className="actions-cell">
+
 
                           <div className="actions-wrapper">
                             <div className="main-actions">
@@ -880,7 +874,15 @@ export default function Admin() {
                             </div>
                           </div>
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {hasBoughtTicket(req) ? (
+                            <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
+                          ) : (
+                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
+                          )}
+                        </td>
                       </tr>
+
                     ))}
                   </tbody>
                 </table>
