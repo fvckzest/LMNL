@@ -32,10 +32,12 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('events'); // 'events', 'shop', 'inquiries'
 
   const tabColors = {
+    all: '#000000',
     events: '#004ffa',
     shop: '#ff0000',
     inquiries: '#6222d8'
   };
+
 
 
 
@@ -335,6 +337,13 @@ export default function Admin() {
         <div className="admin-body" style={{ '--active-tab-color': tabColors[activeTab] }}>
           <div className="admin-tabs">
             <button 
+              className={`admin-tab ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveTab('all')}
+              style={activeTab === 'all' ? { borderBottomColor: '#000000', color: '#000000' } : {}}
+            >
+              ALL
+            </button>
+            <button 
               className={`admin-tab ${activeTab === 'events' ? 'active' : ''}`}
               onClick={() => setActiveTab('events')}
               style={activeTab === 'events' ? { borderBottomColor: '#004ffa', color: '#004ffa' } : {}}
@@ -357,9 +366,10 @@ export default function Admin() {
             </button>
           </div>
 
-          {activeTab === 'events' && (
+          {(activeTab === 'events' || activeTab === 'all') && (
             <>
-              <section className="admin-section">
+              <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
+
 
             <div className="section-header-flex">
               <h2 className="section-title">EVENT MANAGEMENT</h2>
@@ -604,7 +614,8 @@ export default function Admin() {
             </div>
           )}
 
-          <section className="admin-section">
+          <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
+
             <h2 className="section-title">INVITE REQUESTS</h2>
             <div className="admin-stats">
               <div className="stat-item">
@@ -728,8 +739,9 @@ export default function Admin() {
             </>
           )}
 
-          {activeTab === 'inquiries' && (
-          <section className="admin-section">
+          {(activeTab === 'inquiries' || activeTab === 'all') && (
+          <section className="admin-section" style={{ '--active-tab-color': '#6222d8' }}>
+
 
             <h2 className="section-title">SERVICE INQUIRIES</h2>
             <div className="admin-stats">
@@ -842,8 +854,9 @@ export default function Admin() {
           </section>
           )}
 
-          {activeTab === 'shop' && (
-          <section className="admin-section">
+          {(activeTab === 'shop' || activeTab === 'all') && (
+          <section className="admin-section" style={{ '--active-tab-color': '#ff0000' }}>
+
 
             <div className="section-header-flex">
               <h2 className="section-title">SQUARE PRODUCT CATALOG
