@@ -787,7 +787,8 @@ export default function Admin() {
                       <th>NAME</th>
                       <th>EMAIL</th>
                       <th>STATUS</th>
-                      <th>BOUGHT?</th>
+                      <th style={{ textAlign: 'center' }}>BOUGHT?</th>
+
                       <th>ACTIONS</th>
 
                     </tr>
