@@ -61,7 +61,21 @@ export default function Admin() {
     onConfirm: null
   });
 
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: '',
+    type: 'success'
+  });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ isOpen: true, message, type });
+    setTimeout(() => {
+      setToast({ isOpen: false, message: '', type: 'success' });
+    }, 4000);
+  };
+
   const triggerConfirm = (message, onConfirm) => {
+
     setConfirmModal({
       isOpen: true,
       message,
@@ -158,16 +172,17 @@ export default function Admin() {
         });
         const result = await response.json();
         if (result.success) {
-          alert('Tracking enabled! Now set your stock count in Square.');
+          showToast('Tracking enabled! Now set your stock count in Square.');
           fetchSquareCatalog();
         } else {
           throw new Error(result.error);
         }
       } catch (err) {
-        alert('Error: ' + err.message);
+        showToast('Error: ' + err.message, 'error');
       }
     });
   }
+
 
 
   async function createTestItem() {
@@ -178,16 +193,17 @@ export default function Admin() {
         });
         const result = await response.json();
         if (result.success) {
-          alert('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
+          showToast('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
           fetchSquareCatalog();
         } else {
           throw new Error(result.error);
         }
       } catch (err) {
-        alert('Error creating test item: ' + err.message);
+        showToast('Error creating test item: ' + err.message, 'error');
       }
     });
   }
+
 
 
   async function fetchRequests() {
@@ -230,7 +246,7 @@ export default function Admin() {
 
     if (error) {
       console.error('Error updating event status:', error);
-      alert('Failed to update event status: ' + error.message);
+      showToast('Failed to update event status: ' + error.message, 'error');
     } else {
       fetchEvents();
     }
@@ -245,12 +261,13 @@ export default function Admin() {
 
       if (error) {
         console.error('Error deleting event:', error);
-        alert('Failed to delete event: ' + error.message);
+        showToast('Failed to delete event: ' + error.message, 'error');
       } else {
         fetchEvents();
       }
     });
   }
+
 
 
 
@@ -272,11 +289,12 @@ export default function Admin() {
         const result = await response.json();
         if (result.error) throw new Error(result.error);
         
-        alert('APPROVE SUCCESS: Square link generated and email sent.');
+        showToast('APPROVE SUCCESS: Square link generated and email sent.');
       } catch (err) {
         console.error('Approval failed:', err);
-        alert('ERROR: ' + err.message);
+        showToast('ERROR: ' + err.message, 'error');
       }
+
       fetchRequests();
     } else {
       const { error } = await supabase
@@ -352,7 +370,8 @@ export default function Admin() {
   async function handleEventSubmit(e) {
     e.preventDefault();
     const priceCents = Math.round(parseFloat(eventForm.price) * 100);
-    if (!eventForm.name || isNaN(priceCents)) return alert('Invalid name or price');
+    if (!eventForm.name || isNaN(priceCents)) return showToast('Invalid name or price', 'error');
+
 
     const data = {
       ...eventForm,
@@ -379,12 +398,13 @@ export default function Admin() {
     }
 
     if (error) {
-      alert('Error saving event: ' + error.message);
+      showToast('Error saving event: ' + error.message, 'error');
     } else {
       setIsModalOpen(false);
       fetchEvents();
     }
   }
+
 
   return (
     <div className="page-container">
@@ -1009,7 +1029,30 @@ export default function Admin() {
           )}
         </div>
 
+        {toast.isOpen && (
+          <div style={{
+            position: 'fixed',
+            bottom: '30px',
+            right: '30px',
+            background: toast.type === 'success' ? '#000' : '#991b1b',
+            color: '#fff',
+            padding: '15px 25px',
+            fontSize: '12px',
+            letterSpacing: '0.1em',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            animation: 'slideIn 0.3s ease forwards'
+          }}>
+            <span>{toast.message}</span>
+          </div>
+        )}
+
         {confirmModal.isOpen && (
+
           <div className="admin-modal-overlay" style={{ zIndex: 2000 }}>
             <div className="admin-modal" style={{ maxWidth: '400px', padding: '30px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '14px', letterSpacing: '0.2em', marginBottom: '20px' }}>CONFIRMATION</h3>
