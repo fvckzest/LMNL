@@ -109,6 +109,8 @@
 .admin-btn.reject:hover { background: #991b1b; color: #fff; border-color: #991b1b; }
 .admin-btn.reset { border-color: #ccc; color: #999; }
 .admin-btn.reset:hover { border-color: #000; color: #000; }
+.admin-btn.signout-btn:hover { background: black; color: white; }
+
 
 .loading-text {
   padding: 40px;

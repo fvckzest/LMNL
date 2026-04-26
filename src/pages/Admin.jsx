@@ -367,7 +367,7 @@ export default function Admin() {
               INQUIRIES
             </button>
             </div>
-            <button className="admin-btn" style={{ padding: '10px 24px', fontSize: '13px', fontWeight: '700' }} onClick={() => supabase.auth.signOut()}>SIGN OUT</button>
+            <button className="admin-btn signout-btn" style={{ padding: '10px 24px', fontSize: '13px', fontWeight: '700' }} onClick={() => { if (window.confirm('Are you sure you want to sign out?')) supabase.auth.signOut(); }}>SIGN OUT</button>
           </div>
 
           {(activeTab === 'events' || activeTab === 'all') && (
