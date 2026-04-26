@@ -40,6 +40,8 @@ export default function Admin() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [showArchivedServices, setShowArchivedServices] = useState(false);
   const [activeTab, setActiveTab] = useState('events'); // 'events', 'shop', 'inquiries'
+  const [tickets, setTickets] = useState([]);
+
 
   const tabColors = {
     all: '#000000',
@@ -116,7 +118,25 @@ export default function Admin() {
     fetchEvents();
     fetchSquareCatalog();
     fetchServiceInquiries();
+    fetchTickets();
   }, []);
+
+  async function fetchTickets() {
+    const { data, error } = await supabase.from('tickets').select('*');
+    if (error) console.error('Error fetching tickets:', error);
+    else setTickets(data || []);
+  }
+
+  const hasBoughtTicket = (req) => {
+    if (req.status === 'fulfilled') return true;
+    
+    const matchedEvent = events.find(e => e.name === req.event_name);
+    return tickets.some(t => 
+      t.customer_email?.toLowerCase() === req.customer_email?.toLowerCase() &&
+      (matchedEvent ? t.event_id === matchedEvent.id : true)
+    );
+  };
+
 
   async function fetchServiceInquiries() {
     setServicesLoading(true);
@@ -767,7 +787,9 @@ export default function Admin() {
                       <th>NAME</th>
                       <th>EMAIL</th>
                       <th>STATUS</th>
+                      <th>BOUGHT?</th>
                       <th>ACTIONS</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -790,7 +812,15 @@ export default function Admin() {
                             {req.status}
                           </span>
                         </td>
+                        <td>
+                          {hasBoughtTicket(req) ? (
+                            <span className="status-pill approved" style={{ background: '#22c55e', color: '#fff', borderRadius: '0px' }}>YES</span>
+                          ) : (
+                            <span className="status-pill reject" style={{ background: '#ef4444', color: '#fff', borderRadius: '0px' }}>NO</span>
+                          )}
+                        </td>
                         <td className="actions-cell">
+
                           <div className="actions-wrapper">
                             <div className="main-actions">
                               {req.status === 'pending' && (
