@@ -1,0 +1,236 @@
+.community-layout {
+  margin: 160px auto 0 auto;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 40px 100px 40px;
+  font-family: 'Gantari', sans-serif;
+}
+
+.community-split-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 80px;
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 60px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .community-split-layout {
+    flex-direction: column-reverse;
+    gap: 40px;
+  }
+}
+
+.community-stats-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 60px;
+  padding: 40px;
+  background: rgba(255, 91, 184, 0.03);
+  border: 1px solid rgba(255, 91, 184, 0.2);
+  backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.community-stats-container::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: linear-gradient(90deg, #ff5bb8, transparent);
+}
+
+.stat-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 91, 184, 0.15) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stat-count-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.community-large-number {
+  font-size: 120px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ff5bb8;
+  letter-spacing: -0.05em;
+  margin: 0;
+}
+
+.stat-suffix {
+  font-size: 24px;
+  font-weight: 500;
+  color: #000;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.community-stat-label {
+  font-size: 14px;
+  color: #666;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+/* Marquee Styles */
+.marquees-wrapper {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+  padding: 20px 0;
+  background: transparent;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.marquee-row {
+  display: flex;
+  user-select: none;
+  overflow: hidden;
+  gap: 40px;
+  width: 100%;
+}
+
+.marquee-track {
+  display: flex;
+  gap: 40px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.marquee-row-1 .marquee-track {
+  animation: scroll-left 180s linear infinite;
+  animation-delay: -20s;
+}
+
+.marquee-row-2 .marquee-track {
+  animation: scroll-right 200s linear infinite;
+  animation-delay: -80s;
+}
+
+.marquee-row-3 .marquee-track {
+  animation: scroll-left 220s linear infinite;
+  animation-delay: -140s;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.marquee-name {
+  font-size: 20px;
+  font-weight: 500;
+  color: #000000;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.marquee-name-link {
+  font-size: 20px;
+  font-weight: 500;
+  color: #000000;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.marquee-name-link:hover {
+  color: #ff5bb8;
+  border-bottom-color: #ff5bb8;
+}
+
+.marquee-event {
+  font-size: 11px;
+  color: #666666;
+  font-weight: 500;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 3px 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.marquee-divider {
+  color: #ff5bb8;
+  font-size: 20px;
+  font-weight: normal;
+}
+
+.empty-msg {
+  color: #999;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  font-style: italic;
+  text-align: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 768px) {
+  .community-layout {
+    margin-top: 80px;
+    padding: 0 15px 60px;
+  }
+
+  .community-large-number {
+    font-size: 80px;
+  }
+
+  .marquee-name,
+  .marquee-name-link,
+  .marquee-divider {
+    font-size: 20px;
+  }
+
+  .marquee-event {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+}
