@@ -780,7 +780,7 @@ export default function Admin() {
                         <td>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {Array.isArray(req.selected_services) && req.selected_services.map(s => (
-                              <span key={s} className="status-pill active" style={{ fontSize: '10px', background: '#6222d8' }}>
+                              <span key={s} className="status-pill active" style={{ fontSize: '10px', background: '#6222d8', color: '#ffffff', borderRadius: '0px' }}>
                                 {s.toUpperCase()}
                               </span>
                             ))}
