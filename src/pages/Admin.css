@@ -540,3 +540,9 @@
   color: black;
 }
 
+.delete-btn:hover {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+}
+
+

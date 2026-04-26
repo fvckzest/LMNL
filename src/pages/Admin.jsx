@@ -19,6 +19,16 @@ const UnarchiveIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
+  </svg>
+);
+
+
 export default function Admin() {
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
@@ -192,6 +202,37 @@ export default function Admin() {
     }
     setEventLoading(false);
   }
+
+  async function updateEventStatus(id, newStatus) {
+    const { error } = await supabase
+      .from('events')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating event status:', error);
+      alert('Failed to update event status: ' + error.message);
+    } else {
+      fetchEvents();
+    }
+  }
+
+  async function deleteEvent(id) {
+    if (!window.confirm('Are you sure you want to delete this event permanently?')) return;
+    
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting event:', error);
+      alert('Failed to delete event: ' + error.message);
+    } else {
+      fetchEvents();
+    }
+  }
+
 
   async function updateStatus(id, newStatus, requestData) {
     if (newStatus === 'approved') {
@@ -425,9 +466,41 @@ export default function Admin() {
                           <td>${(event.price / 100).toFixed(2)}</td>
                           <td>{event.event_date || 'TBD'}</td>
                           <td>{event.location_name || 'TBD'}</td>
-                          <td>
-                            <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
+                          <td className="actions-cell">
+                            <div className="actions-wrapper">
+                              <div className="main-actions">
+                                <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
+                              </div>
+                              <div className="secondary-actions" style={{ display: 'flex', gap: '10px' }}>
+                                {event.status !== 'archived' ? (
+                                  <button
+                                    className="icon-btn archive-btn"
+                                    title="Archive Event"
+                                    onClick={() => updateEventStatus(event.id, 'archived')}
+                                  >
+                                    <ArchiveIcon />
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="icon-btn unarchive-btn"
+                                    title="Unarchive Event"
+                                    onClick={() => updateEventStatus(event.id, 'active')}
+                                  >
+                                    <UnarchiveIcon />
+                                  </button>
+                                )}
+                                <button
+                                  className="icon-btn delete-btn"
+                                  style={{ color: '#991b1b' }}
+                                  title="Delete Event"
+                                  onClick={() => deleteEvent(event.id)}
+                                >
+                                  <TrashIcon />
+                                </button>
+                              </div>
+                            </div>
                           </td>
+
                         </tr>
                       ))}
                     </tbody>
