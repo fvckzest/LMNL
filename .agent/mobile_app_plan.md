@@ -20,8 +20,8 @@ This document outlines the steps required to transition the LMNL web platform in
 - Configure the `manifest` object:
   - **name**: "LMNL"
   - **short_name**: "LMNL"
-  - **theme_color**: "#000000"
-  - **background_color**: "#000000"
+  - **theme_color**: "#FFFFFF"
+  - **background_color**: "#FFFFFF"
   - **display**: "standalone" (removes the Safari browser chrome)
   - **orientation**: "portrait"
 
