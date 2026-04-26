@@ -432,14 +432,20 @@ html {
   }
 
   .header-socials {
-    top: 30px;
+    top: calc(30px + 23.44px);
+    transform: translateY(-50%);
     right: 15px;
     gap: 10px;
   }
 
-  .social-link svg {
-    width: 32px;
-    height: 32px;
+  .header-socials .social-link svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .header-socials .social-link[title="X"] svg {
+    width: 17.6px;
+    height: 17.6px;
   }
 
   .home-socials {
