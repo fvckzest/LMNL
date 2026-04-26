@@ -335,7 +335,9 @@ export default function Admin() {
         </div>
 
         <div className="admin-body" style={{ '--active-tab-color': tabColors[activeTab] }}>
-          <div className="admin-tabs">
+          <div className="tabs-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid #eee' }}>
+            <div className="admin-tabs" style={{ marginBottom: 0, borderBottom: 'none' }}>
+
             <button 
               className={`admin-tab ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => setActiveTab('all')}
@@ -364,9 +366,12 @@ export default function Admin() {
             >
               INQUIRIES
             </button>
+            </div>
+            <button className="admin-btn" onClick={() => supabase.auth.signOut()}>SIGN OUT</button>
           </div>
 
           {(activeTab === 'events' || activeTab === 'all') && (
+
             <>
               <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
 
@@ -376,9 +381,9 @@ export default function Admin() {
               {!tableMissing && (
                 <div className="action-buttons">
                   <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
-                  <button className="admin-btn" onClick={() => supabase.auth.signOut()}>SIGN OUT</button>
                 </div>
               )}
+
             </div>
             
             {tableMissing ? (
