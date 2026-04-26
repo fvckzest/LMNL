@@ -14,8 +14,11 @@ export default function Events() {
 
         <div className="events-timeline">
           <div className="events-node">
-            <h2 className="events-space-title">[SPACE]</h2>
+            <a href="/space" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <h2 className="events-space-title">[SPACE]</h2>
+            </a>
           </div>
+
 
           <div className="events-divider" />
 
