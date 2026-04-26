@@ -393,7 +393,10 @@ html {
   }
 
   .home-circle-wrapper {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 296px;
     height: 296px;
   }
