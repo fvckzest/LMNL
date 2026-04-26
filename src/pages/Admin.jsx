@@ -862,9 +862,10 @@ export default function Admin() {
                           {hasBoughtTicket(req) ? (
                             <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
                           ) : (
-                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
+                            <span style={{ color: '#999', fontSize: '14px' }}>--</span>
                           )}
                         </td>
+
                         <td style={{ textAlign: 'center' }}>
                           {req.status !== 'archived' ? (
                             <button
