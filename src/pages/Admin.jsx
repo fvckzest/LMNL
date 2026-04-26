@@ -812,13 +812,14 @@ export default function Admin() {
                             {req.status}
                           </span>
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           {hasBoughtTicket(req) ? (
-                            <span className="status-pill approved" style={{ background: '#22c55e', color: '#fff', borderRadius: '0px' }}>YES</span>
+                            <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
                           ) : (
-                            <span className="status-pill reject" style={{ background: '#ef4444', color: '#fff', borderRadius: '0px' }}>NO</span>
+                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
                           )}
                         </td>
+
                         <td className="actions-cell">
 
                           <div className="actions-wrapper">
