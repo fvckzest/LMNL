@@ -390,6 +390,7 @@ html {
     height: auto;
     overflow: visible;
     gap: 204px;
+    position: static;
   }
 
   .home-circle-wrapper {
