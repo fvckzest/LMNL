@@ -787,8 +787,10 @@ export default function Admin() {
                       <th>NAME</th>
                       <th>EMAIL</th>
                       <th>STATUS</th>
-                      <th style={{ textAlign: 'center' }}>BOUGHT?</th>
                       <th>ACTIONS</th>
+                      <th style={{ textAlign: 'center' }}>BOUGHT?</th>
+                      <th style={{ textAlign: 'center' }}>ARCHIVE</th>
+
 
 
 
@@ -814,15 +816,8 @@ export default function Admin() {
                             {req.status}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          {hasBoughtTicket(req) ? (
-                            <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
-                          ) : (
-                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
-                          )}
-                        </td>
-
                         <td className="actions-cell">
+
 
 
 
@@ -861,29 +856,38 @@ export default function Admin() {
                                 </button>
                               )}
                             </div>
-                            
-                            <div className="secondary-actions">
-                              {req.status !== 'archived' ? (
-                                <button
-                                  className="icon-btn archive-btn"
-                                  title="Archive Request"
-                                  onClick={() => updateStatus(req.id, 'archived', req)}
-                                >
-                                  <ArchiveIcon />
-                                </button>
-                              ) : (
-                                <button
-                                  className="icon-btn unarchive-btn"
-                                  title="Unarchive Request"
-                                  onClick={() => updateStatus(req.id, 'pending', req)}
-                                >
-                                  <UnarchiveIcon />
-                                </button>
-                              )}
-                            </div>
                           </div>
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {hasBoughtTicket(req) ? (
+                            <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
+                          ) : (
+                            <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: 'bold' }}>✕</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {req.status !== 'archived' ? (
+                            <button
+                              className="icon-btn archive-btn"
+                              title="Archive Request"
+                              onClick={() => updateStatus(req.id, 'archived', req)}
+                              style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            >
+                              <ArchiveIcon />
+                            </button>
+                          ) : (
+                            <button
+                              className="icon-btn unarchive-btn"
+                              title="Unarchive Request"
+                              onClick={() => updateStatus(req.id, 'pending', req)}
+                              style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            >
+                              <UnarchiveIcon />
+                            </button>
+                          )}
+                        </td>
                       </tr>
+
 
 
                     ))}
