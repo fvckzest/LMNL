@@ -481,7 +481,7 @@
 @media (max-width: 768px) {
   .services-layout {
     gap: 50px;
-    padding-top: 80px;
+    padding-top: 42px;
   }
 
   .form-row {

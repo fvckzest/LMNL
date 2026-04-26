@@ -452,6 +452,10 @@ html {
     height: 17.72px;
   }
 
+  .page-header {
+    left: -10px;
+  }
+
   .page-header-rect {
     width: 18.26px;
     height: 52.51px;
@@ -461,6 +465,10 @@ html {
     font-size: 53px;
     line-height: 53px;
     margin-left: 18.26px;
+  }
+
+  .generic-page-body {
+    margin-top: 25px;
   }
 }
 

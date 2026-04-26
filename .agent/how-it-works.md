@@ -73,5 +73,5 @@ The database (Supabase) handles the "headless" state and event metadata.
 - [x] **Square Catalog Integration** (Linking events to real items).
 - [x] **Automated Stock Tracking** (Square Order flow).
 - [x] **Real-time Inventory Bridge** (Automatic "Sold Out" status).
-- [ ] **Apple Wallet (.pkpass)** generation backend.
-- [ ] **QR Scanning UI** for door validation.
+- [x] **Apple Wallet (.pkpass)** generation backend.
+- [ ] **QR Scanning UI** (Excluded from current scope per user instructions).

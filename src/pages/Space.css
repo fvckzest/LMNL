@@ -84,6 +84,10 @@
 }
 
 @media (max-width: 768px) {
+  .space-body {
+    margin-top: 106px;
+  }
+
   .description-content {
     font-size: 16px;
   }
