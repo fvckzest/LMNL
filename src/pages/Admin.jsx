@@ -793,6 +793,22 @@ export default function Admin() {
                       <input type="text" placeholder="https://partiful.com/e/..." value={eventForm.partiful_url} onChange={e => setEventForm({...eventForm, partiful_url: e.target.value})} />
                     </div>
 
+                    <div className="form-group">
+                      <label>EVENT PAGE LINK (METADATA)</label>
+                      <input 
+                        type="text" 
+                        placeholder="https://..." 
+                        value={eventForm.metadata?.event_link || ''} 
+                        onChange={e => setEventForm({
+                          ...eventForm,
+                          metadata: {
+                            ...eventForm.metadata,
+                            event_link: e.target.value
+                          }
+                        })} 
+                      />
+                    </div>
+
                     <div className="form-group full">
                       <label>PERFORMERS LINEUP (COMMA SEPARATED)</label>
                       <input 

@@ -77,14 +77,16 @@ export default function Events() {
           title: e.name,
           type: e.image_url ? 'image' : 'text',
           display: e.image_url || `[${e.name.toUpperCase()}]`,
-          link: e.partiful_url || e.spotify_id || '',
+          link: e.metadata?.event_link || e.partiful_url || e.spotify_id || '',
           date: e.event_date,
           description: e.description,
           performers: e.metadata?.performers || '',
           artists: e.metadata?.artists || '',
           media: e.metadata?.media || [],
           is_featured: e.metadata?.is_featured || false,
-          location: e.location_name || 'LMNL Space, LA'
+          location: e.location_name || 'LMNL Space, LA',
+          price: e.price,
+          is_private: e.is_private
         }));
         
         setEvents(mapped);
@@ -98,7 +100,9 @@ export default function Events() {
             date: feat.date,
             location: feat.location,
             description: feat.description,
-            rsvpLink: feat.link || '#rsvp'
+            rsvpLink: feat.link || '#rsvp',
+            price: feat.price,
+            is_private: feat.is_private
           });
         }
       } else {
@@ -222,7 +226,7 @@ export default function Events() {
             </div>
             <p className="upcoming-description">{featuredEvent.description}</p>
             <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
-              RSVP NOW
+              VIEW EVENT
             </a>
           </div>
         </div>
@@ -233,6 +237,7 @@ export default function Events() {
           <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', letterSpacing: '0.1em', fontWeight: '600' }}>NO EVENTS FOUND.</p>
         ) : (
           <>
+            <h2 className="timeline-section-title">ALL EVENTS</h2>
             <div className="timeline-wrapper">
               <button className="timeline-arrow left" onClick={() => scrollTimeline('left')} aria-label="Scroll Left">
                 &larr;
