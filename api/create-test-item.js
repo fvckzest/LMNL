@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await squareClient.catalog.object.upsert({
+    const response = await squareClient.catalog.upsertCatalogObject({
       idempotencyKey: crypto.randomUUID(),
       object: {
         type: 'ITEM',

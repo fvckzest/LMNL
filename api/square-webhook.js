@@ -2,6 +2,7 @@ import { SquareClient, SquareEnvironment } from 'square';
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { generatePassBuffer } from './_lib/generate-pass-helper.js';
 
 // Module-level lock to prevent simultaneous race conditions
 const processingOrderIds = new Set();
@@ -302,14 +303,34 @@ export default async function handler(req, res) {
 
       try {
         console.log('[Webhook] Attempting to send email via Resend...');
-        console.log('[Webhook] Email options:', { from: fromEmail, to: customerEmail, subject: `Your Ticket: ${eventName}` });
         
-        const { data: emailData, error: emailError } = await resend.emails.send({
+        let passBuffer = null;
+        try {
+          passBuffer = await generatePassBuffer(ticket, eventData);
+        } catch (passErr) {
+          console.error('[Webhook] Failed to generate Apple Wallet pass for email:', passErr);
+        }
+
+        const emailOptions = {
           from: fromEmail,
           to: customerEmail,
           subject: `Your Ticket: ${eventName}`,
           html: emailHtml
-        });
+        };
+
+        if (passBuffer) {
+          emailOptions.attachments = [
+            {
+              filename: `${eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_ticket.pkpass`,
+              content: passBuffer
+            }
+          ];
+          console.log('[Webhook] Attaching Apple Wallet pass to email.');
+        }
+
+        console.log('[Webhook] Email options:', { from: fromEmail, to: customerEmail, subject: `Your Ticket: ${eventName}`, hasAttachment: !!passBuffer });
+        
+        const { data: emailData, error: emailError } = await resend.emails.send(emailOptions);
 
         if (emailError) {
           console.error('[Webhook] Resend Error returned:', emailError);

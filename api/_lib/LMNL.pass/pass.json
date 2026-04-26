@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.art.lmnl",
+  "serialNumber": "TICKET_ID",
+  "teamIdentifier": "REPLACE_WITH_TEAM_ID",
+  "organizationName": "LMNL",
+  "description": "LMNL Event Ticket",
+  "logoText": "LMNL",
+  "backgroundColor": "rgb(255, 255, 255)",
+  "foregroundColor": "rgb(0, 0, 0)",
+  "labelColor": "rgb(100, 100, 100)",
+  "eventTicket": {}
+}

@@ -220,3 +220,35 @@
     height: 220px !important;
   }
 }
+
+.wallet-section {
+  margin-top: 20px;
+}
+
+.apple-wallet-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background-color: black;
+  color: white;
+  border: 2px solid black;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.apple-wallet-button:hover {
+  background-color: white;
+  color: black;
+}
+
+.apple-icon {
+  flex-shrink: 0;
+}
