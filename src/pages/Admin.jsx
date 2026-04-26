@@ -55,6 +55,23 @@ export default function Admin() {
   // Edit State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: '',
+    onConfirm: null
+  });
+
+  const triggerConfirm = (message, onConfirm) => {
+    setConfirmModal({
+      isOpen: true,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmModal({ isOpen: false, message: '', onConfirm: null });
+      }
+    });
+  };
+
   const [eventForm, setEventForm] = useState({
     name: '',
     price: '',
@@ -132,44 +149,46 @@ export default function Admin() {
   }
 
   async function enableSquareTracking(variationId) {
-    if (!confirm('Turn on inventory tracking for this item in Square?')) return;
-    
-    try {
-      const response = await fetch('/api/enable-square-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ variationId })
-      });
-      const result = await response.json();
-      if (result.success) {
-        alert('Tracking enabled! Now set your stock count in Square.');
-        fetchSquareCatalog();
-      } else {
-        throw new Error(result.error);
+    triggerConfirm('Turn on inventory tracking for this item in Square?', async () => {
+      try {
+        const response = await fetch('/api/enable-square-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variationId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('Tracking enabled! Now set your stock count in Square.');
+          fetchSquareCatalog();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
+    });
   }
 
+
   async function createTestItem() {
-    if (!confirm('This will create a real item called "API TEST TICKET" in your Square account. Proceed?')) return;
-    
-    try {
-      const response = await fetch('/api/create-test-item', {
-        method: 'POST'
-      });
-      const result = await response.json();
-      if (result.success) {
-        alert('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
-        fetchSquareCatalog();
-      } else {
-        throw new Error(result.error);
+    triggerConfirm('This will create a real item called "API TEST TICKET" in your Square account. Proceed?', async () => {
+      try {
+        const response = await fetch('/api/create-test-item', {
+          method: 'POST'
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
+          fetchSquareCatalog();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        alert('Error creating test item: ' + err.message);
       }
-    } catch (err) {
-      alert('Error creating test item: ' + err.message);
-    }
+    });
   }
+
 
   async function fetchRequests() {
     setLoading(true);
@@ -218,20 +237,21 @@ export default function Admin() {
   }
 
   async function deleteEvent(id) {
-    if (!window.confirm('Are you sure you want to delete this event permanently?')) return;
-    
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', id);
+    triggerConfirm('Are you sure you want to delete this event permanently?', async () => {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting event:', error);
-      alert('Failed to delete event: ' + error.message);
-    } else {
-      fetchEvents();
-    }
+      if (error) {
+        console.error('Error deleting event:', error);
+        alert('Failed to delete event: ' + error.message);
+      } else {
+        fetchEvents();
+      }
+    });
   }
+
 
 
   async function updateStatus(id, newStatus, requestData) {
@@ -408,7 +428,8 @@ export default function Admin() {
               INQUIRIES
             </button>
             </div>
-            <button className="admin-btn signout-btn" style={{ padding: '10px 24px', fontSize: '13px', fontWeight: '700' }} onClick={() => { if (window.confirm('Are you sure you want to sign out?')) supabase.auth.signOut(); }}>SIGN OUT</button>
+            <button className="admin-btn signout-btn" style={{ padding: '10px 24px', fontSize: '13px', fontWeight: '700' }} onClick={() => triggerConfirm('Are you sure you want to sign out?', () => supabase.auth.signOut())}>SIGN OUT</button>
+
           </div>
 
           {(activeTab === 'events' || activeTab === 'all') && (
@@ -988,7 +1009,33 @@ export default function Admin() {
           )}
         </div>
 
+        {confirmModal.isOpen && (
+          <div className="admin-modal-overlay" style={{ zIndex: 2000 }}>
+            <div className="admin-modal" style={{ maxWidth: '400px', padding: '30px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '14px', letterSpacing: '0.2em', marginBottom: '20px' }}>CONFIRMATION</h3>
+              <p style={{ fontSize: '14px', marginBottom: '30px', color: '#666', lineHeight: '1.5' }}>{confirmModal.message}</p>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                <button 
+                  className="admin-btn approve" 
+                  style={{ padding: '10px 20px' }} 
+                  onClick={confirmModal.onConfirm}
+                >
+                  PROCEED
+                </button>
+                <button 
+                  className="admin-btn" 
+                  style={{ padding: '10px 20px' }} 
+                  onClick={() => setConfirmModal({ isOpen: false, message: '', onConfirm: null })}
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
+
