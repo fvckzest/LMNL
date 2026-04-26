@@ -33,11 +33,12 @@
 }
 
 .requests-table-container, .events-table-container {
-  border: 2px solid black;
+  border: 2px solid var(--active-tab-color, black);
   background: white;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 20px;
+  transition: border-color 0.3s ease;
 }
 
 .requests-table, .admin-table {
@@ -48,14 +49,16 @@
 }
 
 .requests-table th, .admin-table th {
-  background: black;
+  background: var(--active-tab-color, black);
   color: white;
   padding: 15px 20px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 12px;
+  transition: background-color 0.3s ease;
 }
+
 
 .requests-table td, .admin-table td {
   padding: 15px 20px;
@@ -175,10 +178,12 @@
   font-size: 14px;
   letter-spacing: 0.3em;
   margin-bottom: 30px;
-  border-bottom: 2px solid black;
+  border-bottom: 2px solid var(--active-tab-color, black);
   display: inline-block;
   padding-bottom: 5px;
+  transition: border-color 0.3s ease;
 }
+
 
 .event-name-link {
   color: black;
@@ -502,3 +507,33 @@
     grid-column: span 1;
   }
 }
+
+.admin-tabs {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0;
+}
+
+.admin-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 5px 15px 5px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.admin-tab:hover {
+  color: #333;
+}
+
+.admin-tab.active {
+  color: black;
+}
+

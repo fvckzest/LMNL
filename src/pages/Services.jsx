@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import GenericPage from './GenericPage';
+import { supabase } from '../lib/supabase';
 import './Services.css';
+
 
 const SERVICES_DATA = {
   design: {
@@ -56,8 +58,11 @@ const CURATED_PACKAGES = [
 
 export default function Services() {
   const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedBundleName, setSelectedBundleName] = useState(null);
   const [inquirySent, setInquirySent] = useState(false);
+  const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, error
   const [formData, setFormData] = useState({ name: '', email: '', notes: '' });
+
 
   const toggleService = (serviceId) => {
     setSelectedServices(prev => 
@@ -65,6 +70,7 @@ export default function Services() {
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
+    setSelectedBundleName(null);
   };
 
   const getPackageRecommendation = () => {
@@ -91,12 +97,31 @@ export default function Services() {
     return { title: 'SINGLE MODULE', discount: 'Add more for Sync discounts', note: 'Standalone execution.' };
   };
 
-  const handleInquirySubmit = (e) => {
+  const handleInquirySubmit = async (e) => {
     e.preventDefault();
-    // In a real app, this would send data to a server or CRM.
-    setInquirySent(true);
-    setFormData({ name: '', email: '', notes: '' });
+    setRequestStatus('loading');
+
+    const { error } = await supabase
+      .from('service_inquiries')
+      .insert([
+        { 
+          name: formData.name, 
+          email: formData.email, 
+          notes: formData.notes,
+          selected_services: selectedServices 
+        }
+      ]);
+
+    if (error) {
+      console.error('Error submitting inquiry:', error);
+      setRequestStatus('error');
+    } else {
+      setInquirySent(true);
+      setRequestStatus('idle');
+      setFormData({ name: '', email: '', notes: '' });
+    }
   };
+
 
   const recommendation = getPackageRecommendation();
 
@@ -181,12 +206,12 @@ export default function Services() {
             {CURATED_PACKAGES.map((pkg, i) => (
               <div key={i} className="package-card">
                 <h3 className="package-title">{pkg.title}</h3>
-                <p className="package-desc">{pkg.description}</p>
                 <div className="package-tags">
                   {pkg.services.map((s, j) => (
                     <span key={j} className="package-tag">{s}</span>
                   ))}
                 </div>
+                <p className="package-desc">{pkg.description}</p>
                 <ul className="package-features">
                   {pkg.features.map((feat, j) => (
                     <li key={j} className="package-feat-item">{feat}</li>
@@ -197,10 +222,11 @@ export default function Services() {
                   onClick={() => {
                     const serviceIds = pkg.services.map(s => s.toLowerCase());
                     setSelectedServices(serviceIds);
+                    setSelectedBundleName(pkg.title);
                     document.getElementById('inquiry-form-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  CONFIGURE BUNDLE
+                  SELECT BUNDLE
                 </button>
               </div>
             ))}
@@ -209,55 +235,78 @@ export default function Services() {
 
         {/* Section 4: Inquiry Form */}
         <section className="services-section inquiry-section" id="inquiry-form-section">
-          <h2 className="services-section-title">INITIATE PROJECT</h2>
+          <h2 className="services-section-title inquiry-title">INITIATE PROJECT</h2>
           {inquirySent ? (
             <div className="inquiry-success">
               <h3 className="success-title">TRANSMISSION RECEIVED.</h3>
               <p className="success-text">A creative lead will reach out within 24 hours.</p>
-              <button className="reset-btn" onClick={() => setInquirySent(false)}>NEW INQUIRY</button>
+              <button className="reset-btn" onClick={() => {
+                setInquirySent(false);
+                setSelectedServices([]);
+                setSelectedBundleName(null);
+              }}>NEW INQUIRY</button>
             </div>
           ) : (
-            <form onSubmit={handleInquirySubmit} className="inquiry-form">
-              <div className="form-row">
-                <input 
-                  type="text" 
-                  placeholder="NAME / ENTITY" 
-                  required 
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="inquiry-input"
-                  id="inquiry-name"
-                />
-                <input 
-                  type="email" 
-                  placeholder="EMAIL ADDRESS" 
-                  required 
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="inquiry-input"
-                  id="inquiry-email"
-                />
-              </div>
-              <textarea 
-                placeholder="PROJECT BRIEF / DIRECTIONAL GOALS" 
-                required 
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="inquiry-textarea"
-                id="inquiry-notes"
-              />
-              
+            <>
               {selectedServices.length > 0 && (
-                <div className="form-selected-services">
-                  <span className="form-selected-label">Selected Modules: </span>
-                  {selectedServices.map(s => SERVICES_DATA[s].title).join(' + ')}
+                <div className="form-selected-services" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span className="form-selected-label">Selected: </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {selectedBundleName ? (
+                      <span className="package-tag">{selectedBundleName}</span>
+                    ) : (
+                      selectedServices.map((s, j) => (
+                        <span key={j} className="package-tag">{SERVICES_DATA[s].title}</span>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
+              <form onSubmit={handleInquirySubmit} className="inquiry-form">
+                <div className="form-row">
+                  <input 
+                    type="text" 
+                    placeholder="NAME / ENTITY" 
+                    required 
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="inquiry-input"
+                    id="inquiry-name"
+                  />
+                  <input 
+                    type="email" 
+                    placeholder="EMAIL ADDRESS" 
+                    required 
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="inquiry-input"
+                    id="inquiry-email"
+                  />
+                </div>
+                <textarea 
+                  placeholder="PROJECT BRIEF / DIRECTIONAL GOALS" 
+                  required 
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="inquiry-textarea"
+                  id="inquiry-notes"
+                />
+                
+                {requestStatus === 'error' && (
+                  <p className="error-message" style={{ color: '#ff0055', margin: '10px 0', fontFamily: 'monospace' }}>
+                    Transmission failed. Ensure database setup is complete.
+                  </p>
+                )}
+                <button 
+                  type="submit" 
+                  className="inquiry-submit-btn"
+                  disabled={requestStatus === 'loading'}
+                >
+                  {requestStatus === 'loading' ? 'TRANSMITTING...' : (selectedServices.length > 0 ? 'SUBMIT BUNDLE INQUIRY' : 'SUBMIT INQUIRY')}
+                </button>
 
-              <button type="submit" className="inquiry-submit-btn">
-                {selectedServices.length > 0 ? 'SUBMIT BUNDLE INQUIRY' : 'SUBMIT INQUIRY'}
-              </button>
-            </form>
+              </form>
+            </>
           )}
         </section>
 
