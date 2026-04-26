@@ -411,8 +411,9 @@ html {
   }
 
   .home-logo {
-    width: 130px;
-    height: 61px;
+    width: 100px;
+    aspect-ratio: 192/90;
+    height: auto;
   }
 
   .home-circle {
