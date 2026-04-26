@@ -36,6 +36,7 @@ export default function Admin() {
   const [eventLoading, setEventLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [showArchivedServices, setShowArchivedServices] = useState(false);
@@ -287,8 +288,54 @@ export default function Admin() {
       }
     });
   }
+  async function deleteRequest(id) {
+    triggerConfirm('Are you sure you want to delete this request permanently?', async () => {
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', id);
 
+      if (error) {
+        console.error('Error deleting request:', error);
+        showToast('Failed to delete request: ' + error.message, 'error');
+      } else {
+        fetchRequests();
+      }
+    });
+  }
+  async function toggleHighlightEvent(targetEvent) {
+    const updatedMetadata = {
+      ...(targetEvent.metadata || {}),
+      is_featured: !targetEvent.metadata?.is_featured
+    };
 
+    if (updatedMetadata.is_featured) {
+      await supabase
+        .from('events')
+        .update({ metadata: updatedMetadata })
+        .eq('id', targetEvent.id);
+
+      const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_featured);
+      for (const other of others) {
+        const otherMeta = { ...other.metadata };
+        delete otherMeta.is_featured;
+        await supabase
+          .from('events')
+          .update({ metadata: otherMeta })
+          .eq('id', other.id);
+      }
+    } else {
+      const clearedMeta = { ...(targetEvent.metadata || {}) };
+      delete clearedMeta.is_featured;
+      await supabase
+        .from('events')
+        .update({ metadata: clearedMeta })
+        .eq('id', targetEvent.id);
+    }
+
+    fetchEvents();
+    showToast('Upcoming event selection updated.', 'success');
+  }
 
 
   async function updateStatus(id, newStatus, requestData) {
@@ -335,12 +382,14 @@ export default function Admin() {
       setEventForm({
         ...event,
         price: (event.price / 100).toFixed(2),
+        event_date: event.event_date || '',
+        event_time: event.event_time || '',
         capacity: event.capacity || '',
         location_name: event.location_name || '',
         address: event.address || '',
         description: event.description || '',
         image_url: event.image_url || '',
-        partiful_url: event.spotify_id || '', // DB column is still `spotify_id`, repurposed for Partiful
+        partiful_url: event.spotify_id || '', 
         is_private: event.is_private ?? true,
         status: event.status || 'active',
         square_variation_id: event.square_variation_id || '',
@@ -394,14 +443,21 @@ export default function Admin() {
 
 
     const data = {
-      ...eventForm,
-      spotify_id: eventForm.partiful_url, // Map back to DB column
+      name: eventForm.name,
       price: priceCents,
-      capacity: eventForm.capacity ? parseInt(eventForm.capacity) : null
+      event_date: eventForm.event_date || null,
+      event_time: eventForm.event_time || null,
+      location_name: eventForm.location_name || '',
+      address: eventForm.address || '',
+      description: eventForm.description || '',
+      capacity: eventForm.capacity ? parseInt(eventForm.capacity) : null,
+      image_url: eventForm.image_url || '',
+      spotify_id: eventForm.partiful_url || '',
+      is_private: eventForm.is_private,
+      status: eventForm.status || 'active',
+      square_variation_id: eventForm.square_variation_id || '',
+      metadata: eventForm.metadata || {}
     };
-    
-    // Remove the temporary partiful_url field before sending
-    delete data.partiful_url;
 
     let error;
     if (editingEvent) {
@@ -482,10 +538,16 @@ export default function Admin() {
               <h2 className="section-title">EVENT MANAGEMENT</h2>
               {!tableMissing && (
                 <div className="action-buttons">
+                  <button 
+                    className={`admin-btn small ${showArchivedEvents ? 'active' : ''}`}
+                    onClick={() => setShowArchivedEvents(!showArchivedEvents)}
+                    style={{ marginRight: '10px' }}
+                  >
+                    {showArchivedEvents ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({events.filter(e => e.status === 'archived').length})
+                  </button>
                   <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
                 </div>
               )}
-
             </div>
             
             {tableMissing ? (
@@ -510,11 +572,14 @@ export default function Admin() {
                         <th>PRICE</th>
                         <th>DATE</th>
                         <th>LOCATION</th>
+                        <th style={{ textAlign: 'center' }}>FEATURE</th>
                         <th>ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {events.map((event) => (
+                      {events
+                        .filter(event => showArchivedEvents ? true : event.status !== 'archived')
+                        .map((event) => (
                         <tr key={event.id}>
                           <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
                           <td>
@@ -527,6 +592,23 @@ export default function Admin() {
                           <td>${(event.price / 100).toFixed(2)}</td>
                           <td>{event.event_date || 'TBD'}</td>
                           <td>{event.location_name || 'TBD'}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              onClick={() => toggleHighlightEvent(event)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '20px',
+                                color: event.metadata?.is_featured ? '#004ffa' : '#ccc',
+                                padding: '5px',
+                                transition: 'color 0.2s ease'
+                              }}
+                              title={event.metadata?.is_featured ? 'Highlighted as Upcoming' : 'Highlight this event as Upcoming'}
+                            >
+                              {event.metadata?.is_featured ? '★' : '☆'}
+                            </button>
+                          </td>
                           <td className="actions-cell">
                             <div className="actions-wrapper">
                               <div className="main-actions">
@@ -616,6 +698,7 @@ export default function Admin() {
                       <label>STATUS</label>
                       <select value={eventForm.status} onChange={e => setEventForm({...eventForm, status: e.target.value})}>
                         <option value="active">ACTIVE</option>
+                        <option value="past">PAST</option>
                         <option value="sold_out">SOLD OUT</option>
                         <option value="draft">DRAFT</option>
                         <option value="archived">ARCHIVED</option>
@@ -708,6 +791,38 @@ export default function Admin() {
                     <div className="form-group">
                       <label>PARTIFUL LINK</label>
                       <input type="text" placeholder="https://partiful.com/e/..." value={eventForm.partiful_url} onChange={e => setEventForm({...eventForm, partiful_url: e.target.value})} />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>PERFORMERS LINEUP (COMMA SEPARATED)</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Artist A, Artist B, Artist C" 
+                        value={eventForm.metadata?.performers || ''} 
+                        onChange={e => setEventForm({
+                          ...eventForm,
+                          metadata: {
+                            ...eventForm.metadata,
+                            performers: e.target.value
+                          }
+                        })} 
+                      />
+                    </div>
+
+                    <div className="form-group full">
+                      <label>FEATURED ARTISTS (COMMA SEPARATED)</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Painter A, Sculptor B, Visualist C" 
+                        value={eventForm.metadata?.artists || ''} 
+                        onChange={e => setEventForm({
+                          ...eventForm,
+                          metadata: {
+                            ...eventForm.metadata,
+                            artists: e.target.value
+                          }
+                        })} 
+                      />
                     </div>
 
                     <div className="form-group checkbox">
@@ -867,25 +982,35 @@ export default function Admin() {
                         </td>
 
                         <td style={{ textAlign: 'center' }}>
-                          {req.status !== 'archived' ? (
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                            {req.status !== 'archived' ? (
+                              <button
+                                className="icon-btn archive-btn"
+                                title="Archive Request"
+                                onClick={() => updateStatus(req.id, 'archived', req)}
+                                style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                              >
+                                <ArchiveIcon />
+                              </button>
+                            ) : (
+                              <button
+                                className="icon-btn unarchive-btn"
+                                title="Unarchive Request"
+                                onClick={() => updateStatus(req.id, 'pending', req)}
+                                style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                              >
+                                <UnarchiveIcon />
+                              </button>
+                            )}
                             <button
-                              className="icon-btn archive-btn"
-                              title="Archive Request"
-                              onClick={() => updateStatus(req.id, 'archived', req)}
-                              style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                              className="icon-btn delete-btn"
+                              title="Delete Request"
+                              onClick={() => deleteRequest(req.id)}
+                              style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#991b1b' }}
                             >
-                              <ArchiveIcon />
+                              <TrashIcon />
                             </button>
-                          ) : (
-                            <button
-                              className="icon-btn unarchive-btn"
-                              title="Unarchive Request"
-                              onClick={() => updateStatus(req.id, 'pending', req)}
-                              style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                            >
-                              <UnarchiveIcon />
-                            </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
 
@@ -1052,7 +1177,25 @@ export default function Admin() {
                       item.variations.map((v, idx) => (
                         <tr key={v.id}>
                           {idx === 0 ? (
-                            <td rowSpan={item.variations.length}><strong>{item.name.toUpperCase()}</strong></td>
+                            <td rowSpan={item.variations.length}>
+                              <a 
+                                href={`https://squareup.com/dashboard/items/library/${item.id}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                title="Edit in Square Dashboard"
+                                style={{ 
+                                  color: '#000000', 
+                                  textDecoration: 'none',
+                                  fontWeight: 'bold',
+                                  borderBottom: '1px solid transparent',
+                                  transition: 'border-color 0.2s ease'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.borderBottomColor = '#000000'}
+                                onMouseOut={e => e.currentTarget.style.borderBottomColor = 'transparent'}
+                              >
+                                {item.name.toUpperCase()}
+                              </a>
+                            </td>
                           ) : null}
                           <td>{v.name}</td>
                           <td>${(v.price / 100).toFixed(2)}</td>

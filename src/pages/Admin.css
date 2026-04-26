@@ -4,8 +4,8 @@
 
 .admin-body {
   padding: 0 40px;
-  margin-top: 160px;
-  max-width: 1400px;
+  margin: 160px auto 0 auto;
+  max-width: 1200px;
   width: 100%;
 }
 
@@ -86,6 +86,7 @@
 .status-pill.rejected { background: #fee2e2; color: #991b1b; }
 .status-pill.draft { background: #f1f5f9; color: #475569; }
 .status-pill.sold_out { background: #fef3c7; color: #92400e; }
+.status-pill.past { background: #dbeafe; color: #1e40af; }
 .status-pill.archived { background: #f3f4f6; color: #9ca3af; }
 
 .action-buttons {
