@@ -449,8 +449,20 @@ html {
   }
 
   .home-socials {
-    top: 30px;
+    top: calc(39px + 30.5px);
+    transform: translateY(-50%);
     right: 15px;
+    gap: 10px;
+  }
+
+  .home-socials .social-link svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .home-socials .social-link[title="X"] svg {
+    width: 17.6px;
+    height: 17.6px;
   }
 
   .nav-container {
