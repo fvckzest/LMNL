@@ -133,16 +133,16 @@ html {
 .key-label {
   font-family: 'Gantari', sans-serif;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 17.5px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .key-code {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 12px;
+  font-size: 15px;
   color: #888;
-  margin-left: 8px;
+  margin-left: 10px;
 }
 
 
