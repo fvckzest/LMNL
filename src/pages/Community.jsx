@@ -5,6 +5,11 @@ import Footer from '../components/Footer';
 import './Community.css';
 
 export default function Community() {
+  useEffect(() => {
+    document.documentElement.style.setProperty('--page-color', '#ff5bb8');
+    return () => document.documentElement.style.removeProperty('--page-color');
+  }, []);
+
   const [credits, setCredits] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);

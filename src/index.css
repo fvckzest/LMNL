@@ -15,6 +15,25 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Custom Scrollbar */
+html {
+  scrollbar-color: var(--page-color, #000000) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--page-color, #000000);
+  border-radius: 4px;
+}
+
 #root {
   width: 100%;
   height: 100%;

@@ -38,6 +38,12 @@ const homePageInfo = [
 export default function Home() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
+  useEffect(() => {
+    const color = hoveredIndex !== null ? homePageInfo[hoveredIndex].color : '#000000';
+    document.documentElement.style.setProperty('--page-color', color);
+    return () => document.documentElement.style.removeProperty('--page-color');
+  }, [hoveredIndex]);
+
   return (
     <div className="home-container">
       <div className="home-graph-key">

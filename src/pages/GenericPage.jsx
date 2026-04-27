@@ -1,7 +1,13 @@
+import { useEffect } from 'react';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 
 export default function GenericPage({ title, color, children }) {
+  useEffect(() => {
+    document.documentElement.style.setProperty('--page-color', color);
+    return () => document.documentElement.style.removeProperty('--page-color');
+  }, [color]);
+
   return (
     <div className="page-container">
       <HeaderBar />

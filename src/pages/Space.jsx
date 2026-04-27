@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase';
 import './Space.css';
 
 export default function Space() {
+  useEffect(() => {
+    document.documentElement.style.setProperty('--page-color', '#000000');
+    return () => document.documentElement.style.removeProperty('--page-color');
+  }, []);
+
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error

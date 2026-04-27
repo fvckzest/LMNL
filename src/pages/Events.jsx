@@ -65,6 +65,11 @@ export default function Events() {
   const timelineRef = useRef(null);
 
   useEffect(() => {
+    document.documentElement.style.setProperty('--page-color', '#004ffa');
+    return () => document.documentElement.style.removeProperty('--page-color');
+  }, []);
+
+  useEffect(() => {
     async function fetchSupabaseEvents() {
       const { data, error } = await supabase
         .from('events')
