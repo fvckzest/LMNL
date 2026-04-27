@@ -40,6 +40,22 @@ export default function Home() {
 
   return (
     <div className="home-container">
+      <div className="home-graph-key">
+        {homePageInfo.map((item, index) => (
+          <Link 
+            key={index} 
+            to={homeCircleLinks[index]}
+            className={`key-item ${hoveredIndex === index ? 'active' : ''}`}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            <div className="key-color-rect" style={{ backgroundColor: item.color }} />
+            <span className="key-label">{item.title}</span>
+            <span className="key-code">{item.color.toUpperCase()}</span>
+          </Link>
+        ))}
+      </div>
+
       <div className="home-hero">
         <div className="home-circle-wrapper">
           <div className="circle-flip">
@@ -48,6 +64,8 @@ export default function Home() {
               links={homeCircleLinks} 
               className="home-circle" 
               onHoverChange={setHoveredIndex}
+              info={homePageInfo}
+              hoveredIndex={hoveredIndex}
             />
           </div>
         </div>
@@ -55,13 +73,6 @@ export default function Home() {
           <LmnlLogoBlack className="home-logo" />
         </div>
       </div>
-      
-      {hoveredIndex !== null && (
-        <div className="home-page-preview">
-          <div className="page-header-rect" style={{ backgroundColor: homePageInfo[hoveredIndex].color }} />
-          <h1 className="page-title">{homePageInfo[hoveredIndex].title}</h1>
-        </div>
-      )}
       
       <SocialLinks className="home-socials" />
 
