@@ -41,19 +41,22 @@ export default function Home() {
   return (
     <div className="home-container">
       <div className="home-graph-key">
-        {homePageInfo.map((item, index) => (
-          <Link 
-            key={index} 
-            to={homeCircleLinks[index]}
-            className={`key-item ${hoveredIndex === index ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredIndex(index)}
-            onMouseLeave={() => setHoveredIndex(null)}
-          >
-            <div className="key-color-rect" style={{ backgroundColor: item.color }} />
-            <span className="key-label">{item.title}</span>
-            <span className="key-code">{item.color.toUpperCase()}</span>
-          </Link>
-        ))}
+        {[6, 7, 0, 1, 2, 3, 4, 5].map((originalIndex) => {
+          const item = homePageInfo[originalIndex];
+          return (
+            <Link 
+              key={originalIndex} 
+              to={homeCircleLinks[originalIndex]}
+              className={`key-item ${hoveredIndex === originalIndex ? 'active' : ''}`}
+              onMouseEnter={() => setHoveredIndex(originalIndex)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <div className="key-color-rect" style={{ backgroundColor: item.color }} />
+              <span className="key-label">{item.title}</span>
+              <span className="key-code">{item.color.toUpperCase()}</span>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="home-hero">
