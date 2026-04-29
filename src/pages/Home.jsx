@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
