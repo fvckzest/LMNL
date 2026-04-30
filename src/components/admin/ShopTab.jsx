@@ -51,7 +51,7 @@ export default function ShopTab({
     const isPersistent = formData.type === 'persistent';
 
     try {
-      await apiPost('/api/preorders/upsert', {
+      await apiPost('/api/preorders', {
         square_item_id: selectedItem.id,
         item_name: selectedItem.name,
         goal_quantity: isPersistent ? 0 : parseInt(formData.goal_quantity),
@@ -78,7 +78,7 @@ export default function ShopTab({
     const isPersistent = formData.type === 'persistent';
 
     try {
-      await apiPost('/api/preorders/upsert', {
+      await apiPost('/api/preorders', {
         id: editingPreorder.id,
         square_item_id: formData.square_item_id,
         item_name: formData.item_name,
@@ -103,7 +103,7 @@ export default function ShopTab({
   async function deletePreorder(id) {
     triggerConfirm('Are you sure you want to delete this preorder permanently?', async () => {
       try {
-        await apiPost('/api/preorders/delete', { id });
+        await apiPost('/api/preorders', { action: 'delete', id });
         showToast('Preorder deleted.');
         fetchPreorders();
       } catch (error) {
@@ -134,7 +134,7 @@ export default function ShopTab({
 
   async function updatePreorderStatus(id, status) {
     try {
-      await apiPost('/api/preorders/upsert', { action: 'update-status', id, status });
+      await apiPost('/api/preorders', { action: 'update-status', id, status });
       showToast(`Status updated to ${status}`);
       fetchPreorders();
     } catch (error) {

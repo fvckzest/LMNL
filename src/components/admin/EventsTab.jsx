@@ -46,7 +46,7 @@ export default function EventsTab({
 
   async function updateEventStatus(id, newStatus) {
     try {
-      await apiPost('/api/events/upsert', { action: 'update-status', id, status: newStatus });
+      await apiPost('/api/events', { action: 'update-status', id, status: newStatus });
       fetchEvents();
     } catch (error) {
       console.error('Error updating event status:', error);
@@ -57,7 +57,7 @@ export default function EventsTab({
   async function deleteEvent(id) {
     triggerConfirm('Are you sure you want to delete this event permanently?', async () => {
       try {
-        await apiPost('/api/events/delete', { id });
+        await apiPost('/api/events', { action: 'delete', id });
         fetchEvents();
       } catch (error) {
         console.error('Error deleting event:', error);
@@ -73,7 +73,7 @@ export default function EventsTab({
     };
 
     if (updatedMetadata.is_featured) {
-      await apiPost('/api/events/upsert', {
+      await apiPost('/api/events', {
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: updatedMetadata,
@@ -83,7 +83,7 @@ export default function EventsTab({
       for (const other of others) {
         const otherMeta = { ...other.metadata };
         delete otherMeta.is_featured;
-        await apiPost('/api/events/upsert', {
+        await apiPost('/api/events', {
           action: 'update-metadata',
           id: other.id,
           metadata: otherMeta,
@@ -92,7 +92,7 @@ export default function EventsTab({
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
       delete clearedMeta.is_featured;
-      await apiPost('/api/events/upsert', {
+      await apiPost('/api/events', {
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: clearedMeta,
@@ -110,7 +110,7 @@ export default function EventsTab({
     };
 
     if (updatedMetadata.is_home_notif) {
-      await apiPost('/api/events/upsert', {
+      await apiPost('/api/events', {
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: updatedMetadata,
@@ -121,7 +121,7 @@ export default function EventsTab({
       for (const other of others) {
         const otherMeta = { ...other.metadata };
         delete otherMeta.is_home_notif;
-        await apiPost('/api/events/upsert', {
+        await apiPost('/api/events', {
           action: 'update-metadata',
           id: other.id,
           metadata: otherMeta,
@@ -130,7 +130,7 @@ export default function EventsTab({
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
       delete clearedMeta.is_home_notif;
-      await apiPost('/api/events/upsert', {
+      await apiPost('/api/events', {
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: clearedMeta,
@@ -266,7 +266,7 @@ export default function EventsTab({
     };
 
     try {
-      await apiPost('/api/events/upsert', {
+      await apiPost('/api/events', {
         ...data,
         id: editingEvent?.id,
         previousName: editingEvent?.name,

@@ -156,11 +156,11 @@ export default function Admin() {
   async function updateStatus(id, newStatus, requestRecord) {
     try {
       if (newStatus === 'approved') {
-        await apiPost('/api/requests/approve', { requestId: id });
+        await apiPost('/api/requests', { action: 'approve', requestId: id });
         fetchRequests();
         showToast(`Approved & email sent to ${requestRecord.customer_name}`);
       } else {
-        await apiPost('/api/requests/update', { id, status: newStatus });
+        await apiPost('/api/requests', { action: 'update', id, status: newStatus });
         fetchRequests();
         showToast(`Status updated to ${newStatus}`);
       }
@@ -173,7 +173,7 @@ export default function Admin() {
   async function deleteRequest(id) {
     triggerConfirm('Delete this request permanently?', async () => {
       try {
-        await apiPost('/api/requests/delete', { id });
+        await apiPost('/api/requests', { action: 'delete', id });
         fetchRequests();
         showToast('Request removed.');
       } catch (error) {
@@ -184,7 +184,7 @@ export default function Admin() {
 
   async function updateServiceStatus(id, newStatus) {
     try {
-      await apiPost('/api/service-inquiries/update', { id, status: newStatus });
+      await apiPost('/api/service-inquiries', { action: 'update', id, status: newStatus });
       fetchServiceInquiries();
       showToast(`Inquiry marked as ${newStatus}`);
     } catch (error) {

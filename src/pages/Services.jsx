@@ -102,7 +102,8 @@ export default function Services() {
     setRequestStatus('loading');
 
     try {
-      await apiPost('/api/service-inquiries/create', {
+      await apiPost('/api/service-inquiries', {
+        action: 'create',
         name: formData.name,
         email: formData.email,
         notes: formData.notes,

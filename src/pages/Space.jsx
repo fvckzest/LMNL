@@ -120,7 +120,8 @@ export default function Space() {
     setRequestStatus('loading');
 
     try {
-      await apiPost('/api/requests/create', {
+      await apiPost('/api/requests', {
+        action: 'create',
         eventName: eventData.name,
         customerName: formData.name,
         customerEmail: formData.email,
