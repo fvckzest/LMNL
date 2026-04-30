@@ -2,15 +2,19 @@ import { PKPass } from 'passkit-generator';
 import forge from 'node-forge';
 import fs from 'fs';
 import path from 'path';
+import { getApplePassConfig } from './env.js';
 
 /**
  * Generates an Apple Wallet .pkpass buffer for a given ticket and event.
  * Returns null if required certificates are not configured.
  */
 export async function generatePassBuffer(ticket, eventData) {
-  const passTypeIdentifier = process.env.APPLE_PASS_TYPE_IDENTIFIER;
-  const teamIdentifier = process.env.APPLE_TEAM_ID;
-  const base64Cert = process.env.APPLE_PASS_CERTIFICATE;
+  const {
+    passTypeIdentifier,
+    teamIdentifier,
+    certificateBase64: base64Cert,
+    certificatePassword,
+  } = getApplePassConfig();
 
   // If certs aren't configured yet, we can't generate the pass
   if (!passTypeIdentifier || !teamIdentifier || !base64Cert) {
@@ -33,10 +37,13 @@ export async function generatePassBuffer(ticket, eventData) {
     // Parse certificates using node-forge
     const p12Der = Buffer.from(base64Cert, 'base64').toString('binary');
     const p12Asn1 = forge.asn1.fromDer(p12Der);
-    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, ''); // Assuming no password
-    
-    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-    const cert = certBags[forge.pki.oids.certBag][0].cert;
+    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, certificatePassword);
+
+    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })?.[forge.pki.oids.certBag] || [];
+    const cert = certBags[0]?.cert;
+    if (!cert) {
+      throw new Error('Could not extract signer certificate from .p12 certificate.');
+    }
     const signerCert = forge.pki.certificateToPem(cert);
     
     const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag }) || {};

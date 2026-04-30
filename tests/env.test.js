@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { getApplePassConfig, getBaseConfig, getResendConfig, getSquareConfig, getSupabaseConfig } from '../api/_lib/env.js';
 
 test('getBaseConfig provides stable defaults', () => {
@@ -37,9 +40,27 @@ test('getApplePassConfig reads optional configuration', () => {
   process.env.APPLE_PASS_TYPE_IDENTIFIER = 'pass.type';
   process.env.APPLE_TEAM_ID = 'team-id';
   process.env.APPLE_PASS_CERTIFICATE = 'base64-cert';
+  process.env.APPLE_PASS_CERTIFICATE_PASSWORD = 'secret';
 
   const config = getApplePassConfig();
   assert.equal(config.passTypeIdentifier, 'pass.type');
   assert.equal(config.teamIdentifier, 'team-id');
   assert.equal(config.certificateBase64, 'base64-cert');
+  assert.equal(config.certificatePassword, 'secret');
+});
+
+test('getApplePassConfig can load certificate contents from a file path', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lmnl-pass-'));
+  const certPath = path.join(tempDir, 'wallet-cert.txt');
+  fs.writeFileSync(certPath, 'file-based-cert\n');
+
+  delete process.env.APPLE_PASS_CERTIFICATE;
+  process.env.APPLE_PASS_CERTIFICATE_PATH = certPath;
+
+  const config = getApplePassConfig();
+  assert.equal(config.certificateBase64, 'file-based-cert');
+  assert.equal(config.certificatePath, certPath);
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+  delete process.env.APPLE_PASS_CERTIFICATE_PATH;
 });

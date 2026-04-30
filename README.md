@@ -60,7 +60,15 @@ SQUARE_ACCESS_TOKEN=your_square_access_token
 SQUARE_WEBHOOK_SIGNATURE_KEY=your_webhook_signature
 SITE_URL=https://lmnl.space (or your domain)
 RESEND_API_KEY=your_resend_api_key
+APPLE_PASS_TYPE_IDENTIFIER=pass.art.lmnl
+APPLE_TEAM_ID=your_apple_team_id
+APPLE_PASS_CERTIFICATE=base64_encoded_p12_contents
+APPLE_PASS_CERTIFICATE_PATH=path/to/WalletCertificate.p12
+APPLE_PASS_CERTIFICATE_PASSWORD=your_p12_export_password
 ```
+
+For Apple Wallet, provide either `APPLE_PASS_CERTIFICATE` or `APPLE_PASS_CERTIFICATE_PATH`.
+The repo now supports password-protected `.p12` exports directly, which is the normal Apple certificate flow.
 
 ---
 

@@ -12,6 +12,13 @@ import {
 import { createTicket, findTicketBySquareOrderId } from '../repositories/tickets.js';
 import { generateTicketPass } from './passkit.js';
 
+function isPlaceholderEmail(email) {
+  if (!email) return true;
+  const normalized = String(email).trim().toLowerCase();
+  if (!normalized) return true;
+  return normalized.endsWith('@example.com');
+}
+
 function verifySignature(payload, headers) {
   const { squareWebhookSignatureKey, squareWebhookUrl } = getBaseConfig();
   const signature = headers['x-square-hmacsha256-signature'];
@@ -34,9 +41,12 @@ function verifySignature(payload, headers) {
   }
 }
 
-async function resolveCustomer(order, squareOrderId) {
+export async function resolveCustomer(order, squareOrderId, deps = {}) {
   let customerName = 'Guest';
   let customerEmail = '';
+  const squareClient = deps.squareClient || getSquareClient();
+  const loadRequestCustomerById = deps.getRequestCustomerById || getRequestCustomerById;
+  const loadRequestCustomerByOrderId = deps.getRequestCustomerByOrderId || getRequestCustomerByOrderId;
 
   const recipient = order.fulfillments?.[0]?.pickupDetails?.recipient
     || order.fulfillments?.[0]?.shipmentDetails?.recipient
@@ -45,17 +55,19 @@ async function resolveCustomer(order, squareOrderId) {
 
   if (recipient) {
     customerName = recipient.displayName || customerName;
-    customerEmail = recipient.emailAddress || customerEmail;
+    if (!isPlaceholderEmail(recipient.emailAddress)) {
+      customerEmail = recipient.emailAddress;
+    }
   }
 
   if (!customerEmail) {
     const customerId = order.customerId || order.tenders?.[0]?.customerId;
     if (customerId) {
       try {
-        const response = await getSquareClient().customers.get({ customerId });
+        const response = await squareClient.customers.get({ customerId });
         const customer = response.customer || response.result?.customer;
         customerName = `${customer?.givenName || ''} ${customer?.familyName || ''}`.trim() || customerName;
-        customerEmail = customer?.emailAddress || '';
+        customerEmail = isPlaceholderEmail(customer?.emailAddress) ? '' : (customer?.emailAddress || '');
       } catch (error) {
         console.warn('[webhook] customer lookup failed', error);
       }
@@ -63,13 +75,13 @@ async function resolveCustomer(order, squareOrderId) {
   }
 
   if (!customerEmail && order.metadata?.requestId) {
-    const requestCustomer = await getRequestCustomerById(order.metadata.requestId);
+    const requestCustomer = await loadRequestCustomerById(order.metadata.requestId);
     customerName = requestCustomer?.customer_name || customerName;
     customerEmail = requestCustomer?.customer_email || customerEmail;
   }
 
   if (!customerEmail) {
-    const requestCustomer = await getRequestCustomerByOrderId(squareOrderId);
+    const requestCustomer = await loadRequestCustomerByOrderId(squareOrderId);
     customerName = requestCustomer?.customer_name || customerName;
     customerEmail = requestCustomer?.customer_email || customerEmail;
   }
@@ -77,25 +89,26 @@ async function resolveCustomer(order, squareOrderId) {
   return { customerName, customerEmail };
 }
 
-async function sendTicketEmail(ticket, event, customerEmail, customerName) {
+export async function sendTicketEmail(ticket, event, customerEmail, customerName, deps = {}) {
   if (!customerEmail) return;
 
-  const resend = getResendClient();
+  const resend = deps.resendClient || getResendClient();
   const { siteUrl } = getBaseConfig();
   const ticketUrl = `${siteUrl}/ticket/${ticket.id}`;
   const eventName = event?.name || 'LMNL Event';
-  const from = process.env.RESEND_API_KEY?.startsWith('re_')
+  const primaryFrom = process.env.RESEND_API_KEY?.startsWith('re_')
     ? 'LMNL <tickets@lmnl.art>'
     : 'onboarding@resend.dev';
 
   const emailOptions = {
-    from,
+    from: primaryFrom,
     to: customerEmail,
     subject: `Your Ticket: ${eventName}`,
     html: `<p>Your ticket for ${eventName} is ready. View it here: <a href="${ticketUrl}">${ticketUrl}</a></p><p>Guest: ${customerName}</p>`,
   };
 
-  const passResult = await generateTicketPass(ticket.id);
+  const makePass = deps.generateTicketPass || generateTicketPass;
+  const passResult = await makePass(ticket.id);
   if (passResult.kind === 'buffer') {
     emailOptions.attachments = [{
       filename: passResult.filename,
@@ -104,9 +117,32 @@ async function sendTicketEmail(ticket, event, customerEmail, customerName) {
   }
 
   const response = await resend.emails.send(emailOptions);
-  if (response.error) {
-    console.error('[webhook] email send failed', response.error);
+  if (response.error && primaryFrom !== 'onboarding@resend.dev') {
+    const fallback = await resend.emails.send({
+      ...emailOptions,
+      from: 'onboarding@resend.dev',
+    });
+
+    if (fallback.error) {
+      throw new AppError(`Email failed: ${fallback.error.message}`, {
+        code: 'EMAIL_SEND_FAILED',
+        status: 502,
+        expose: true,
+      });
+    }
+
+    return fallback.data;
   }
+
+  if (response.error) {
+    throw new AppError(`Email failed: ${response.error.message}`, {
+      code: 'EMAIL_SEND_FAILED',
+      status: 502,
+      expose: true,
+    });
+  }
+
+  return response.data;
 }
 
 export async function processSquareOrderUpdate(payload, headers, deps = {}) {

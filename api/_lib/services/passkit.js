@@ -35,10 +35,13 @@ function getCertificateMaterial() {
 
   const p12Der = Buffer.from(config.certificateBase64, 'base64').toString('binary');
   const p12Asn1 = forge.asn1.fromDer(p12Der);
-  const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, '');
+  const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, config.certificatePassword || '');
 
-  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-  const cert = certBags[forge.pki.oids.certBag][0].cert;
+  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })?.[forge.pki.oids.certBag] || [];
+  const cert = certBags[0]?.cert;
+  if (!cert) {
+    return null;
+  }
   const signerCert = forge.pki.certificateToPem(cert);
 
   const shroudedKeyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })?.[forge.pki.oids.pkcs8ShroudedKeyBag] || [];

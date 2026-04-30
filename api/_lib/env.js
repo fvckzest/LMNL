@@ -1,4 +1,6 @@
 import { AppError } from './errors.js';
+import fs from 'fs';
+import path from 'path';
 
 function readEnv(name) {
   const value = process.env[name];
@@ -79,9 +81,20 @@ export function getResendConfig() {
 }
 
 export function getApplePassConfig() {
+  const certificatePath = readEnv('APPLE_PASS_CERTIFICATE_PATH');
+  const resolvedCertificatePath = certificatePath
+    ? path.resolve(process.cwd(), certificatePath)
+    : '';
+  const certificateBase64 = readEnv('APPLE_PASS_CERTIFICATE')
+    || (resolvedCertificatePath && fs.existsSync(resolvedCertificatePath)
+      ? fs.readFileSync(resolvedCertificatePath, 'utf8').trim()
+      : '');
+
   return {
     passTypeIdentifier: readEnv('APPLE_PASS_TYPE_IDENTIFIER'),
     teamIdentifier: readEnv('APPLE_TEAM_ID'),
-    certificateBase64: readEnv('APPLE_PASS_CERTIFICATE'),
+    certificateBase64,
+    certificatePassword: readEnv('APPLE_PASS_CERTIFICATE_PASSWORD'),
+    certificatePath: resolvedCertificatePath,
   };
 }
