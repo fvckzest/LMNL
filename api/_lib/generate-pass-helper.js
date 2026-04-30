@@ -3,6 +3,7 @@ import forge from 'node-forge';
 import fs from 'fs';
 import path from 'path';
 import { getApplePassConfig } from './env.js';
+import { applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './services/passkit-customization.js';
 
 /**
  * Generates an Apple Wallet .pkpass buffer for a given ticket and event.
@@ -68,6 +69,7 @@ export async function generatePassBuffer(ticket, eventData) {
     }
 
     // Create Pass using v3 API
+    const wallet = getWalletPassConfig(eventData);
     const pass = await PKPass.from(
       {
         model: templatePath,
@@ -77,19 +79,17 @@ export async function generatePassBuffer(ticket, eventData) {
           signerKey
         }
       },
-      {
-        passTypeIdentifier,
-        teamIdentifier,
-        serialNumber: ticket.id
-      }
+      buildPassOverrides(ticket, eventData, { passTypeIdentifier, teamIdentifier })
     );
 
     // Push dynamic fields programmatically
-    pass.primaryFields.push({ 
-      key: 'event', 
-      label: 'EVENT', 
-      value: eventData?.name || 'LMNL Event' 
-    });
+    if (wallet.primaryValue) {
+      pass.primaryFields.push({ 
+        key: 'event', 
+        label: 'EVENT', 
+        value: wallet.primaryValue
+      });
+    }
     
     pass.secondaryFields.push(
       { key: 'date', label: 'DATE', value: dateVal },
@@ -97,15 +97,13 @@ export async function generatePassBuffer(ticket, eventData) {
     );
     
     pass.auxiliaryFields.push(
-      { key: 'location', label: 'LOCATION', value: eventData?.location_name || 'TBA' },
+      { key: 'location', label: 'LOCATION', value: wallet.locationValue },
       { key: 'guest', label: 'GUEST', value: ticket.customer_name }
     );
 
-    pass.barcodes = [{
-      message: ticket.qr_code_payload,
-      format: 'PKBarcodeFormatQR',
-      messageEncoding: 'iso-8859-1'
-    }];
+    const barcodeMessage = ticket.qr_code_payload || ticket.id;
+    pass.setBarcodes(barcodeMessage);
+    await applyPassVisualCustomization(pass, eventData);
 
     // Generate Buffer
     return await pass.getAsBuffer();

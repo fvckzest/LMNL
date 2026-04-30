@@ -4,6 +4,7 @@ import { PKPass } from 'passkit-generator';
 import forge from 'node-forge';
 import { getApplePassConfig } from '../env.js';
 import { getTicketView } from './tickets.js';
+import { applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './passkit-customization.js';
 
 let passAssets;
 
@@ -81,6 +82,7 @@ export async function generateTicketPass(ticketId) {
   }
 
   const { ticket, event } = await getTicketView(ticketId);
+  const wallet = getWalletPassConfig(event);
   const pass = await PKPass.from(
     {
       model: assets.templatePath,
@@ -90,18 +92,16 @@ export async function generateTicketPass(ticketId) {
         signerKey: certificateMaterial.signerKey,
       },
     },
-    {
-      passTypeIdentifier: certificateMaterial.passTypeIdentifier,
-      teamIdentifier: certificateMaterial.teamIdentifier,
-      serialNumber: ticket.id,
-    }
+    buildPassOverrides(ticket, event, certificateMaterial)
   );
 
-  pass.primaryFields.push({
-    key: 'event',
-    label: 'EVENT',
-    value: event?.name || 'LMNL Event',
-  });
+  if (wallet.primaryValue) {
+    pass.primaryFields.push({
+      key: 'event',
+      label: 'EVENT',
+      value: wallet.primaryValue,
+    });
+  }
 
   pass.secondaryFields.push(
     { key: 'date', label: 'DATE', value: formatEventDate(event) },
@@ -109,15 +109,13 @@ export async function generateTicketPass(ticketId) {
   );
 
   pass.auxiliaryFields.push(
-    { key: 'location', label: 'LOCATION', value: event?.location_name || 'TBA' },
+    { key: 'location', label: 'LOCATION', value: wallet.locationValue },
     { key: 'guest', label: 'GUEST', value: ticket.customer_name }
   );
 
-  pass.barcodes = [{
-    message: ticket.qr_code_payload,
-    format: 'PKBarcodeFormatQR',
-    messageEncoding: 'iso-8859-1',
-  }];
+  const barcodeMessage = ticket.qr_code_payload || ticket.id;
+  pass.setBarcodes(barcodeMessage);
+  await applyPassVisualCustomization(pass, event);
 
   return {
     kind: 'buffer',

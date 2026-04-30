@@ -2,6 +2,23 @@ import { useState } from 'react';
 import { apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
+const MANAGED_METADATA_KEYS = new Set([
+  'event_link',
+  'performers',
+  'artists',
+  'is_featured',
+  'is_home_notif',
+  'wallet_strip_image_url',
+  'wallet_logo_text',
+  'wallet_description',
+  'wallet_primary_override',
+  'wallet_location_override',
+  'wallet_background_color',
+  'wallet_foreground_color',
+  'wallet_label_color',
+  'wallet_notes',
+]);
+
 export default function EventsTab({
   events,
   eventLoading,
@@ -186,6 +203,11 @@ export default function EventsTab({
 
   function addTrait() {
     if (!newTraitKey || !newTraitValue) return;
+    if (MANAGED_METADATA_KEYS.has(newTraitKey)) {
+      showToast('That key is managed by the event form above.', 'error');
+      return;
+    }
+
     setEventForm({
       ...eventForm,
       metadata: {
@@ -243,6 +265,16 @@ export default function EventsTab({
     });
   }
 
+  function updateMetadataField(key, value) {
+    setEventForm({
+      ...eventForm,
+      metadata: {
+        ...eventForm.metadata,
+        [key]: value
+      }
+    });
+  }
+
   async function handleEventSubmit(e) {
     e.preventDefault();
     const priceCents = Math.round(parseFloat(eventForm.price) * 100);
@@ -280,6 +312,8 @@ export default function EventsTab({
       showToast('Error saving event: ' + error.message, 'error');
     }
   }
+
+  const customMetadataEntries = Object.entries(eventForm.metadata || {}).filter(([key]) => !MANAGED_METADATA_KEYS.has(key));
 
   return (
     <>
@@ -708,13 +742,7 @@ export default function EventsTab({
                     type="text" 
                     placeholder="https://..." 
                     value={eventForm.metadata?.event_link || ''} 
-                    onChange={e => setEventForm({
-                      ...eventForm,
-                      metadata: {
-                        ...eventForm.metadata,
-                        event_link: e.target.value
-                      }
-                    })} 
+                    onChange={e => updateMetadataField('event_link', e.target.value)} 
                   />
                 </div>
 
@@ -724,13 +752,7 @@ export default function EventsTab({
                     type="text" 
                     placeholder="e.g. Artist A, Artist B, Artist C" 
                     value={eventForm.metadata?.performers || ''} 
-                    onChange={e => setEventForm({
-                      ...eventForm,
-                      metadata: {
-                        ...eventForm.metadata,
-                        performers: e.target.value
-                      }
-                    })} 
+                    onChange={e => updateMetadataField('performers', e.target.value)} 
                   />
                 </div>
 
@@ -740,13 +762,103 @@ export default function EventsTab({
                     type="text" 
                     placeholder="e.g. Painter A, Sculptor B, Visualist C" 
                     value={eventForm.metadata?.artists || ''} 
-                    onChange={e => setEventForm({
-                      ...eventForm,
-                      metadata: {
-                        ...eventForm.metadata,
-                        artists: e.target.value
-                      }
-                    })} 
+                    onChange={e => updateMetadataField('artists', e.target.value)} 
+                  />
+                </div>
+
+                <div className="form-group full" style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid #e5e5e5' }}>
+                  <label>APPLE WALLET SETTINGS</label>
+                  <p className="form-help">These fields control the Apple Wallet pass for this event. Leave any field blank to use the default pass styling.</p>
+                </div>
+
+                <div className="form-group full">
+                  <label>WALLET STRIP IMAGE URL (PNG)</label>
+                  <input
+                    type="text"
+                    placeholder="Direct PNG URL for the pass banner"
+                    value={eventForm.metadata?.wallet_strip_image_url || ''}
+                    onChange={e => updateMetadataField('wallet_strip_image_url', e.target.value)}
+                  />
+                  <p className="form-help">If blank, the pass falls back to the event image URL. Apple Wallet strip images work best as direct PNG files.</p>
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET TITLE OVERRIDE</label>
+                  <input
+                    type="text"
+                    placeholder="Defaults to event name"
+                    value={eventForm.metadata?.wallet_primary_override || ''}
+                    onChange={e => updateMetadataField('wallet_primary_override', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET LOCATION OVERRIDE</label>
+                  <input
+                    type="text"
+                    placeholder="Defaults to location name"
+                    value={eventForm.metadata?.wallet_location_override || ''}
+                    onChange={e => updateMetadataField('wallet_location_override', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET LOGO TEXT</label>
+                  <input
+                    type="text"
+                    placeholder="Defaults to LMNL"
+                    value={eventForm.metadata?.wallet_logo_text || ''}
+                    onChange={e => updateMetadataField('wallet_logo_text', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET DESCRIPTION</label>
+                  <input
+                    type="text"
+                    placeholder="Defaults to LMNL Event Ticket"
+                    value={eventForm.metadata?.wallet_description || ''}
+                    onChange={e => updateMetadataField('wallet_description', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET BACKGROUND COLOR</label>
+                  <input
+                    type="text"
+                    placeholder="rgb(255, 255, 255)"
+                    value={eventForm.metadata?.wallet_background_color || ''}
+                    onChange={e => updateMetadataField('wallet_background_color', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET FOREGROUND COLOR</label>
+                  <input
+                    type="text"
+                    placeholder="rgb(0, 0, 0)"
+                    value={eventForm.metadata?.wallet_foreground_color || ''}
+                    onChange={e => updateMetadataField('wallet_foreground_color', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET LABEL COLOR</label>
+                  <input
+                    type="text"
+                    placeholder="rgb(100, 100, 100)"
+                    value={eventForm.metadata?.wallet_label_color || ''}
+                    onChange={e => updateMetadataField('wallet_label_color', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>WALLET NOTES</label>
+                  <textarea
+                    rows="3"
+                    placeholder="Optional notes shown on the back of the pass"
+                    value={eventForm.metadata?.wallet_notes || ''}
+                    onChange={e => updateMetadataField('wallet_notes', e.target.value)}
                   />
                 </div>
 
@@ -774,7 +886,7 @@ export default function EventsTab({
                   </div>
                   
                   <div className="traits-list">
-                    {Object.entries(eventForm.metadata || {}).map(([key, val]) => (
+                    {customMetadataEntries.map(([key, val]) => (
                       <div key={key} className="trait-pill">
                         <span className="trait-key">{key}:</span>
                         <span className="trait-val">{val}</span>
