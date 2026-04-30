@@ -89,6 +89,7 @@ export default function Events() {
           artists: e.metadata?.artists || '',
           media: e.metadata?.media || [],
           is_featured: e.metadata?.is_featured || false,
+          is_home_notif: e.metadata?.is_home_notif || false,
           location: e.location_name || 'LMNL Space, LA',
           price: e.price,
           is_private: e.is_private
@@ -107,7 +108,8 @@ export default function Events() {
             description: feat.description,
             rsvpLink: feat.link || '#rsvp',
             price: feat.price,
-            is_private: feat.is_private
+            is_private: feat.is_private,
+            is_home_notif: feat.is_home_notif
           });
         }
       } else {
@@ -230,9 +232,15 @@ export default function Events() {
               </span>
             </div>
             <p className="upcoming-description">{featuredEvent.description}</p>
-            <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
-              VIEW EVENT
-            </a>
+            {featuredEvent.is_home_notif ? (
+              <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
+                VIEW EVENT
+              </a>
+            ) : (
+              <div className="upcoming-rsvp-btn" style={{ opacity: 0.5, cursor: 'not-allowed', filter: 'grayscale(100%)' }}>
+                COMING SOON
+              </div>
+            )}
           </div>
         </div>
 
@@ -314,26 +322,22 @@ export default function Events() {
                     </div>
                   )}
                   
-                  <div className="card-media-section">
-                    <h3 className="media-section-title">Media Gallery</h3>
-                    <div className="media-grid-placeholder">
-                      <div className="placeholder-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <circle cx="8.5" cy="8.5" r="1.5" />
-                          <polyline points="21 15 16 10 5 21" />
-                        </svg>
-                        <span>Coming Soon</span>
-                      </div>
-                      <div className="placeholder-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polygon points="23 7 16 12 23 17 23 7" />
-                          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                        </svg>
-                        <span>Coming Soon</span>
+                  {selectedEvent.media && selectedEvent.media.length > 0 && (
+                    <div className="card-media-section">
+                      <h3 className="media-section-title">Media Gallery</h3>
+                      <div className="media-grid">
+                        {selectedEvent.media.map((item, idx) => (
+                          <div key={idx} className="media-item">
+                            {item.type === 'image' ? (
+                              <img src={item.url} alt={`Media ${idx}`} className="media-img" />
+                            ) : (
+                              <video src={item.url} className="media-video" controls />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}

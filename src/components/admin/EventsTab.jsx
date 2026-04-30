@@ -109,6 +109,41 @@ export default function EventsTab({
     showToast('Upcoming event selection updated.', 'success');
   }
 
+  async function toggleHomeNotification(targetEvent) {
+    const updatedMetadata = {
+      ...(targetEvent.metadata || {}),
+      is_home_notif: !targetEvent.metadata?.is_home_notif
+    };
+
+    if (updatedMetadata.is_home_notif) {
+      await supabase
+        .from('events')
+        .update({ metadata: updatedMetadata })
+        .eq('id', targetEvent.id);
+
+      // Unset others
+      const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_home_notif);
+      for (const other of others) {
+        const otherMeta = { ...other.metadata };
+        delete otherMeta.is_home_notif;
+        await supabase
+          .from('events')
+          .update({ metadata: otherMeta })
+          .eq('id', other.id);
+      }
+    } else {
+      const clearedMeta = { ...(targetEvent.metadata || {}) };
+      delete clearedMeta.is_home_notif;
+      await supabase
+        .from('events')
+        .update({ metadata: clearedMeta })
+        .eq('id', targetEvent.id);
+    }
+
+    fetchEvents();
+    showToast('Home notification selection updated.', 'success');
+  }
+
   function openEditModal(event = null) {
     setNewTraitKey('');
     setNewTraitValue('');
@@ -297,6 +332,7 @@ export default function EventsTab({
                     <th>DATE</th>
                     <th>LOCATION</th>
                     <th style={{ textAlign: 'center' }}>FEATURE</th>
+                    <th style={{ textAlign: 'center' }}>HOME</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
@@ -331,6 +367,23 @@ export default function EventsTab({
                           title={event.metadata?.is_featured ? 'Highlighted as Upcoming' : 'Highlight this event as Upcoming'}
                         >
                           {event.metadata?.is_featured ? '★' : '☆'}
+                        </button>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          onClick={() => toggleHomeNotification(event)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            color: event.metadata?.is_home_notif ? '#004ffa' : '#ccc',
+                            padding: '5px',
+                            transition: 'color 0.2s ease'
+                          }}
+                          title={event.metadata?.is_home_notif ? 'Show on Home Page' : 'Turn on Home Notification'}
+                        >
+                          {event.metadata?.is_home_notif ? '★' : '☆'}
                         </button>
                       </td>
                       <td className="actions-cell">

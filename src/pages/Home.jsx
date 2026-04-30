@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
 import SocialLinks from '../components/SocialLinks';
@@ -37,12 +38,32 @@ const homePageInfo = [
 
 export default function Home() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [notificationEvent, setNotificationEvent] = useState(null);
 
   useEffect(() => {
     const color = hoveredIndex !== null ? homePageInfo[hoveredIndex].color : '#000000';
     document.documentElement.style.setProperty('--page-color', color);
     return () => document.documentElement.style.removeProperty('--page-color');
   }, [hoveredIndex]);
+
+  useEffect(() => {
+    async function fetchNotificationStatus() {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*');
+      
+      if (!error && data) {
+        const notifEvent = data.find(e => e.metadata?.is_home_notif === true);
+        setNotificationEvent(notifEvent || null);
+      }
+    }
+    fetchNotificationStatus();
+  }, []);
+
+  const getNotificationLink = () => {
+    if (!notificationEvent) return '/space';
+    return notificationEvent.metadata?.event_link || notificationEvent.partiful_url || notificationEvent.spotify_id || '/space';
+  };
 
   return (
     <div className="home-container">
@@ -85,10 +106,12 @@ export default function Home() {
       
       <SocialLinks className="home-socials" />
 
-      <Link to="/space" className="space-notification">
-        <div className="space-notification-dot"></div>
-        <span>1 new invite</span>
-      </Link>
+      {notificationEvent && (
+        <Link to={getNotificationLink()} className="space-notification">
+          <div className="space-notification-dot"></div>
+          <span>1 new invite</span>
+        </Link>
+      )}
     </div>
   );
 }
