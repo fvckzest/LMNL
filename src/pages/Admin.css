@@ -111,6 +111,11 @@
   white-space: nowrap;
 }
 
+.admin-btn:hover {
+  background: black;
+  color: white;
+}
+
 .admin-btn.approve:hover { background: #000; color: #fff; }
 .admin-btn.reject:hover { background: #991b1b; color: #fff; border-color: #991b1b; }
 .admin-btn.status-change:hover { background: var(--active-tab-color, #000); color: #fff; border-color: var(--active-tab-color, #000); }
@@ -186,11 +191,15 @@
 .section-title {
   font-size: 14px;
   letter-spacing: 0.3em;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   border-bottom: 2px solid var(--active-tab-color, black);
   display: inline-block;
   padding-bottom: 5px;
   transition: border-color 0.3s ease;
+}
+
+.section-header-flex .section-title {
+  margin-bottom: 0;
 }
 
 

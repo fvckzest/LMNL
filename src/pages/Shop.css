@@ -210,6 +210,20 @@
   letter-spacing: 0.1em;
 }
 
+/* Persistent Info */
+.persistent-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.persistent-status {
+  font-size: 18px;
+  font-weight: 500;
+  color: #ff0000;
+  letter-spacing: 0.05em;
+}
+
 /* Purchase Section */
 .purchase-actions {
   display: flex;

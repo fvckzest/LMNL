@@ -172,7 +172,7 @@ export default function CommunityTab({
               <button 
                 className="admin-btn small" 
                 onClick={syncFromEvents}
-                style={{ marginRight: '10px', backgroundColor: '#000', color: '#fff' }}
+                style={{ marginRight: '10px' }}
               >
                 SYNC FROM EVENTS
               </button>
