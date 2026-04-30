@@ -28,6 +28,5 @@ dist-ssr
 ! .env.example
 scratch/
 *.bak
-
-
-dev-dist
+.agent/*
+dev-dist/*
