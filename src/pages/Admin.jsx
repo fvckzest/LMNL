@@ -153,8 +153,9 @@ export default function Admin() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              email: requestRecord.customer_email,
-              name: requestRecord.customer_name,
+              requestId: id,
+              customerEmail: requestRecord.customer_email,
+              customerName: requestRecord.customer_name,
               eventName: requestRecord.event_name
             })
           });

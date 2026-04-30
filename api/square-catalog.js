@@ -71,7 +71,8 @@ export default async function handler(req, res) {
     }));
 
     return res.status(200).json({ 
-      items: formattedItems,
+      success: true,
+      catalog: formattedItems,
       count: items.length,
       environment: process.env.SQUARE_ENVIRONMENT 
     });
