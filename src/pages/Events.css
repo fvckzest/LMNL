@@ -199,6 +199,7 @@
   color: #666;
   margin: 0 0 25px 0;
   max-width: 100%;
+  white-space: pre-wrap;
 }
 
 .card-action-btn {
@@ -430,6 +431,7 @@
   color: #444444;
   margin: 0 0 35px 0;
   max-width: 100%;
+  white-space: pre-wrap;
 }
 
 .upcoming-rsvp-btn {
