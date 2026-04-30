@@ -121,17 +121,19 @@ export default function Community() {
     };
   }, [credits, events]);
 
-  const totalCapacity = useMemo(() => {
+  const pastEvents = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    return events
-      .filter(e => {
-        if (!e.event_date) return false;
-        const eventDate = new Date(e.event_date + 'T00:00:00');
-        return eventDate < now;
-      })
-      .reduce((sum, e) => sum + (Number(e.capacity) || 0), 0);
+    return events.filter(e => {
+      if (!e.event_date) return false;
+      const eventDate = new Date(e.event_date + 'T00:00:00');
+      return eventDate < now;
+    });
   }, [events]);
+
+  const totalCapacity = useMemo(() => {
+    return pastEvents.reduce((sum, e) => sum + (Number(e.capacity) || 0), 0);
+  }, [pastEvents]);
 
 
   return (
@@ -147,8 +149,21 @@ export default function Community() {
           <div className="community-split-layout">
             
             {/* Left Column: Stacked Numbers */}
-            <div className="community-stats-stack" style={{ display: 'flex', flexDirection: 'column', gap: '40px', flex: '1', minWidth: '280px', maxWidth: '400px' }}>
+            <div className="community-stats-stack" style={{ display: 'flex', flexDirection: 'column', gap: '40px', flex: '1', minWidth: '200px', maxWidth: '250px' }}>
               
+              {/* Counter 0: Past Events Count */}
+              <div className="space-occupancy-container">
+                <p className="space-occupancy-label" style={{ color: '#666', letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: '12px', fontWeight: '500' }}>past events</p>
+                <div className="space-occupancy-content" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '5px' }}>
+                  <div className="space-occupancy-number" style={{ fontSize: '50px', fontWeight: '500', color: '#000', letterSpacing: '-0.02em', lineHeight: '1' }}>
+                    {loading ? '---' : String(pastEvents.length).padStart(3, '0')}
+                  </div>
+                  <div className="space-occupancy-bar-bg" style={{ height: '3px', width: '50%', backgroundColor: '#eaeaea' }}>
+                    <div className="space-occupancy-bar-fill" style={{ height: '100%', width: `100%`, backgroundColor: '#ff5bb8' }} />
+                  </div>
+                </div>
+              </div>
+
               {/* Counter 1: Creators Count */}
               <div className="space-occupancy-container">
                 <p className="space-occupancy-label" style={{ color: '#666', letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: '12px', fontWeight: '500' }}>creators count</p>
@@ -156,7 +171,7 @@ export default function Community() {
                   <div className="space-occupancy-number" style={{ fontSize: '50px', fontWeight: '500', color: '#000', letterSpacing: '-0.02em', lineHeight: '1' }}>
                     {loading ? '---' : String(totalUnique).padStart(3, '0')}
                   </div>
-                  <div className="space-occupancy-bar-bg" style={{ height: '3px', width: '100%', backgroundColor: '#eaeaea' }}>
+                  <div className="space-occupancy-bar-bg" style={{ height: '3px', width: '50%', backgroundColor: '#eaeaea' }}>
                     <div className="space-occupancy-bar-fill" style={{ height: '100%', width: `100%`, backgroundColor: '#ff5bb8' }} />
                   </div>
                 </div>
@@ -169,7 +184,7 @@ export default function Community() {
                   <div className="space-occupancy-number" style={{ fontSize: '50px', fontWeight: '500', color: '#000', letterSpacing: '-0.02em', lineHeight: '1' }}>
                     {loading ? '---' : String(totalCapacity).padStart(3, '0') + '+'}
                   </div>
-                  <div className="space-occupancy-bar-bg" style={{ height: '3px', width: '100%', backgroundColor: '#eaeaea' }}>
+                  <div className="space-occupancy-bar-bg" style={{ height: '3px', width: '50%', backgroundColor: '#eaeaea' }}>
                     <div className="space-occupancy-bar-fill" style={{ height: '100%', width: `100%`, backgroundColor: '#ff5bb8' }} />
                   </div>
                 </div>
