@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
+import { apiPost } from '../lib/api';
 import './Space.css';
 
 export default function Space() {
@@ -29,72 +30,70 @@ export default function Space() {
   };
 
   useEffect(() => {
-    fetchEvent();
-  }, []);
+    async function loadEvent() {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('name', 'SPACE')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-  async function fetchEvent() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('name', 'SPACE')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      if (data && !error) {
+        console.log('Fetched event data:', data);
 
-    if (data && !error) {
-      console.log('Fetched event data:', data);
-      
-      // Update immediately with database data
-      let initialSyncData = { ...data, sold_tickets: 0 };
-      setEventData(initialSyncData);
-      
-      // 1. Fetch Approved Requests Count
-      const { count: approvedCount, error: countError } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_name', data.name)
-        .eq('status', 'approved');
+        let initialSyncData = { ...data, sold_tickets: 0 };
+        setEventData(initialSyncData);
 
-      if (!countError) {
-        setEventData(prev => ({ ...prev, sold_tickets: approvedCount || 0 }));
-      }
+        const { count: approvedCount, error: countError } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_name', data.name)
+          .eq('status', 'approved');
 
-      // 2. If linked to Square, check real inventory & price
-      if (data.square_variation_id) {
-        try {
-          const invRes = await fetch(`/api/check-inventory?variationId=${data.square_variation_id}`);
-          if (!invRes.ok) throw new Error('Inventory API error');
-          
-          const invData = await invRes.json();
-          console.log('Inventory data:', invData);
-          
-          setEventData(prev => {
-            let updated = { ...prev };
-            
-            if (invData.count !== undefined) {
-              updated.available_tickets = invData.count;
-              const squareSold = Math.max(0, (data.capacity || 0) - invData.count);
-              updated.sold_tickets = Math.max(updated.sold_tickets || 0, squareSold);
-              
-              if (invData.count <= 0) {
-                updated.status = 'sold_out';
-              }
-            }
-            
-            if (invData.price !== undefined) {
-              updated.price = invData.price;
-            }
-            
-            return updated;
-          });
-        } catch (err) {
-          console.error('Failed to sync with Square:', err);
+        if (!countError) {
+          setEventData(prev => ({ ...prev, sold_tickets: approvedCount || 0 }));
         }
+
+        if (data.square_variation_id) {
+          try {
+            const invRes = await fetch(`/api/check-inventory?variationId=${data.square_variation_id}`);
+            if (!invRes.ok) throw new Error('Inventory API error');
+
+            const payload = await invRes.json();
+            const invData = payload.data || {};
+            console.log('Inventory data:', invData);
+
+            setEventData(prev => {
+              let updated = { ...prev };
+
+              if (invData.available !== undefined) {
+                updated.available_tickets = invData.available;
+                const squareSold = Math.max(0, (data.capacity || 0) - invData.available);
+                updated.sold_tickets = Math.max(updated.sold_tickets || 0, squareSold);
+
+                if (invData.available <= 0) {
+                  updated.status = 'sold_out';
+                }
+              }
+
+              if (invData.price !== undefined) {
+                updated.price = invData.price;
+              }
+
+              return updated;
+            });
+          } catch (err) {
+            console.error('Failed to sync with Square:', err);
+          }
+        }
+      } else if (error) {
+        console.error('Supabase fetch error:', error);
       }
-    } else if (error) {
-      console.error('Supabase fetch error:', error);
     }
-  }
+
+    loadEvent();
+  }, []);
 
   const totalGoal = 3500;
   const soundCovered = 500;
@@ -120,22 +119,17 @@ export default function Space() {
     e.preventDefault();
     setRequestStatus('loading');
 
-    const { error } = await supabase
-      .from('requests')
-      .insert([
-        { 
-          event_name: eventData.name, 
-          customer_name: formData.name, 
-          customer_email: formData.email 
-        }
-      ]);
-
-    if (error) {
-      console.error('Error submitting request:', error);
-      setRequestStatus('error');
-    } else {
+    try {
+      await apiPost('/api/requests/create', {
+        eventName: eventData.name,
+        customerName: formData.name,
+        customerEmail: formData.email,
+      });
       setRequestStatus('success');
       setFormData({ name: '', email: '' });
+    } catch (error) {
+      console.error('Error submitting request:', error);
+      setRequestStatus('error');
     }
   };
 
@@ -290,14 +284,11 @@ function Timer({ eventDate, eventTime }) {
   const targetStr = (eventDate && eventTime) 
     ? `${eventDate}T${eventTime}`
     : "2026-07-03T18:00:00";
-    
-  const [time, setTime] = useState(() => getTimeLeft(new Date(targetStr)));
+
+  const [time, setTime] = useState(() => buildInitialTime(targetStr));
 
   useEffect(() => {
     const target = new Date(targetStr);
-    // Update immediately when targetStr changes to avoid the jump
-    setTime(getTimeLeft(target));
-
     const interval = setInterval(() => {
       setTime(getTimeLeft(target));
     }, 1000);
@@ -315,6 +306,10 @@ function Timer({ eventDate, eventTime }) {
       </div>
     </div>
   );
+}
+
+function buildInitialTime(targetStr) {
+  return getTimeLeft(new Date(targetStr));
 }
 
 function getTimeLeft(target) {

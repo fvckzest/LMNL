@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
 import SocialLinks from '../components/SocialLinks';
@@ -47,17 +46,25 @@ export default function Home() {
   }, [hoveredIndex]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchNotificationStatus() {
+      const { supabase } = await import('../lib/supabase');
       const { data, error } = await supabase
         .from('events')
         .select('*');
       
-      if (!error && data) {
+      if (isMounted && !error && data) {
         const notifEvent = data.find(e => e.metadata?.is_home_notif === true);
         setNotificationEvent(notifEvent || null);
       }
     }
+
     fetchNotificationStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const getNotificationLink = () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { apiPost } from '../lib/api';
 import GenericPage from './GenericPage';
 import './Shop.css';
 
@@ -47,6 +48,7 @@ function ProductCard({ product, onPurchase }) {
         <img 
           src={product.image_url || "/lmnl_hoodie_mockup_1777568946142.png"} 
           alt={product.item_name} 
+          decoding="async"
           className="drop-image" 
         />
       </div>
@@ -146,44 +148,32 @@ export default function Shop() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    async function loadProducts() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('merch_preorders')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
 
-  async function fetchProducts() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('merch_preorders')
-      .select('*')
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setProducts(data);
-    } else if (error) {
-      setError(error.message);
+      if (!error && data) {
+        setProducts(data);
+      } else if (error) {
+        setError(error.message);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+
+    loadProducts();
+  }, []);
 
   async function handlePurchase(product) {
     setError(null);
     try {
-      const response = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          preorderId: product.id,
-          squareItemId: product.square_item_id
-        })
+      const result = await apiPost('/api/create-checkout', {
+        preorderId: product.id,
       });
-      
-      const result = await response.json();
-      
-      if (result.success && result.url) {
-        window.location.href = result.url;
-      } else {
-        throw new Error(result.error || 'Failed to generate checkout link');
-      }
+      window.location.href = result.checkoutUrl;
     } catch (err) {
       console.error('Purchase Error:', err);
       setError('Failed to start checkout. Please try again.');

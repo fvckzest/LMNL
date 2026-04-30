@@ -178,78 +178,79 @@ export default function Events() {
           <h1 className="page-title events-title">EVENTS</h1>
         </div>
 
-        {/* Upcoming Event Highlight */}
-        <div className="upcoming-event-section">
-          <div className="upcoming-glow" />
-          <div className="upcoming-content">
-            <div className="upcoming-tag">UPCOMING EVENT</div>
-            <h2 className="upcoming-title">{featuredEvent.title}</h2>
-            <div className="upcoming-meta">
-              <span className="upcoming-date">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                {featuredEvent.date}
-              </span>
-              <span className="upcoming-location">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {featuredEvent.location}
-              </span>
-            </div>
-
-            <div className="upcoming-meta" style={{ marginTop: '-15px', marginBottom: '25px' }}>
-              <span className="upcoming-date">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                  <line x1="12" y1="1" x2="12" y2="23" />
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                </svg>
-                {featuredEvent.price === 0 || !featuredEvent.price ? 'FREE' : `$${(featuredEvent.price / 100).toFixed(2)}`}
-              </span>
-              <span className="upcoming-location">
-                {featuredEvent.is_private ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    PRIVATE (REQUEST ONLY)
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    PUBLIC
-                  </>
-                )}
-              </span>
-            </div>
-            <p className="upcoming-description">{featuredEvent.description}</p>
-            {featuredEvent.is_home_notif ? (
-              <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
-                VIEW EVENT
-              </a>
-            ) : (
-              <div className="upcoming-rsvp-btn" style={{ opacity: 0.5, cursor: 'not-allowed', filter: 'grayscale(100%)' }}>
-                COMING SOON
+        <div className="events-layout">
+          {/* Upcoming Event Highlight */}
+          <div className="upcoming-event-section">
+            <div className="upcoming-glow" />
+            <div className="upcoming-content">
+              <div className="upcoming-tag">UPCOMING EVENT</div>
+              <h2 className="upcoming-title">{featuredEvent.title}</h2>
+              <div className="upcoming-meta">
+                <span className="upcoming-date">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  {featuredEvent.date}
+                </span>
+                <span className="upcoming-location">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {featuredEvent.location}
+                </span>
               </div>
-            )}
-          </div>
-        </div>
 
-        {loading ? (
-          <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', color: '#004ffa', letterSpacing: '0.1em', fontWeight: '600' }}>RETRIEVING TIMELINE...</p>
-        ) : events.length === 0 ? (
-          <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', letterSpacing: '0.1em', fontWeight: '600' }}>NO EVENTS FOUND.</p>
-        ) : (
-          <>
+              <div className="upcoming-meta" style={{ marginTop: '-15px', marginBottom: '25px' }}>
+                <span className="upcoming-date">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  {featuredEvent.price === 0 || !featuredEvent.price ? 'FREE' : `$${(featuredEvent.price / 100).toFixed(2)}`}
+                </span>
+                <span className="upcoming-location">
+                  {featuredEvent.is_private ? (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      PRIVATE (REQUEST ONLY)
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      PUBLIC
+                    </>
+                  )}
+                </span>
+              </div>
+              <p className="upcoming-description">{featuredEvent.description}</p>
+              {featuredEvent.is_home_notif ? (
+                <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
+                  VIEW EVENT
+                </a>
+              ) : (
+                <div className="upcoming-rsvp-btn" style={{ opacity: 0.5, cursor: 'not-allowed', filter: 'grayscale(100%)' }}>
+                  COMING SOON
+                </div>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', color: '#004ffa', letterSpacing: '0.1em', fontWeight: '600' }}>RETRIEVING TIMELINE...</p>
+          ) : events.length === 0 ? (
+            <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', letterSpacing: '0.1em', fontWeight: '600' }}>NO EVENTS FOUND.</p>
+          ) : (
+            <>
             <h2 className="timeline-section-title">ALL EVENTS</h2>
             <div className="timeline-wrapper">
               <button className="timeline-arrow left" onClick={() => scrollTimeline('left')} aria-label="Scroll Left">
@@ -268,7 +269,13 @@ export default function Events() {
                           {event.type === 'text' ? (
                             <h2 className="events-space-title">{event.display}</h2>
                           ) : (
-                            <img src={event.display} alt={event.title} className="events-img" />
+                            <img
+                              src={event.display}
+                              alt={event.title}
+                              className="events-img"
+                              decoding="async"
+                              loading="lazy"
+                            />
                           )}
                         </button>
                       </div>
@@ -329,7 +336,13 @@ export default function Events() {
                         {selectedEvent.media.map((item, idx) => (
                           <div key={idx} className="media-item">
                             {item.type === 'image' ? (
-                              <img src={item.url} alt={`Media ${idx}`} className="media-img" />
+                              <img
+                                src={item.url}
+                                alt={`Media ${idx}`}
+                                className="media-img"
+                                decoding="async"
+                                loading="lazy"
+                              />
                             ) : (
                               <video src={item.url} className="media-video" controls />
                             )}
@@ -341,8 +354,9 @@ export default function Events() {
                 </div>
               </div>
             )}
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
       <Footer />
     </div>

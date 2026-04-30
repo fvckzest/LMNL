@@ -1,32 +1,49 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import Home from './pages/Home';
-import GenericPage from './pages/GenericPage';
-import Space from './pages/Space';
-import Events from './pages/Events';
-import Admin from './pages/Admin';
-import Login from './pages/Login';
-import Ticket from './pages/Ticket';
-import Services from './pages/Services';
-import Community from './pages/Community';
-import Shop from './pages/Shop';
 import './index.css';
+
+const GenericPage = lazy(() => import('./pages/GenericPage'));
+const Space = lazy(() => import('./pages/Space'));
+const Events = lazy(() => import('./pages/Events'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Login = lazy(() => import('./pages/Login'));
+const Ticket = lazy(() => import('./pages/Ticket'));
+const Services = lazy(() => import('./pages/Services'));
+const Community = lazy(() => import('./pages/Community'));
+const Shop = lazy(() => import('./pages/Shop'));
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
   const [session, setSession] = useState(undefined);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    let isMounted = true;
+    let unsubscribe = () => {};
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    async function initSession() {
+      const { supabase } = await import('./lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
 
-    return () => subscription.unsubscribe();
+      if (isMounted) {
+        setSession(session);
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        if (isMounted) {
+          setSession(nextSession);
+        }
+      });
+
+      unsubscribe = () => subscription.unsubscribe();
+    }
+
+    initSession();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   if (session === undefined) return null; // Loading state
@@ -43,50 +60,52 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        {/* SHARED / PUBLIC CONTENT */}
-        <Route path="/ticket/:ticketId" element={<Ticket />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/space" element={<Space />} />
-        <Route path="/about" element={
-          <GenericPage title="ABOUT" color="#ff9300">
-            <img src="/rules.png" alt="Rules" className="about-rules-img" />
-          </GenericPage>
-        } />
+      <Suspense fallback={null}>
+        <Routes>
+          {/* SHARED / PUBLIC CONTENT */}
+          <Route path="/ticket/:ticketId" element={<Ticket />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/space" element={<Space />} />
+          <Route path="/about" element={
+            <GenericPage title="ABOUT" color="#ff9300">
+              <img src="/rules.png" alt="Rules" className="about-rules-img" decoding="async" />
+            </GenericPage>
+          } />
 
-        {/* SUBDOMAIN SPECIFIC LOGIC */}
-        {showAdmin ? (
-          <>
-            {/* On admin.lmnl.art, the root is the Dashboard */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Admin />
-              </ProtectedRoute>
-            } />
-            {/* Allow viewing the public home via /home on the subdomain */}
-            <Route path="/home" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-          </>
-        ) : (
-          <>
-            {/* On the main site, the root is the Home page */}
-            <Route path="/" element={<Home />} />
-            {/* Block /admin and /login on the public site */}
-            <Route path="/admin" element={<Navigate to="/" />} />
-            <Route path="/login" element={<Navigate to="/" />} />
-          </>
-        )}
+          {/* SUBDOMAIN SPECIFIC LOGIC */}
+          {showAdmin ? (
+            <>
+              {/* On admin.lmnl.art, the root is the Dashboard */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              } />
+              {/* Allow viewing the public home via /home on the subdomain */}
+              <Route path="/home" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+            </>
+          ) : (
+            <>
+              {/* On the main site, the root is the Home page */}
+              <Route path="/" element={<Home />} />
+              {/* Block /admin and /login on the public site */}
+              <Route path="/admin" element={<Navigate to="/" />} />
+              <Route path="/login" element={<Navigate to="/" />} />
+            </>
+          )}
 
-        {/* CATCH-ALL / UTILITY */}
-        <Route path="/services" element={<Services />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
-        <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
-        <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
+          {/* CATCH-ALL / UTILITY */}
+          <Route path="/services" element={<Services />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
+          <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
+          <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
 
-        <Route path="*" element={<Space />} />
-      </Routes>
+          <Route path="*" element={<Space />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

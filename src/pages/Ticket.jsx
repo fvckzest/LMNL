@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { supabase } from '../lib/supabase';
+import { apiGet } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import './Ticket.css';
@@ -10,17 +10,17 @@ export default function Ticket() {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [eventData, setEventData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(() => Boolean(ticketId));
+  const [error, setError] = useState(ticketId ? null : 'Missing ticket ID.');
 
   useEffect(() => {
+    if (!ticketId) {
+      return;
+    }
+
     async function fetchTicket() {
       try {
-        const response = await fetch(`/api/get-ticket?ticketId=${ticketId}`);
-        if (!response.ok) {
-          throw new Error('System error: Ticket not found or invalid.');
-        }
-        const data = await response.json();
+        const data = await apiGet(`/api/get-ticket?ticketId=${ticketId}`);
         setTicket(data.ticket);
         setEventData(data.event);
       } catch (err) {
@@ -31,12 +31,7 @@ export default function Ticket() {
       }
     }
 
-    if (ticketId) {
-      fetchTicket();
-    } else {
-      setError('Missing ticket ID.');
-      setLoading(false);
-    }
+    fetchTicket();
   }, [ticketId]);
 
   return (

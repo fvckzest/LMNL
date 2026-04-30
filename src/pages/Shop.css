@@ -3,10 +3,6 @@
   flex-direction: column;
   gap: 80px;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-top: 100px;
-  padding-bottom: 60px;
 }
 
 /* Drop Hero Section */
@@ -286,7 +282,6 @@
 @media (max-width: 968px) {
   .shop-layout {
     gap: 50px;
-    padding-top: 42px;
   }
 
   .drop-hero {

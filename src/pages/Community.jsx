@@ -1,8 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import ContentPageShell from '../components/ContentPageShell';
 import './Community.css';
+
+function shuffleArray(arr) {
+  const newArr = [...arr];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = (i * 7 + 3) % (i + 1);
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
 
 export default function Community() {
   useEffect(() => {
@@ -95,15 +103,6 @@ export default function Community() {
     const allMembers = [...finalPerformers, ...finalArtists];
     const uniqueCount = new Set([...Object.keys(pMap), ...Object.keys(aMap)]).size;
 
-    const shuffleArray = (arr) => {
-      const newArr = [...arr];
-      for (let i = newArr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-      }
-      return newArr;
-    };
-
     const getMarqueeList = (list) => {
       if (list.length === 0) return [];
       let combined = [...list];
@@ -137,15 +136,8 @@ export default function Community() {
 
 
   return (
-    <div className="page-container">
-      <HeaderBar />
-      <div className="page-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#ff5bb8' }} />
-          <h1 className="page-title">COMMUNITY</h1>
-        </div>
-
-        <div className="community-layout">
+    <ContentPageShell title="COMMUNITY" color="#ff5bb8">
+      <div className="community-layout">
           <div className="community-split-layout">
             
             {/* Left Column: Stacked Numbers */}
@@ -267,10 +259,7 @@ export default function Community() {
 
           {loading && <p className="loading-text" style={{ color: '#ff5bb8' }}>RETRIEVING DIRECTORY...</p>}
           {!loading && marqueeList1.length === 0 && <p className="empty-msg">No community directory loaded yet.</p>}
-        </div>
       </div>
-
-      <Footer />
-    </div>
+    </ContentPageShell>
   );
 }

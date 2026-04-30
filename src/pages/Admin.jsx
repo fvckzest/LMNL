@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { apiGet, apiPost } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
 import EventsTab from '../components/admin/EventsTab';
 import InquiriesTab from '../components/admin/InquiriesTab';
@@ -127,10 +128,8 @@ export default function Admin() {
     setFetchingCatalog(true);
     setSquareError(null);
     try {
-      const response = await fetch('/api/square-catalog');
-      const data = await response.json();
-      if (data.success) setSquareItems(data.catalog);
-      else throw new Error(data.error);
+      const data = await apiGet('/api/square-catalog');
+      setSquareItems(data.catalog);
     } catch (err) {
       console.error('Catalog fetch err:', err);
       setSquareError(err.message);
@@ -155,66 +154,41 @@ export default function Admin() {
   }
 
   async function updateStatus(id, newStatus, requestRecord) {
-    const { error } = await supabase
-      .from('requests')
-      .update({ status: newStatus })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error updating status:', error);
-      showToast('Failed to update status: ' + error.message, 'error');
-    } else {
-      fetchRequests();
+    try {
       if (newStatus === 'approved') {
-        try {
-          const response = await fetch('/api/send-approval-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              requestId: id,
-              customerEmail: requestRecord.customer_email,
-              customerName: requestRecord.customer_name,
-              eventName: requestRecord.event_name
-            })
-          });
-          const result = await response.json();
-          if (result.success) showToast(`Approved & email sent to ${requestRecord.customer_name}`);
-          else throw new Error(result.error);
-        } catch (err) {
-          showToast(`Approved, but email failed: ${err.message}`, 'error');
-        }
+        await apiPost('/api/requests/approve', { requestId: id });
+        fetchRequests();
+        showToast(`Approved & email sent to ${requestRecord.customer_name}`);
       } else {
+        await apiPost('/api/requests/update', { id, status: newStatus });
+        fetchRequests();
         showToast(`Status updated to ${newStatus}`);
       }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showToast('Failed to update status: ' + error.message, 'error');
     }
   }
 
   async function deleteRequest(id) {
     triggerConfirm('Delete this request permanently?', async () => {
-      const { error } = await supabase
-        .from('requests')
-        .delete()
-        .eq('id', id);
-
-      if (error) showToast('Delete failed: ' + error.message, 'error');
-      else {
+      try {
+        await apiPost('/api/requests/delete', { id });
         fetchRequests();
         showToast('Request removed.');
+      } catch (error) {
+        showToast('Delete failed: ' + error.message, 'error');
       }
     });
   }
 
   async function updateServiceStatus(id, newStatus) {
-    const { error } = await supabase
-      .from('service_inquiries')
-      .update({ status: newStatus })
-      .eq('id', id);
-
-    if (error) {
-      showToast('Failed to update: ' + error.message, 'error');
-    } else {
+    try {
+      await apiPost('/api/service-inquiries/update', { id, status: newStatus });
       fetchServiceInquiries();
       showToast(`Inquiry marked as ${newStatus}`);
+    } catch (error) {
+      showToast('Failed to update: ' + error.message, 'error');
     }
   }
 

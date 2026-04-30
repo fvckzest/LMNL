@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import GenericPage from './GenericPage';
-import { supabase } from '../lib/supabase';
+import ContentPageShell from '../components/ContentPageShell';
+import { apiPost } from '../lib/api';
 import './Services.css';
 
 
@@ -101,24 +101,19 @@ export default function Services() {
     e.preventDefault();
     setRequestStatus('loading');
 
-    const { error } = await supabase
-      .from('service_inquiries')
-      .insert([
-        { 
-          name: formData.name, 
-          email: formData.email, 
-          notes: formData.notes,
-          selected_services: selectedServices 
-        }
-      ]);
-
-    if (error) {
-      console.error('Error submitting inquiry:', error);
-      setRequestStatus('error');
-    } else {
+    try {
+      await apiPost('/api/service-inquiries/create', {
+        name: formData.name,
+        email: formData.email,
+        notes: formData.notes,
+        selectedServices: selectedServices,
+      });
       setInquirySent(true);
       setRequestStatus('idle');
       setFormData({ name: '', email: '', notes: '' });
+    } catch (error) {
+      console.error('Error submitting inquiry:', error);
+      setRequestStatus('error');
     }
   };
 
@@ -126,7 +121,7 @@ export default function Services() {
   const recommendation = getPackageRecommendation();
 
   return (
-    <GenericPage title="SERVICES" color="#6222d8">
+    <ContentPageShell title="SERVICES" color="#6222d8">
       <div className="services-layout">
         
         {/* Section 1: Capabilities */}
@@ -311,6 +306,6 @@ export default function Services() {
         </section>
 
       </div>
-    </GenericPage>
+    </ContentPageShell>
   );
 }

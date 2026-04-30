@@ -610,9 +610,6 @@ html {
     margin-left: 18.26px;
   }
 
-  .generic-page-body {
-    margin-top: 25px;
-  }
 }
 
 /* Space Notification */
@@ -685,19 +682,13 @@ html {
 
 
 
-/* Generic Page Content */
-.generic-page-body {
-  margin-top: 50px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
 .about-rules-img {
+  display: block;
   width: 90%;
   max-width: 100%;
   height: auto;
   object-fit: contain;
+  margin: 0 auto;
 }
 
 @media (min-width: 769px) {

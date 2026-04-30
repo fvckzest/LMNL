@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
 export default function EventsTab({
@@ -16,7 +16,6 @@ export default function EventsTab({
   fetchSquareCatalog,
   requests,
   loading,
-  tickets,
   updateStatus,
   deleteRequest,
   hasBoughtTicket
@@ -46,31 +45,23 @@ export default function EventsTab({
   });
 
   async function updateEventStatus(id, newStatus) {
-    const { error } = await supabase
-      .from('events')
-      .update({ status: newStatus })
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await apiPost('/api/events/upsert', { action: 'update-status', id, status: newStatus });
+      fetchEvents();
+    } catch (error) {
       console.error('Error updating event status:', error);
       showToast('Failed to update event status: ' + error.message, 'error');
-    } else {
-      fetchEvents();
     }
   }
 
   async function deleteEvent(id) {
     triggerConfirm('Are you sure you want to delete this event permanently?', async () => {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
+      try {
+        await apiPost('/api/events/delete', { id });
+        fetchEvents();
+      } catch (error) {
         console.error('Error deleting event:', error);
         showToast('Failed to delete event: ' + error.message, 'error');
-      } else {
-        fetchEvents();
       }
     });
   }
@@ -82,27 +73,30 @@ export default function EventsTab({
     };
 
     if (updatedMetadata.is_featured) {
-      await supabase
-        .from('events')
-        .update({ metadata: updatedMetadata })
-        .eq('id', targetEvent.id);
+      await apiPost('/api/events/upsert', {
+        action: 'update-metadata',
+        id: targetEvent.id,
+        metadata: updatedMetadata,
+      });
 
       const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_featured);
       for (const other of others) {
         const otherMeta = { ...other.metadata };
         delete otherMeta.is_featured;
-        await supabase
-          .from('events')
-          .update({ metadata: otherMeta })
-          .eq('id', other.id);
+        await apiPost('/api/events/upsert', {
+          action: 'update-metadata',
+          id: other.id,
+          metadata: otherMeta,
+        });
       }
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
       delete clearedMeta.is_featured;
-      await supabase
-        .from('events')
-        .update({ metadata: clearedMeta })
-        .eq('id', targetEvent.id);
+      await apiPost('/api/events/upsert', {
+        action: 'update-metadata',
+        id: targetEvent.id,
+        metadata: clearedMeta,
+      });
     }
 
     fetchEvents();
@@ -116,28 +110,31 @@ export default function EventsTab({
     };
 
     if (updatedMetadata.is_home_notif) {
-      await supabase
-        .from('events')
-        .update({ metadata: updatedMetadata })
-        .eq('id', targetEvent.id);
+      await apiPost('/api/events/upsert', {
+        action: 'update-metadata',
+        id: targetEvent.id,
+        metadata: updatedMetadata,
+      });
 
       // Unset others
       const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_home_notif);
       for (const other of others) {
         const otherMeta = { ...other.metadata };
         delete otherMeta.is_home_notif;
-        await supabase
-          .from('events')
-          .update({ metadata: otherMeta })
-          .eq('id', other.id);
+        await apiPost('/api/events/upsert', {
+          action: 'update-metadata',
+          id: other.id,
+          metadata: otherMeta,
+        });
       }
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
       delete clearedMeta.is_home_notif;
-      await supabase
-        .from('events')
-        .update({ metadata: clearedMeta })
-        .eq('id', targetEvent.id);
+      await apiPost('/api/events/upsert', {
+        action: 'update-metadata',
+        id: targetEvent.id,
+        metadata: clearedMeta,
+      });
     }
 
     fetchEvents();
@@ -268,25 +265,19 @@ export default function EventsTab({
       metadata: eventForm.metadata || {}
     };
 
-    let error;
-    if (editingEvent) {
-      const { error: err } = await supabase.from('events').update(data).eq('id', editingEvent.id);
-      error = err;
-      
-      if (!error && eventForm.name !== editingEvent.name) {
-        await supabase.from('requests').update({ event_name: eventForm.name }).eq('event_name', editingEvent.name);
-        fetchRequests();
-      }
-    } else {
-      const { error: err } = await supabase.from('events').insert([data]);
-      error = err;
-    }
-
-    if (error) {
-      showToast('Error saving event: ' + error.message, 'error');
-    } else {
+    try {
+      await apiPost('/api/events/upsert', {
+        ...data,
+        id: editingEvent?.id,
+        previousName: editingEvent?.name,
+      });
       setIsModalOpen(false);
       fetchEvents();
+      if (editingEvent && eventForm.name !== editingEvent.name) {
+        fetchRequests();
+      }
+    } catch (error) {
+      showToast('Error saving event: ' + error.message, 'error');
     }
   }
 

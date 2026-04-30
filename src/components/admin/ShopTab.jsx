@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
 export default function ShopTab({
@@ -50,9 +50,8 @@ export default function ShopTab({
 
     const isPersistent = formData.type === 'persistent';
 
-    const { error } = await supabase
-      .from('merch_preorders')
-      .insert([{
+    try {
+      await apiPost('/api/preorders/upsert', {
         square_item_id: selectedItem.id,
         item_name: selectedItem.name,
         goal_quantity: isPersistent ? 0 : parseInt(formData.goal_quantity),
@@ -63,15 +62,13 @@ export default function ShopTab({
         status: formData.status,
         image_url: selectedItem.imageUrl || '',
         price: parseInt(formData.price)
-      }]);
-
-    if (error) {
-      showToast('Error creating product: ' + error.message, 'error');
-    } else {
+      });
       showToast('Product added successfully!');
       setIsCreating(false);
       setSelectedItem(null);
       fetchPreorders();
+    } catch (error) {
+      showToast('Error creating product: ' + error.message, 'error');
     }
   }
 
@@ -80,9 +77,9 @@ export default function ShopTab({
 
     const isPersistent = formData.type === 'persistent';
 
-    const { error } = await supabase
-      .from('merch_preorders')
-      .update({
+    try {
+      await apiPost('/api/preorders/upsert', {
+        id: editingPreorder.id,
         square_item_id: formData.square_item_id,
         item_name: formData.item_name,
         goal_quantity: isPersistent ? 0 : parseInt(formData.goal_quantity),
@@ -93,29 +90,24 @@ export default function ShopTab({
         status: formData.status,
         price: parseInt(formData.price)
       })
-      .eq('id', editingPreorder.id);
-
-    if (error) {
-      showToast('Update failed: ' + error.message, 'error');
-    } else {
+      ;
       showToast('Product updated successfully!');
       setIsEditing(false);
       setEditingPreorder(null);
       fetchPreorders();
+    } catch (error) {
+      showToast('Update failed: ' + error.message, 'error');
     }
   }
 
   async function deletePreorder(id) {
     triggerConfirm('Are you sure you want to delete this preorder permanently?', async () => {
-      const { error } = await supabase
-        .from('merch_preorders')
-        .delete()
-        .eq('id', id);
-
-      if (error) showToast('Delete failed: ' + error.message, 'error');
-      else {
+      try {
+        await apiPost('/api/preorders/delete', { id });
         showToast('Preorder deleted.');
         fetchPreorders();
+      } catch (error) {
+        showToast('Delete failed: ' + error.message, 'error');
       }
     });
   }
@@ -141,15 +133,12 @@ export default function ShopTab({
   }
 
   async function updatePreorderStatus(id, status) {
-    const { error } = await supabase
-      .from('merch_preorders')
-      .update({ status })
-      .eq('id', id);
-
-    if (error) showToast('Update failed: ' + error.message, 'error');
-    else {
+    try {
+      await apiPost('/api/preorders/upsert', { action: 'update-status', id, status });
       showToast(`Status updated to ${status}`);
       fetchPreorders();
+    } catch (error) {
+      showToast('Update failed: ' + error.message, 'error');
     }
   }
 

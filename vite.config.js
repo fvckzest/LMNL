@@ -41,5 +41,19 @@ export default defineConfig({
       }
     })
   ],
-})
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-router-dom') || id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'framework';
+          }
 
+          if (id.includes('node_modules/@supabase/supabase-js')) {
+            return 'supabase';
+          }
+        }
+      }
+    }
+  }
+})
