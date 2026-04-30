@@ -25,6 +25,8 @@ export default function Admin() {
   const [squareItems, setSquareItems] = useState([]);
   const [fetchingCatalog, setFetchingCatalog] = useState(false);
   const [squareError, setSquareError] = useState(null);
+  const [preorders, setPreorders] = useState([]);
+  const [preordersLoading, setPreordersLoading] = useState(true);
 
   // Toast & Confirm Modals
   const [toast, setToast] = useState(null);
@@ -45,6 +47,7 @@ export default function Admin() {
     fetchTickets();
     fetchCommunityCredits();
     fetchSquareCatalog();
+    fetchPreorders();
   }, []);
 
   function showToast(message, type = 'success') {
@@ -134,6 +137,21 @@ export default function Admin() {
     } finally {
       setFetchingCatalog(false);
     }
+  }
+
+  async function fetchPreorders() {
+    setPreordersLoading(true);
+    const { data, error } = await supabase
+      .from('merch_preorders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching preorders:', error);
+    } else {
+      setPreorders(data || []);
+    }
+    setPreordersLoading(false);
   }
 
   async function updateStatus(id, newStatus, requestRecord) {
@@ -295,6 +313,11 @@ export default function Admin() {
           fetchingCatalog={fetchingCatalog}
           squareError={squareError}
           fetchSquareCatalog={fetchSquareCatalog}
+          preorders={preorders}
+          preordersLoading={preordersLoading}
+          fetchPreorders={fetchPreorders}
+          showToast={showToast}
+          triggerConfirm={triggerConfirm}
         />
       )}
 

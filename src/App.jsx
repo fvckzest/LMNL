@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Ticket from './pages/Ticket';
 import Services from './pages/Services';
 import Community from './pages/Community';
+import Shop from './pages/Shop';
 import './index.css';
 
 // Protected Route Component
@@ -79,7 +80,7 @@ function App() {
         {/* CATCH-ALL / UTILITY */}
         <Route path="/services" element={<Services />} />
         <Route path="/community" element={<Community />} />
-        <Route path="/shop" element={<GenericPage title="SHOP" color="#ff0000" />} />
+        <Route path="/shop" element={<Shop />} />
         <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
         <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
         <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
