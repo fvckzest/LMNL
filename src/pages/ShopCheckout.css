@@ -10,6 +10,7 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(14px);
+  border-radius: 0;
 }
 
 .checkout-product-card {
@@ -117,6 +118,7 @@
   padding: 16px 14px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: #fff;
+  border-radius: 0;
 }
 
 .checkout-card-slot.minimal {
@@ -149,6 +151,7 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   cursor: pointer;
+  border-radius: 0;
 }
 
 .checkout-error {

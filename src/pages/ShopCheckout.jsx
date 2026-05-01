@@ -253,7 +253,17 @@ export default function ShopCheckout() {
         const payments = Square.payments(checkout.square.applicationId, checkout.square.locationId);
         squareInstanceRef.current = payments;
 
-        const card = await payments.card({ includePostalCode: false });
+        const card = await payments.card({ 
+          includePostalCode: false,
+          style: {
+            'input': {
+              'borderRadius': '0'
+            },
+            '.input-container': {
+              'borderRadius': '0'
+            }
+          }
+        });
         if (!active) return;
         await card.attach('#checkout-card-slot');
         cardInstanceRef.current = card;
