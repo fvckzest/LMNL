@@ -12,6 +12,7 @@ const Ticket = lazy(() => import('./pages/Ticket'));
 const Success = lazy(() => import('./pages/Success'));
 const Services = lazy(() => import('./pages/Services'));
 const Community = lazy(() => import('./pages/Community'));
+const ArtistInterest = lazy(() => import('./pages/ArtistInterest'));
 const Shop = lazy(() => import('./pages/Shop'));
 const ShopCheckout = lazy(() => import('./pages/ShopCheckout'));
 
@@ -101,6 +102,8 @@ function App() {
           {/* CATCH-ALL / UTILITY */}
           <Route path="/services" element={<Services />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/community/share" element={<ArtistInterest />} />
+          <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/checkout/:preorderId" element={<ShopCheckout />} />
           <Route path="/checkout/event/:eventId" element={<ShopCheckout />} />

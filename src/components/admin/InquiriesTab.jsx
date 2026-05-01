@@ -30,7 +30,7 @@ export default function InquiriesTab({
         </div>
       </div>
 
-      <div className="requests-table-container">
+      <div className="requests-table-container admin-table-shell">
         {servicesLoading ? (
           <p className="loading-text">RETRIEVING DATA...</p>
         ) : serviceInquiries.length === 0 ? (

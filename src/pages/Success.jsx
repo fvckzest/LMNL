@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
 import './Success.css';
 
@@ -35,9 +36,9 @@ function formatPrice(amount) {
 
 function InfoRow({ label, value }) {
   return (
-    <div className="success-info-row">
-      <span className="success-info-label">{label}</span>
-      <span className="success-info-value">{value || 'TBA'}</span>
+    <div className="success-info-row theme-data-row">
+      <span className="success-info-label theme-data-label">{label}</span>
+      <span className="success-info-value theme-data-value">{value || 'TBA'}</span>
     </div>
   );
 }
@@ -52,10 +53,7 @@ export default function Success() {
     data: null,
   });
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--page-color', '#004ffa');
-    return () => document.documentElement.style.removeProperty('--page-color');
-  }, []);
+  usePageColor('#004ffa');
 
   useEffect(() => {
     if (!requestId && !ticketId) {
@@ -105,7 +103,7 @@ export default function Success() {
           <h1 className="page-title">SUCCESS</h1>
         </div>
 
-        <div className="success-grid">
+        <div className="success-grid theme-shell-section">
           <section className="success-hero-card">
             <div className="success-kicker">ORDER CONFIRMED</div>
             <h2 className="success-subtitle">
@@ -125,26 +123,24 @@ export default function Success() {
                     : 'Your payment landed, and we are still finalizing ticket delivery.'}
             </p>
 
-            <div className="success-actions">
+            <div className="success-actions theme-action-row">
               {ticket ? (
-                <Link to={`/ticket/${ticket.id}`} className="success-primary-btn">
+                <Link to={`/ticket/${ticket.id}`} className="success-primary-btn theme-button">
                   VIEW TICKET
                 </Link>
               ) : (
-                <button type="button" className="success-primary-btn disabled" disabled>
+                <button type="button" className="success-primary-btn theme-button disabled" disabled>
                   ISSUING TICKET...
                 </button>
               )}
-              <Link to="/events" className="success-secondary-btn">
+              <Link to="/events" className="success-secondary-btn theme-button">
                 BACK TO EVENTS
               </Link>
             </div>
           </section>
 
           <section className="success-summary-card">
-
-
-            <div className="success-info-list">
+            <div className="success-info-list theme-data-list">
               <InfoRow label="Event" value={event?.name || request?.eventName} />
               <InfoRow label="Guest" value={request?.customerName} />
               <InfoRow label="Email" value={request?.customerEmail} />

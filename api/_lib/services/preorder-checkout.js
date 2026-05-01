@@ -103,15 +103,67 @@ function preorderCategory(preorder) {
   return preorderRequiresShipping(preorder) ? 'physical' : 'digital';
 }
 
-function buildCheckoutView(preorder, squareConfig = {}) {
+function readFallbackPreorderPrice(preorder) {
+  const numeric = Number(preorder?.price);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
+}
+
+async function resolveSquarePricing(squareItemId, deps = {}) {
+  if (!squareItemId) {
+    return null;
+  }
+
+  const squareClient = deps.squareClient || getSquareClient();
+  const response = await squareClient.catalog.object.get({ objectId: squareItemId });
+  const object = response.object || response.result?.object;
+
+  if (!object) {
+    throw new AppError('Square catalog item not found.', {
+      code: 'SQUARE_ITEM_NOT_FOUND',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  if (object.type === 'ITEM_VARIATION') {
+    return {
+      variationId: object.id,
+      price: Number(object.itemVariationData?.priceMoney?.amount || 0),
+    };
+  }
+
+  if (object.type === 'ITEM') {
+    const variation = object.itemData?.variations?.[0];
+    if (!variation?.id) {
+      throw new AppError('This Square item has no variations.', {
+        code: 'SQUARE_VARIATION_MISSING',
+        status: 400,
+        expose: true,
+      });
+    }
+
+    return {
+      variationId: variation.id,
+      price: Number(variation.itemVariationData?.priceMoney?.amount || 0),
+    };
+  }
+
+  throw new AppError('Unsupported Square object type for checkout.', {
+    code: 'SQUARE_ITEM_INVALID',
+    status: 400,
+    expose: true,
+  });
+}
+
+function buildCheckoutView(preorder, resolvedPrice, squareConfig = {}) {
   return {
     preorderId: preorder.id,
     itemName: preorder.item_name || 'LMNL Product',
     description: preorder.description || '',
     imageUrl: preorder.image_url || '',
     category: preorder.category || '',
-    price: Number(preorder.price || 0),
-    displayPrice: toDisplayPrice(preorder.price),
+    price: resolvedPrice,
+    displayPrice: toDisplayPrice(resolvedPrice),
     requiresShipping: preorderRequiresShipping(preorder),
     checkoutCategory: preorderCategory(preorder),
     square: {
@@ -152,6 +204,9 @@ async function createSquareOrderForPreorder(preorder, buyer, shippingAddress, de
   const squareClient = deps.squareClient || getSquareClient();
   const loadLocationId = deps.getSquareLocationId || getSquareLocationId;
   const locationId = await loadLocationId();
+  const squarePricing = await resolveSquarePricing(preorder.square_item_id, deps);
+  const fallbackPrice = readFallbackPreorderPrice(preorder);
+  const price = squarePricing?.price ?? fallbackPrice;
 
   if (!locationId) {
     throw new AppError('No active Square location found.', {
@@ -170,16 +225,16 @@ async function createSquareOrderForPreorder(preorder, buyer, shippingAddress, de
         preorderId: String(preorder.id),
       },
       lineItems: [
-        preorder.square_item_id
+        squarePricing?.variationId
           ? {
             quantity: '1',
-            catalogObjectId: preorder.square_item_id,
+            catalogObjectId: squarePricing.variationId,
           }
           : {
             name: preorder.item_name || 'LMNL Product',
             quantity: '1',
             basePriceMoney: {
-              amount: toBigIntAmount(preorder.price),
+              amount: toBigIntAmount(price),
               currency: 'USD',
             },
           },
@@ -216,6 +271,7 @@ async function createSquareOrderForPreorder(preorder, buyer, shippingAddress, de
   return {
     order,
     locationId,
+    price,
   };
 }
 
@@ -223,8 +279,10 @@ export async function getPreorderCheckoutView(preorderId, deps = {}) {
   const preorder = await loadPreorderOrThrow(preorderId, deps);
   const loadLocationId = deps.getSquareLocationId || getSquareLocationId;
   const locationId = await loadLocationId();
+  const squarePricing = await resolveSquarePricing(preorder.square_item_id, deps);
+  const price = squarePricing?.price ?? readFallbackPreorderPrice(preorder);
 
-  return buildCheckoutView(preorder, {
+  return buildCheckoutView(preorder, price, {
     applicationId: deps.getSquareApplicationId ? deps.getSquareApplicationId() : getSquareApplicationId(),
     locationId,
     environment: deps.squareEnvironment || getSquareEnvironmentName(),
@@ -255,7 +313,7 @@ export async function createPaymentForPreorder(preorderId, payload = {}, deps = 
     ? buildAddress(payload.shippingAddress)
     : undefined;
 
-  const { order, locationId } = await createSquareOrderForPreorder(preorder, buyer, shippingAddress, deps);
+  const { order, locationId, price } = await createSquareOrderForPreorder(preorder, buyer, shippingAddress, deps);
   const squareClient = deps.squareClient || getSquareClient();
   const { siteUrl } = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
 
@@ -265,7 +323,7 @@ export async function createPaymentForPreorder(preorderId, payload = {}, deps = 
     orderId: order.id,
     locationId,
     amountMoney: {
-      amount: toBigIntAmount(preorder.price),
+      amount: toBigIntAmount(price),
       currency: 'USD',
     },
     autocomplete: true,

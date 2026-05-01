@@ -16,6 +16,19 @@ import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
 import { upsertPreorder, updatePreorderStatus, deletePreorderById } from './_lib/repositories/preorders.js';
 import { upsertEvent, updateEventMetadata, updateEventStatus, deleteEventById } from './_lib/repositories/events.js';
 
+function throwMissingArtistInterestTable(error) {
+  if (error?.code === 'PGRST205' && error?.message?.includes('artist_interest')) {
+    throw new AppError('Artist interest form is not set up yet. Create the `artist_interest` table in Supabase and try again.', {
+      code: 'ARTIST_INTEREST_TABLE_MISSING',
+      status: 503,
+      details: error,
+      expose: true,
+    });
+  }
+
+  throw error;
+}
+
 function getRouteKey(req) {
   const route = req.query?.route;
   if (Array.isArray(route)) {
@@ -352,6 +365,56 @@ async function handleServiceInquiries(req, res) {
   throw new Error('Unsupported service inquiries action.');
 }
 
+async function handleArtistInterest(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const supabase = getAdminSupabase();
+
+  if (body.action === 'create') {
+    const { data, error } = await supabase
+      .from('artist_interest')
+      .insert([{
+        name: requireValue(body.name, 'name is required.'),
+        email: requireValue(body.email, 'email is required.'),
+        project_name: body.projectName || '',
+        location: body.location || '',
+        practice: requireValue(body.practice, 'practice is required.'),
+        format: body.format || '',
+        links: body.links || '',
+        notes: body.notes || '',
+      }])
+      .select()
+      .single();
+
+    if (error) throwMissingArtistInterestTable(error);
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'update') {
+    const { data, error } = await supabase
+      .from('artist_interest')
+      .update({ status: requireValue(body.status, 'status is required.') })
+      .eq('id', requireValue(body.id, 'id is required.'))
+      .select()
+      .single();
+
+    if (error) throwMissingArtistInterestTable(error);
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'delete') {
+    const { error } = await supabase
+      .from('artist_interest')
+      .delete()
+      .eq('id', requireValue(body.id, 'id is required.'));
+
+    if (error) throwMissingArtistInterestTable(error);
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  throw new Error('Unsupported artist interest action.');
+}
+
 async function handleSquareCatalog(req, res) {
   allowMethods(req, ['GET']);
   const catalog = await getAdminCatalogView();
@@ -387,6 +450,7 @@ const handlers = {
   'get-ticket': handleGetTicket,
   preorders: handlePreorders,
   requests: handleRequests,
+  'artist-interest': handleArtistInterest,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
   'square-webhook': handleSquareWebhook,

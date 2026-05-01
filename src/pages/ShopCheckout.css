@@ -7,10 +7,9 @@
 .checkout-product-card,
 .checkout-form-card,
 .checkout-error-panel {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(14px);
-  border-radius: 0;
+  --theme-panel-border: 1px solid rgba(0, 0, 0, 0.08);
+  --theme-panel-bg: rgba(255, 255, 255, 0.86);
+  --theme-panel-blur: blur(14px);
 }
 
 .checkout-product-card {
@@ -71,9 +70,7 @@
 }
 
 .checkout-form {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
+  --theme-form-gap: 22px;
 }
 
 .checkout-section {
@@ -89,23 +86,15 @@
   color: #7c7c7c;
 }
 
-.checkout-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 11px;
-  letter-spacing: 0.24em;
+.checkout-form .theme-field {
+  --theme-field-gap: 8px;
+  --theme-field-tracking: 0.24em;
 }
 
-.checkout-form input {
-  width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #fff;
-  padding: 16px 14px;
-  font: inherit;
-  font-size: 15px;
-  letter-spacing: 0.02em;
-  border-radius: 0;
+.checkout-form .theme-input {
+  --theme-input-border: 1px solid rgba(0, 0, 0, 0.12);
+  --theme-input-bg: #fff;
+  --theme-input-padding: 16px 14px;
 }
 
 .checkout-row {
@@ -141,19 +130,11 @@
 
 .checkout-submit,
 .checkout-back-link {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 56px;
-  border: 0;
-  background: #ff0000;
-  color: #fff;
-  text-decoration: none;
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border-radius: 0;
+  --theme-button-height: 56px;
+  --theme-button-border: 0;
+  --theme-button-bg: #ff0000;
+  --theme-button-color: #fff;
+  --theme-button-tracking: 0.24em;
 }
 
 .checkout-error {

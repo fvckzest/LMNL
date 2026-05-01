@@ -2,6 +2,28 @@ import { useState } from 'react';
 import { apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
+const PERSISTENT_END_DATE = '2099-12-31T23:59:00.000Z';
+
+function formatDateTimeLocal(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const pad = (part) => String(part).padStart(2, '0');
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function parseWholeNumber(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isPersistentEndDate(value) {
+  return value === PERSISTENT_END_DATE;
+}
+
 export default function ShopTab({
   squareItems,
   fetchingCatalog,
@@ -49,19 +71,29 @@ export default function ShopTab({
     if (!selectedItem) return;
 
     const isPersistent = formData.type === 'persistent';
+    const goalQuantity = isPersistent ? 0 : parseWholeNumber(formData.goal_quantity);
+
+    if (!isPersistent && !formData.end_date) {
+      showToast('An end date is required for preorder drops.', 'error');
+      return;
+    }
+
+    if (!isPersistent && (goalQuantity === null || goalQuantity < 1)) {
+      showToast('Goal quantity must be at least 1 for preorder drops.', 'error');
+      return;
+    }
 
     try {
       await apiPost('/api/preorders', {
         square_item_id: selectedItem.id,
         item_name: selectedItem.name,
-        goal_quantity: isPersistent ? 0 : parseInt(formData.goal_quantity),
+        goal_quantity: goalQuantity,
         current_quantity: 0,
         end_date: isPersistent ? null : formData.end_date,
         description: formData.description,
         category: formData.category,
         status: formData.status,
-        image_url: selectedItem.imageUrl || '',
-        price: parseInt(formData.price)
+        image_url: selectedItem.imageUrl || ''
       });
       showToast('Product added successfully!');
       setIsCreating(false);
@@ -76,19 +108,34 @@ export default function ShopTab({
     if (!editingPreorder) return;
 
     const isPersistent = formData.type === 'persistent';
+    const goalQuantity = isPersistent ? 0 : parseWholeNumber(formData.goal_quantity);
+
+    if (!formData.square_item_id || !formData.item_name) {
+      showToast('Please choose a connected Square product before saving.', 'error');
+      return;
+    }
+
+    if (!isPersistent && !formData.end_date) {
+      showToast('An end date is required for preorder drops.', 'error');
+      return;
+    }
+
+    if (!isPersistent && (goalQuantity === null || goalQuantity < 1)) {
+      showToast('Goal quantity must be at least 1 for preorder drops.', 'error');
+      return;
+    }
 
     try {
       await apiPost('/api/preorders', {
         id: editingPreorder.id,
         square_item_id: formData.square_item_id,
         item_name: formData.item_name,
-        goal_quantity: isPersistent ? 0 : parseInt(formData.goal_quantity),
+        goal_quantity: goalQuantity,
         end_date: isPersistent ? null : formData.end_date,
         description: formData.description,
         category: formData.category,
         image_url: formData.image_url,
-        status: formData.status,
-        price: parseInt(formData.price)
+        status: formData.status
       })
       ;
       showToast('Product updated successfully!');
@@ -121,7 +168,7 @@ export default function ShopTab({
       square_item_id: po.square_item_id,
       item_name: po.item_name,
       goal_quantity: po.goal_quantity,
-      end_date: po.end_date ? po.end_date.split('.')[0] : '', // Format for datetime-local
+      end_date: po.goal_quantity > 0 ? formatDateTimeLocal(po.end_date) : '',
       description: po.description || '',
       category: po.category || 'LIMITED DROP',
       image_url: po.image_url || '',
@@ -418,7 +465,7 @@ export default function ShopTab({
                     <button 
                       className="admin-btn small" 
                       onClick={() => {
-                        const squareItem = squareItems.find(i => i.id === editingPreorder.square_item_id);
+                        const squareItem = squareItems.find(i => i.id === formData.square_item_id);
                         if (squareItem?.imageUrl) {
                           setFormData({...formData, image_url: squareItem.imageUrl});
                           showToast('Image URL pulled from Square Catalog!');
@@ -444,7 +491,7 @@ export default function ShopTab({
         </div>
       )}
 
-      <div className="requests-table-container" style={{ marginBottom: '50px' }}>
+      <div className="requests-table-container admin-table-shell" style={{ marginBottom: '50px' }}>
         {preordersLoading ? (
           <p className="loading-text">LOADING PREORDERS...</p>
         ) : preorders.length === 0 ? (
@@ -501,7 +548,7 @@ export default function ShopTab({
                       <span style={{ color: '#888' }}>ALWAYS OPEN</span>
                     )}
                   </td>
-                  <td>{po.end_date ? new Date(po.end_date).toLocaleDateString() : 'N/A'}</td>
+                  <td>{po.goal_quantity > 0 && po.end_date && !isPersistentEndDate(po.end_date) ? new Date(po.end_date).toLocaleDateString() : 'N/A'}</td>
                   <td>
                     <span className={`status-pill ${po.status}`}>
                       {po.status.toUpperCase()}
@@ -563,7 +610,7 @@ export default function ShopTab({
         </button>
       </div>
       
-      <div className="requests-table-container">
+      <div className="requests-table-container admin-table-shell">
         {fetchingCatalog ? (
           <p className="loading-text">FETCHING SQUARE CATALOG...</p>
         ) : squareError ? (
@@ -600,11 +647,12 @@ export default function ShopTab({
                           style={{ 
                             background: 'transparent', border: 'none', cursor: 'pointer', 
                             fontSize: '12px', color: '#666', padding: '5px',
+                            ['--toggle-color']: '#ff0000',
                             transform: isExpanded ? 'rotate(90deg)' : 'none',
                             transition: 'transform 0.2s ease'
                           }}
                         >
-                          ▶
+                          <span className="admin-toggle-arrow">▶</span>
                         </button>
                         <a 
                           href={`https://squareup.com/dashboard/items/library/${item.id}`} 

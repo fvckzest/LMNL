@@ -10,9 +10,13 @@ html {
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: 'Gantari', sans-serif;
-  background-color: #ffffff;
+  font-family: var(--lmnl-font-sans);
+  background-color: var(--lmnl-color-surface);
   scrollbar-gutter: stable;
+}
+
+:root {
+  color: var(--lmnl-color-text);
 }
 
 /* Custom Scrollbar */
@@ -31,7 +35,7 @@ html {
 
 ::-webkit-scrollbar-thumb {
   background: var(--page-color, #000000);
-  border-radius: 4px;
+  border-radius: var(--lmnl-radius-sm);
 }
 
 #root {
@@ -41,12 +45,12 @@ html {
 
 /* Home */
 .home-container {
-  background-color: white;
+  background-color: var(--lmnl-color-surface);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px;
+  padding: var(--lmnl-space-12);
   position: relative;
   width: 100%;
   min-height: 100vh;
@@ -119,17 +123,17 @@ html {
   left: 30px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  z-index: 100;
+  gap: var(--lmnl-space-4);
+  z-index: var(--lmnl-z-floating);
 }
 
 .key-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--lmnl-space-4);
   text-decoration: none;
-  color: #000;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  color: var(--lmnl-color-text);
+  transition: opacity var(--lmnl-transition-standard), transform var(--lmnl-transition-standard);
 }
 
 .key-item:hover,
@@ -146,11 +150,11 @@ html {
   height: 12px;
   flex-shrink: 0;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
+  border-radius: var(--lmnl-radius-xs);
 }
 
 .key-label {
-  font-family: 'Gantari', sans-serif;
+  font-family: var(--lmnl-font-sans);
   font-weight: 500;
   font-size: 17.5px;
   letter-spacing: 0.05em;
@@ -158,9 +162,9 @@ html {
 }
 
 .key-code {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--lmnl-font-mono);
   font-size: 15px;
-  color: #888;
+  color: var(--lmnl-color-text-subtle);
   margin-left: 10px;
 }
 
@@ -334,13 +338,13 @@ html {
 }
 
 .page-container {
-  background-color: white;
+  background-color: var(--lmnl-color-surface);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 0 30px;
+  padding: 0 0 var(--lmnl-page-padding-bottom);
   position: relative;
-  gap: 10px;
+  gap: var(--lmnl-space-3);
   width: 100%;
   min-height: 100vh;
 }
@@ -351,11 +355,11 @@ html {
   align-items: center;
   justify-content: center;
   overflow: visible;
-  padding: 30px 30px 20px;
+  padding: var(--lmnl-space-12) var(--lmnl-page-padding-inline) var(--lmnl-space-8);
   position: sticky;
   top: 0;
-  z-index: 1000;
-  background-color: white;
+  z-index: var(--lmnl-z-sticky);
+  background-color: var(--lmnl-color-surface);
   width: 100%;
   gap: 15px;
   flex-shrink: 0;
@@ -363,19 +367,19 @@ html {
 
 .header-socials {
   position: absolute;
-  top: 30px;
-  right: 30px;
+  top: var(--lmnl-space-12);
+  right: var(--lmnl-page-padding-inline);
   display: flex;
-  gap: 12px;
+  gap: var(--lmnl-space-4);
   align-items: center;
 }
 
 .social-link {
-  color: #000;
+  color: var(--lmnl-color-text);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--lmnl-transition-standard), transform var(--lmnl-transition-standard);
 }
 
 .social-link:hover {
@@ -388,7 +392,7 @@ html {
   flex-grow: 1;
   min-height: 664px;
   position: relative;
-  padding: 0 30px;
+  padding: 0 var(--lmnl-page-padding-inline);
 }
 
 .page-header {
@@ -407,24 +411,24 @@ html {
 
 .home-socials {
   position: absolute;
-  top: 30px;
-  right: 30px;
-  z-index: 100;
+  top: var(--lmnl-space-12);
+  right: var(--lmnl-page-padding-inline);
+  z-index: var(--lmnl-z-floating);
 }
 
 .page-header-rect {
-  width: 40px;
-  height: 115px;
+  width: var(--lmnl-page-header-rect-width);
+  height: var(--lmnl-page-header-rect-height);
 }
 
 .page-title {
   margin: 0;
-  margin-left: 40px;
-  font-size: 115px;
-  line-height: 115px;
+  margin-left: var(--lmnl-page-header-rect-width);
+  font-size: var(--lmnl-page-title-size);
+  line-height: var(--lmnl-page-title-line-height);
   font-weight: 500;
   text-transform: uppercase;
-  color: black;
+  color: var(--lmnl-color-text);
 }
 
 .footer-container {
@@ -441,11 +445,11 @@ html {
 }
 
 .footer-text {
-  font-family: 'Gantari', sans-serif;
+  font-family: var(--lmnl-font-sans);
   font-weight: normal;
   line-height: normal;
   font-size: 14px;
-  color: black;
+  color: var(--lmnl-color-text);
   white-space: nowrap;
   margin: 0;
 }
@@ -540,14 +544,14 @@ html {
 
   /* Global Layout */
   .page-container {
-    padding: 0 10px 10px;
+    padding: 0 0 var(--lmnl-page-padding-bottom);
   }
 
   .header-bar {
     gap: 15px;
-    padding: 30px 10px 15px;
-    margin-left: -10px;
-    margin-right: -10px;
+    padding: var(--lmnl-space-12) var(--lmnl-page-padding-inline) 15px;
+    margin-left: calc(var(--lmnl-page-padding-inline) * -1);
+    margin-right: calc(var(--lmnl-page-padding-inline) * -1);
     width: calc(100% + 20px);
   }
 
@@ -596,18 +600,7 @@ html {
   }
 
   .page-header {
-    left: -10px;
-  }
-
-  .page-header-rect {
-    width: 18.26px;
-    height: 52.51px;
-  }
-
-  .page-title {
-    font-size: 53px;
-    line-height: 53px;
-    margin-left: 18.26px;
+    left: calc(var(--lmnl-page-padding-inline) * -1);
   }
 
 }
@@ -620,22 +613,22 @@ html {
   background-color: #000;
   color: #fff;
   padding: 20px 32px;
-  border-radius: 0px;
+  border-radius: var(--lmnl-radius-none);
   display: flex;
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  z-index: 100;
-  font-family: 'Gantari', sans-serif;
+  box-shadow: var(--lmnl-shadow-soft);
+  transition: transform var(--lmnl-transition-standard), box-shadow var(--lmnl-transition-standard);
+  z-index: var(--lmnl-z-floating);
+  font-family: var(--lmnl-font-sans);
   font-weight: 500;
   font-size: 14px;
 }
 
 .space-notification:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--lmnl-shadow-lift);
 }
 
 .space-notification-dot {

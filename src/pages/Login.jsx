@@ -33,16 +33,17 @@ export default function Login() {
     <div className="page-container">
       <HeaderBar />
       <div className="page-content login-content">
-        <div className="login-box">
+        <div className="login-box theme-panel">
           <div className="login-header">
             <div className="login-rect" />
             <h1>ADMIN ACCESS</h1>
           </div>
 
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="login-input-group">
+          <form onSubmit={handleLogin} className="login-form theme-form">
+            <div className="login-input-group theme-field">
               <label>IDENTIFIER</label>
               <input 
+                className="theme-input"
                 type="email" 
                 placeholder="EMAIL ADDRESS"
                 value={email}
@@ -51,9 +52,10 @@ export default function Login() {
               />
             </div>
 
-            <div className="login-input-group">
+            <div className="login-input-group theme-field">
               <label>CREDENTIAL</label>
               <input 
+                className="theme-input"
                 type="password" 
                 placeholder="PASSWORD"
                 value={password}
@@ -64,7 +66,7 @@ export default function Login() {
 
             {error && <p className="login-error">AUTH_ERROR: {error.toUpperCase()}</p>}
 
-            <button type="submit" className="login-btn" disabled={loading}>
+            <button type="submit" className="login-btn theme-button" disabled={loading}>
               {loading ? 'AUTHENTICATING...' : 'ESTABLISH SESSION'}
             </button>
           </form>

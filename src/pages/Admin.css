@@ -32,9 +32,23 @@
   font-weight: 600;
 }
 
+.admin-section {
+  --table-accent: var(--active-tab-color, #000);
+  --table-surface: #fff;
+  --table-text: #111;
+  --table-muted: #666;
+  --table-divider: #ececec;
+  --table-button-border: var(--table-accent);
+  --table-button-text: var(--table-accent);
+  --table-button-hover-bg: var(--table-accent);
+  --table-button-hover-text: #fff;
+  --table-link-color: var(--table-accent);
+}
+
+.admin-table-shell,
 .requests-table-container, .events-table-container {
-  border: 2px solid var(--active-tab-color, black);
-  background: white;
+  border: 2px solid var(--table-accent);
+  background: var(--table-surface);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 20px;
@@ -46,11 +60,12 @@
   border-collapse: collapse;
   text-align: left;
   font-size: 14px;
+  color: var(--table-text);
 }
 
 .requests-table th, .admin-table th {
-  background: var(--active-tab-color, black);
-  color: white;
+  background: var(--table-accent);
+  color: #fff;
   padding: 10px 15px;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -62,7 +77,14 @@
 
 .requests-table td, .admin-table td {
   padding: 10px 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--table-divider);
+}
+
+.admin-toggle-arrow {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--toggle-color, currentColor);
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .event-row-expanded td {
@@ -95,12 +117,6 @@
   color: white;
 }
 
-.ticket-toggle-arrow {
-  font-size: 12px;
-  line-height: 1;
-  transition: transform 0.2s ease;
-}
-
 .ticket-toggle.expanded .ticket-toggle-arrow {
   transform: rotate(180deg);
 }
@@ -114,6 +130,107 @@
   background: #fbfcff;
   padding: 0;
   border-bottom: 1px solid #dbe3ff;
+}
+
+.artist-interest-toggle-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.artist-interest-toggle {
+  background: transparent;
+  border: none;
+  color: #666;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.artist-interest-toggle:hover {
+  color: #666;
+}
+
+.artist-interest-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.community-event-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  color: #111;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.community-event-toggle.expanded .community-event-toggle-arrow {
+  transform: rotate(90deg);
+}
+
+.community-group-summary {
+  color: #666;
+  font-weight: 600;
+}
+
+.community-credit-row td:first-child {
+  border-right: 1px solid #f6d4e8;
+}
+
+.artist-interest-details-row td {
+  padding: 0;
+  background: transparent;
+  border-bottom: 1px solid #eee;
+}
+
+.artist-interest-details-panel {
+  padding: 18px 20px 20px;
+}
+
+.artist-interest-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.artist-interest-detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.artist-interest-detail-block-wide {
+  grid-column: 1 / -1;
+}
+
+.artist-interest-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a85586;
+}
+
+.artist-interest-detail-link {
+  color: #004ffa;
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+.artist-interest-detail-notes {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
 }
 
 .ticket-holders-panel {
@@ -232,6 +349,88 @@
 .admin-btn.reset { border-color: #ccc; color: #999; }
 .admin-btn.reset:hover { border-color: #000; color: #000; }
 .admin-btn.signout-btn:hover { background: black; color: white; }
+
+.admin-table-shell .admin-btn {
+  border-color: var(--table-button-border);
+  color: var(--table-button-text);
+}
+
+.admin-table-shell .admin-btn:hover {
+  background: var(--table-button-hover-bg);
+  color: var(--table-button-hover-text);
+  border-color: var(--table-button-hover-bg);
+}
+
+.admin-table-shell .admin-btn.reset {
+  border-color: #ccc;
+  color: #999;
+}
+
+.admin-table-shell .admin-btn.reset:hover {
+  border-color: var(--table-button-hover-bg);
+  color: var(--table-button-hover-text);
+}
+
+.admin-table-shell .admin-btn.approve:hover {
+  background: var(--table-button-hover-bg);
+  color: var(--table-button-hover-text);
+  border-color: var(--table-button-hover-bg);
+}
+
+.admin-table-shell .icon-btn:hover {
+  color: var(--table-accent);
+  background: #f6f8ff;
+}
+
+.admin-table-shell .event-name-link,
+.admin-table-shell .artist-interest-detail-link {
+  color: var(--table-link-color);
+}
+
+.admin-table-shell .event-name-link:hover {
+  border-bottom-color: var(--table-link-color);
+}
+
+.admin-table-shell .ticket-toggle,
+.admin-table-shell .community-event-toggle {
+  color: var(--table-text);
+}
+
+.admin-table-shell .ticket-toggle {
+  border-color: #dbe3ff;
+  background: #f5f8ff;
+  color: var(--table-accent);
+}
+
+.admin-table-shell .ticket-toggle:hover,
+.admin-table-shell .ticket-toggle.expanded {
+  background: var(--table-accent);
+  border-color: var(--table-accent);
+  color: #fff;
+}
+
+.admin-table-shell .ticket-toggle-empty,
+.admin-table-shell .community-group-summary,
+.admin-table-shell .artist-interest-toggle {
+  color: var(--table-muted);
+}
+
+.admin-table-shell .artist-interest-toggle:hover {
+  color: var(--table-muted);
+}
+
+.admin-table-shell .artist-interest-detail-label {
+  color: var(--table-accent);
+}
+
+.admin-table-shell .community-credit-row td:first-child {
+  border-right: 1px solid #f6d4e8;
+}
+
+.admin-table-shell .ticket-holders-row td {
+  background: #fbfcff;
+  border-bottom: 1px solid #dbe3ff;
+}
 
 
 .loading-text {
@@ -647,6 +846,10 @@
     align-items: flex-start;
   }
 
+  .artist-interest-details-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ticket-holder-meta {
     justify-content: flex-start;
     white-space: normal;
@@ -707,4 +910,3 @@
     opacity: 1;
   }
 }
-

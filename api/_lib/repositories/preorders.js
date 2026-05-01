@@ -1,5 +1,17 @@
 import { getAdminSupabase } from '../clients.js';
 
+const PERSISTENT_END_DATE = '2099-12-31T23:59:00.000Z';
+
+function normalizePreorderPayload(payload = {}) {
+  const goalQuantity = Number(payload.goal_quantity || 0);
+  const isPersistent = goalQuantity <= 0;
+
+  return {
+    ...payload,
+    end_date: isPersistent ? payload.end_date || PERSISTENT_END_DATE : payload.end_date,
+  };
+}
+
 export async function getPreorderById(id) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
@@ -34,7 +46,8 @@ export async function listPreorders() {
 
 export async function upsertPreorder(payload) {
   const supabase = getAdminSupabase();
-  const { id, ...data } = payload;
+  const { id, ...rawData } = payload;
+  const data = normalizePreorderPayload(rawData);
   if (id) {
     const { data: updated, error } = await supabase
       .from('merch_preorders')

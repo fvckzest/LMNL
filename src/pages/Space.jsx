@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
-import { supabase } from '../lib/supabase';
+import SpaceCountdown from '../components/space/SpaceCountdown';
+import SpaceOccupancy from '../components/space/SpaceOccupancy';
+import SpacePriceCard from '../components/space/SpacePriceCard';
+import SpaceSystemPanel from '../components/space/SpaceSystemPanel';
+import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
+import { fetchSpaceEventSnapshot } from '../lib/siteData';
 import './Space.css';
 
 export default function Space() {
   const navigate = useNavigate();
-  useEffect(() => {
-    document.documentElement.style.setProperty('--page-color', '#000000');
-    return () => document.documentElement.style.removeProperty('--page-color');
-  }, []);
+  usePageColor('#000000');
 
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -33,64 +35,13 @@ export default function Space() {
 
   useEffect(() => {
     async function loadEvent() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('name', 'SPACE')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (data && !error) {
-        console.log('Fetched event data:', data);
-
-        let initialSyncData = { ...data, sold_tickets: 0 };
-        setEventData(initialSyncData);
-
-        const { count: approvedCount, error: countError } = await supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_name', data.name)
-          .eq('status', 'approved');
-
-        if (!countError) {
-          setEventData(prev => ({ ...prev, sold_tickets: approvedCount || 0 }));
+      try {
+        const snapshot = await fetchSpaceEventSnapshot();
+        if (snapshot) {
+          setEventData(snapshot);
         }
-
-        if (data.square_variation_id) {
-          try {
-            const invRes = await fetch(`/api/check-inventory?variationId=${data.square_variation_id}`);
-            if (!invRes.ok) throw new Error('Inventory API error');
-
-            const payload = await invRes.json();
-            const invData = payload.data || {};
-            console.log('Inventory data:', invData);
-
-            setEventData(prev => {
-              let updated = { ...prev };
-
-              if (invData.available !== undefined) {
-                updated.available_tickets = invData.available;
-                const squareSold = Math.max(0, (data.capacity || 0) - invData.available);
-                updated.sold_tickets = Math.max(updated.sold_tickets || 0, squareSold);
-
-                if (invData.available <= 0) {
-                  updated.status = 'sold_out';
-                }
-              }
-
-              if (invData.price !== undefined) {
-                updated.price = invData.price;
-              }
-
-              return updated;
-            });
-          } catch (err) {
-            console.error('Failed to sync with Square:', err);
-          }
-        }
-      } else if (error) {
-        console.error('Supabase fetch error:', error);
+      } catch (error) {
+        console.error('Failed to load SPACE event:', error);
       }
     }
 
@@ -101,9 +52,9 @@ export default function Space() {
   const soundCovered = 500;
 
   const nodes = [
-    { name: "FORM", raised: 600, goal: 1500 },
-    { name: "ENERGY", raised: 250, goal: 800 },
-    { name: "ATMOSPHERE", raised: 200, goal: 700 },
+    { name: 'FORM', raised: 600, goal: 1500 },
+    { name: 'ENERGY', raised: 250, goal: 800 },
+    { name: 'ATMOSPHERE', raised: 200, goal: 700 },
   ];
 
   const activeRaised = nodes.reduce((sum, item) => sum + item.raised, 0);
@@ -112,8 +63,8 @@ export default function Space() {
 
   const currency = (n) =>
     new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+      style: 'currency',
+      currency: 'USD',
       maximumFractionDigits: 0,
     }).format(n);
 
@@ -148,14 +99,14 @@ export default function Space() {
         <div className="space-body">
           <div className="space-grid">
             <div className="space-metrics-stack">
-              <Timer eventDate={eventData.event_date} eventTime={eventData.event_time} />
-              <OccupancyCounter 
+              <SpaceCountdown eventDate={eventData.event_date} eventTime={eventData.event_time} />
+              <SpaceOccupancy
                 sold={eventData.sold_tickets} 
                 capacity={eventData.capacity} 
               />
             </div>
 
-            <SystemPanel
+            <SpaceSystemPanel
               totalRaised={totalRaised}
               totalGoal={totalGoal}
               totalPct={totalPct}
@@ -166,7 +117,7 @@ export default function Space() {
           </div>
 
           <div className="space-details-row">
-            <PriceIndicator 
+            <SpacePriceCard
               price={eventData.price} 
               eventStatus={eventData.status}
               isPrivate={eventData.is_private}
@@ -281,170 +232,6 @@ export default function Space() {
         )}
       </div>
       <Footer />
-    </div>
-  );
-}
-
-
-function Timer({ eventDate, eventTime }) {
-  const targetStr = (eventDate && eventTime) 
-    ? `${eventDate}T${eventTime}`
-    : "2026-07-03T18:00:00";
-
-  const [time, setTime] = useState(() => buildInitialTime(targetStr));
-
-  useEffect(() => {
-    const target = new Date(targetStr);
-    const interval = setInterval(() => {
-      setTime(getTimeLeft(target));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [targetStr]);
-
-  return (
-    <div className="space-timer-container">
-      <p className="space-timer-label">countdown</p>
-      <div className="space-timer-grid">
-        <TimeUnit value={pad(time.days)} label="days" />
-        <TimeUnit value={pad(time.hours)} label="hours" />
-        <TimeUnit value={pad(time.minutes)} label="mins" />
-        <TimeUnit value={pad(time.seconds)} label="secs" />
-      </div>
-    </div>
-  );
-}
-
-function buildInitialTime(targetStr) {
-  return getTimeLeft(new Date(targetStr));
-}
-
-function getTimeLeft(target) {
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-
-  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  const hours = Math.max(0, Math.floor((diff / (1000 * 60 * 60)) % 24));
-  const minutes = Math.max(0, Math.floor((diff / (1000 * 60)) % 60));
-  const seconds = Math.max(0, Math.floor((diff / 1000) % 60));
-
-  return { days, hours, minutes, seconds };
-}
-
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-
-function SystemPanel({ totalRaised, totalGoal, totalPct, currency, nodes, soundCovered }) {
-  return (
-    <div className="space-system-container">
-      <p className="space-system-header">system diagnostics</p>
-
-      <div className="space-system-progress">
-        <div className="space-system-amounts">
-          <span>{currency(totalRaised)} raised</span>
-          <span>goal: {currency(totalGoal)}</span>
-        </div>
-        <div className="space-system-bar-bg">
-          <div className="space-system-bar-fill" style={{ width: `${totalPct}%` }} />
-        </div>
-      </div>
-
-      <div className="space-system-nodes">
-        <div className="space-system-node-item sound-node">
-          <div className="space-node-info">
-            <span className="space-node-name">
-              <span className="space-pulse-dot" />
-              SOUND
-            </span>
-            <span className="space-node-status">ONLINE ({currency(soundCovered)})</span>
-          </div>
-          <div className="space-node-bar-bg">
-            <div className="space-node-bar-fill completed" style={{ width: `100%` }} />
-          </div>
-        </div>
-        
-        {nodes.map((n) => {
-          const pct = Math.round((n.raised / n.goal) * 100);
-          return (
-            <div key={n.name} className="space-system-node-item">
-              <div className="space-node-info">
-                <span className="space-node-name">{n.name}</span>
-                <span className="space-node-pct">{pct}%</span>
-              </div>
-              <div className="space-node-bar-bg">
-                <div className="space-node-bar-fill" style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TimeUnit({ value, label }) {
-  return (
-    <div className="space-time-unit">
-      <div className="space-time-value">{value}</div>
-      <div className="space-time-label">{label}</div>
-    </div>
-  );
-}
-
-
-function OccupancyCounter({ sold, capacity }) {
-  const isLoaded = sold !== undefined && capacity !== undefined;
-  const pct = isLoaded && capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0;
-  
-  return (
-    <div className="space-occupancy-container">
-      <p className="space-occupancy-label">tickets sold</p>
-      <div className="space-occupancy-content">
-        <div className="space-occupancy-number">
-          {isLoaded ? String(sold).padStart(3, '0') : '---'} 
-          <span className="separator">/</span> 
-          {isLoaded ? String(capacity).padStart(3, '0') : '---'}
-        </div>
-        <div className="space-occupancy-bar-bg">
-          <div className="space-occupancy-bar-fill" style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PriceIndicator({ price, eventStatus, isPrivate, eventId, onInvite, onPurchase, onDonate }) {
-  const isLoaded = price !== undefined;
-  const formattedPrice = isLoaded ? (price / 100).toFixed(2) : '---';
-
-  return (
-    <div className="space-price-container">
-      <p className="space-price-label">admission</p>
-      <div className="space-price-content">
-        <div className="space-price-value">
-          <span className="currency-symbol">$</span>
-          {formattedPrice}
-        </div>
-        <div className="space-price-status">
-          <span className="pulse-dot active" />
-          LIVE FROM SQUARE
-        </div>
-
-        <div className="space-price-actions">
-          {eventStatus === 'sold_out' ? (
-            <button className="space-button sold-out" disabled>
-              sold out
-            </button>
-          ) : (
-            <button className="space-button" onClick={isPrivate ? onInvite : onPurchase} disabled={!eventId}>
-              {isPrivate ? 'request invite' : 'purchase'}
-            </button>
-          )}
-          <button className="space-button" onClick={onDonate}>
-            feed the horse
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

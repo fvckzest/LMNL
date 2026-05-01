@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import Circle from '../components/Circle';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
 import SocialLinks from '../components/SocialLinks';
+import { usePageColor } from '../hooks/usePageColor';
+import { fetchNotificationEvent, getEventLink } from '../lib/siteData';
 import {
   homeImgEllipse16, homeImgEllipse17, homeImgEllipse18, homeImgEllipse19,
   homeImgEllipse20, homeImgEllipse21, homeImgEllipse22, homeImgEllipse23
@@ -39,24 +41,22 @@ export default function Home() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [notificationEvent, setNotificationEvent] = useState(null);
 
-  useEffect(() => {
-    const color = hoveredIndex !== null ? homePageInfo[hoveredIndex].color : '#000000';
-    document.documentElement.style.setProperty('--page-color', color);
-    return () => document.documentElement.style.removeProperty('--page-color');
-  }, [hoveredIndex]);
+  const pageColor = hoveredIndex !== null ? homePageInfo[hoveredIndex].color : '#000000';
+  usePageColor(pageColor);
 
   useEffect(() => {
     let isMounted = true;
 
     async function fetchNotificationStatus() {
-      const { supabase } = await import('../lib/supabase');
-      const { data, error } = await supabase
-        .from('events')
-        .select('*');
-      
-      if (isMounted && !error && data) {
-        const notifEvent = data.find(e => e.metadata?.is_home_notif === true);
-        setNotificationEvent(notifEvent || null);
+      try {
+        const notifEvent = await fetchNotificationEvent();
+        if (isMounted) {
+          setNotificationEvent(notifEvent);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load home notification event:', error);
+        }
       }
     }
 
@@ -68,8 +68,7 @@ export default function Home() {
   }, []);
 
   const getNotificationLink = () => {
-    if (!notificationEvent) return '/space';
-    return notificationEvent.metadata?.event_link || notificationEvent.partiful_url || notificationEvent.spotify_id || '/space';
+    return getEventLink(notificationEvent);
   };
 
   return (

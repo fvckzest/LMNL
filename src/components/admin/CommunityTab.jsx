@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { TrashIcon } from './Icons';
+import { ArchiveIcon, TrashIcon, UnarchiveIcon } from './Icons';
 
 export default function CommunityTab({
   events,
@@ -8,11 +8,19 @@ export default function CommunityTab({
   communityLoading,
   communityTableMissing,
   fetchCommunityCredits,
+  artistInterest,
+  artistInterestLoading,
+  artistInterestTableMissing,
+  fetchArtistInterest,
+  updateArtistInterestStatus,
+  deleteArtistInterest,
   showToast,
   triggerConfirm
 }) {
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [editingCredit, setEditingCredit] = useState(null);
+  const [expandedCommunityEvents, setExpandedCommunityEvents] = useState({});
+  const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
   const [creditForm, setCreditForm] = useState({
     name: '',
     role: 'performer',
@@ -162,6 +170,50 @@ export default function CommunityTab({
     }
   }
 
+  function toggleArtistInterest(id) {
+    setExpandedArtistInterest(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  }
+
+  function toggleCommunityEvent(eventKey) {
+    setExpandedCommunityEvents(prev => ({
+      ...prev,
+      [eventKey]: !prev[eventKey]
+    }));
+  }
+
+  const eventOrderLookup = events.reduce((acc, event, index) => {
+    acc[event.id] = index;
+    return acc;
+  }, {});
+
+  const groupedCommunityCredits = communityCredits.reduce((groups, credit) => {
+    const eventKey = credit.event_id || `independent:${credit.event_name || 'none'}`;
+    const eventLabel = credit.event_name || 'INDEPENDENT / NO EVENT';
+
+    if (!groups[eventKey]) {
+      groups[eventKey] = {
+        key: eventKey,
+        eventId: credit.event_id || null,
+        eventName: eventLabel,
+        credits: []
+      };
+    }
+
+    groups[eventKey].credits.push(credit);
+    return groups;
+  }, {});
+
+  const communityEventGroups = Object.values(groupedCommunityCredits).sort((a, b) => {
+    const aOrder = a.eventId && eventOrderLookup[a.eventId] !== undefined ? eventOrderLookup[a.eventId] : Number.MAX_SAFE_INTEGER;
+    const bOrder = b.eventId && eventOrderLookup[b.eventId] !== undefined ? eventOrderLookup[b.eventId] : Number.MAX_SAFE_INTEGER;
+
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.eventName.localeCompare(b.eventName);
+  });
+
   return (
     <>
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
@@ -219,7 +271,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
             <button className="admin-btn" onClick={fetchCommunityCredits}>REFRESH</button>
           </div>
         ) : (
-          <div className="events-table-container">
+          <div className="events-table-container admin-table-shell">
             {communityLoading ? (
               <p className="loading-text">RETRIEVING COMMUNITY CREDITS...</p>
             ) : communityCredits.length === 0 ? (
@@ -228,51 +280,271 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th>EVENT</th>
                     <th>NAME</th>
                     <th>ROLE</th>
-                    <th>EVENT</th>
                     <th>LINK</th>
                     <th>DETAILS</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {communityCredits.map((credit) => (
-                    <tr key={credit.id}>
-                      <td><strong>{credit.name}</strong></td>
-                      <td>{credit.role.toUpperCase()}</td>
-                      <td>{credit.event_name || 'N/A'}</td>
-                      <td>
-                        {credit.link ? (
-                          <a href={credit.link} target="_blank" rel="noopener noreferrer" style={{ color: '#004ffa', textDecoration: 'underline' }}>
-                            VISIT
-                          </a>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {credit.details || '-'}
-                      </td>
-                      <td className="actions-cell">
-                        <div className="actions-wrapper">
-                          <div className="main-actions">
-                            <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
-                          </div>
-                          <div className="secondary-actions">
+                  {communityEventGroups.map((group) => {
+                    const isExpanded = Boolean(expandedCommunityEvents[group.key]);
+
+                    return (
+                      <Fragment key={group.key}>
+                        <tr className={isExpanded ? 'event-row-expanded' : ''}>
+                          <td>
                             <button
-                              className="icon-btn delete-btn"
-                              style={{ color: '#991b1b' }}
-                              title="Delete Credit"
-                              onClick={() => deleteCredit(credit.id)}
+                              type="button"
+                              className={`community-event-toggle ${isExpanded ? 'expanded' : ''}`}
+                              style={{ '--toggle-color': '#ff5bb8' }}
+                              onClick={() => toggleCommunityEvent(group.key)}
+                              aria-expanded={isExpanded}
+                              aria-label={isExpanded ? `Collapse ${group.eventName}` : `Expand ${group.eventName}`}
                             >
-                              <TrashIcon />
+                              <span className="admin-toggle-arrow community-event-toggle-arrow">▶</span>
+                              <span>{group.eventName}</span>
                             </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </td>
+                          <td className="community-group-summary">
+                            {group.credits.length} {group.credits.length === 1 ? 'person' : 'people'}
+                          </td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td className="community-group-summary">Click to view attendees</td>
+                        </tr>
+                        {isExpanded && group.credits.map((credit) => (
+                          <tr key={credit.id} className="community-credit-row">
+                            <td></td>
+                            <td><strong>{credit.name}</strong></td>
+                            <td>{credit.role.toUpperCase()}</td>
+                            <td>
+                              {credit.link ? (
+                                <a href={credit.link} target="_blank" rel="noopener noreferrer" style={{ color: '#004ffa', textDecoration: 'underline' }}>
+                                  VISIT
+                                </a>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+                            <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {credit.details || '-'}
+                            </td>
+                            <td className="actions-cell">
+                              <div className="actions-wrapper">
+                                <div className="main-actions">
+                                  <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
+                                </div>
+                                <div className="secondary-actions">
+                                  <button
+                                    className="icon-btn delete-btn"
+                                    style={{ color: '#991b1b' }}
+                                    title="Delete Credit"
+                                    onClick={() => deleteCredit(credit.id)}
+                                  >
+                                    <TrashIcon />
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+        <div className="section-header-flex">
+          <h2 className="section-title">ARTIST INTEREST</h2>
+          {!artistInterestTableMissing && (
+            <div className="action-buttons">
+              <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
+            </div>
+          )}
+        </div>
+
+        {artistInterestTableMissing ? (
+          <div className="setup-guide">
+            <div className="guide-header">
+              <span className="warning-icon">⚠️</span>
+              <h3>DATABASE SETUP REQUIRED</h3>
+            </div>
+            <p>Please create the <code>artist_interest</code> table in your Supabase SQL Editor.</p>
+            <pre style={{ 
+              background: '#111', 
+              color: '#fff', 
+              padding: '15px', 
+              borderRadius: '4px', 
+              textAlign: 'left',
+              fontSize: '11px',
+              overflowX: 'auto',
+              marginTop: '10px',
+              marginBottom: '20px',
+              fontFamily: 'monospace'
+            }}>
+{`CREATE TABLE IF NOT EXISTS artist_interest (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    project_name TEXT DEFAULT '',
+    location TEXT DEFAULT '',
+    practice TEXT NOT NULL,
+    format TEXT DEFAULT '',
+    links TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE artist_interest ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public insert access" ON artist_interest FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated read access" ON artist_interest FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING (auth.role() = 'authenticated');`}
+            </pre>
+            <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
+          </div>
+        ) : (
+          <div className="events-table-container admin-table-shell">
+            {artistInterestLoading ? (
+              <p className="loading-text">RETRIEVING ARTIST INTEREST...</p>
+            ) : artistInterest.length === 0 ? (
+              <p className="loading-text">NO ARTIST INTEREST SUBMISSIONS YET.</p>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>NAME</th>
+                    <th>CONTACT</th>
+                    <th>PRACTICE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {artistInterest.map((entry) => {
+                    const isExpanded = Boolean(expandedArtistInterest[entry.id]);
+
+                    return (
+                      <Fragment key={entry.id}>
+                        <tr className={`${isExpanded ? 'event-row-expanded' : ''} status-${entry.status || 'pending'}`}>
+                          <td className="artist-interest-toggle-cell">
+                            <button
+                              type="button"
+                              className={`artist-interest-toggle ${isExpanded ? 'expanded' : ''}`}
+                              style={{ '--toggle-color': '#ff5bb8' }}
+                              onClick={() => toggleArtistInterest(entry.id)}
+                              aria-expanded={isExpanded}
+                              aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                            >
+                              <span className="admin-toggle-arrow artist-interest-toggle-arrow">▶</span>
+                            </button>
+                          </td>
+                          <td><strong>{entry.name}</strong></td>
+                          <td>{entry.email}</td>
+                          <td>{entry.practice}</td>
+                          <td className="actions-cell">
+                            <div className="actions-wrapper">
+                              <div className="main-actions">
+                                {entry.status === 'pending' && (
+                                  <button
+                                    className="admin-btn approve"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'reviewed')}
+                                  >
+                                    MARK REVIEWED
+                                  </button>
+                                )}
+                                {entry.status === 'reviewed' && (
+                                  <button
+                                    className="admin-btn reset"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
+                                  >
+                                    RESET
+                                  </button>
+                                )}
+                              </div>
+                              <div className="secondary-actions">
+                                {entry.status !== 'archived' ? (
+                                  <button
+                                    className="icon-btn archive-btn"
+                                    title="Archive"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'archived')}
+                                  >
+                                    <ArchiveIcon />
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="icon-btn unarchive-btn"
+                                    title="Unarchive"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
+                                  >
+                                    <UnarchiveIcon />
+                                  </button>
+                                )}
+                                <button
+                                  className="icon-btn delete-btn"
+                                  style={{ color: '#991b1b' }}
+                                  title="Delete Artist Interest"
+                                  onClick={() => deleteArtistInterest(entry.id)}
+                                >
+                                  <TrashIcon />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="artist-interest-details-row">
+                            <td colSpan="5">
+                              <div className="artist-interest-details-panel">
+                                <div className="artist-interest-details-grid">
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Submitted</span>
+                                    <span>{entry.created_at ? new Date(entry.created_at).toLocaleDateString() : '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Location</span>
+                                    <span>{entry.location || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Project or collective</span>
+                                    <span>{entry.project_name || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Open to sharing</span>
+                                    <span>{entry.format || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block artist-interest-detail-block-wide">
+                                    <span className="artist-interest-detail-label">Links</span>
+                                    {entry.links ? (
+                                      <a href={entry.links} target="_blank" rel="noopener noreferrer" className="artist-interest-detail-link">
+                                        {entry.links}
+                                      </a>
+                                    ) : (
+                                      <span>-</span>
+                                    )}
+                                  </div>
+                                  <div className="artist-interest-detail-block artist-interest-detail-block-wide">
+                                    <span className="artist-interest-detail-label">Tell us a little</span>
+                                    <p className="artist-interest-detail-notes">{entry.notes || '-'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

@@ -22,6 +22,9 @@ export default function Admin() {
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
+  const [artistInterest, setArtistInterest] = useState([]);
+  const [artistInterestLoading, setArtistInterestLoading] = useState(true);
+  const [artistInterestTableMissing, setArtistInterestTableMissing] = useState(false);
 
   // Square catalog state
   const [squareItems, setSquareItems] = useState([]);
@@ -48,6 +51,7 @@ export default function Admin() {
     fetchTickets();
     fetchServiceInquiries();
     fetchCommunityCredits();
+    fetchArtistInterest();
     fetchSquareCatalog();
     fetchPreorders();
   }, []);
@@ -134,6 +138,24 @@ export default function Admin() {
     setCommunityLoading(false);
   }
 
+  async function fetchArtistInterest() {
+    setArtistInterestLoading(true);
+    const { data, error } = await supabase
+      .from('artist_interest')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching artist interest:', error);
+      if (error.code === '42P01') setArtistInterestTableMissing(true);
+      setArtistInterest([]);
+    } else {
+      setArtistInterestTableMissing(false);
+      setArtistInterest(data || []);
+    }
+    setArtistInterestLoading(false);
+  }
+
   async function fetchSquareCatalog() {
     setFetchingCatalog(true);
     setSquareError(null);
@@ -200,6 +222,28 @@ export default function Admin() {
     } catch (error) {
       showToast('Failed to update: ' + error.message, 'error');
     }
+  }
+
+  async function updateArtistInterestStatus(id, newStatus) {
+    try {
+      await apiPost('/api/artist-interest', { action: 'update', id, status: newStatus });
+      fetchArtistInterest();
+      showToast(`Artist interest marked as ${newStatus}`);
+    } catch (error) {
+      showToast('Failed to update: ' + error.message, 'error');
+    }
+  }
+
+  async function deleteArtistInterest(id) {
+    triggerConfirm('Delete this artist interest entry permanently?', async () => {
+      try {
+        await apiPost('/api/artist-interest', { action: 'delete', id });
+        fetchArtistInterest();
+        showToast('Artist interest removed.');
+      } catch (error) {
+        showToast('Delete failed: ' + error.message, 'error');
+      }
+    });
   }
 
   return (
@@ -303,6 +347,12 @@ export default function Admin() {
           communityLoading={communityLoading}
           communityTableMissing={communityTableMissing}
           fetchCommunityCredits={fetchCommunityCredits}
+          artistInterest={artistInterest}
+          artistInterestLoading={artistInterestLoading}
+          artistInterestTableMissing={artistInterestTableMissing}
+          fetchArtistInterest={fetchArtistInterest}
+          updateArtistInterestStatus={updateArtistInterestStatus}
+          deleteArtistInterest={deleteArtistInterest}
           showToast={showToast}
           triggerConfirm={triggerConfirm}
         />

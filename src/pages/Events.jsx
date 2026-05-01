@@ -1,7 +1,8 @@
 import { useState, Fragment, useRef, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import { usePageColor } from '../hooks/usePageColor';
+import { fallbackEventsTimeline, fetchTimelineEvents } from '../lib/siteData';
 import './Events.css';
 
 const upcomingEvent = {
@@ -15,48 +16,6 @@ const upcomingEvent = {
   is_private: false
 };
 
-const eventsData = [
-  {
-    id: 'space',
-    title: 'LMNL SPACE',
-    type: 'text',
-    display: '[SPACE]',
-    link: '/space',
-    date: 'Ongoing',
-    description: 'The main LMNL space. A hub for creativity, collaboration, and innovation. Join us for workshops, exhibitions, and community gatherings.',
-    performers: 'LMNL Resident DJs, Special Guests',
-    artists: 'Visualist X, Sculptor Y',
-    media: []
-  },
-  {
-    id: 'camp-zest',
-    title: 'Camp Zest',
-    type: 'image',
-    display: '/cz1.png',
-    date: 'Summer 2025',
-    description: 'An immersive summer experience bringing together creators, builders, and thinkers for a week of intense collaboration and learning.',
-    media: []
-  },
-  {
-    id: 'bloom',
-    title: 'Bloom',
-    type: 'image',
-    display: '/title1.png',
-    date: 'Spring 2025',
-    description: 'A celebration of new beginnings, showcasing the latest creative projects and breakthroughs in our community.',
-    media: []
-  },
-  {
-    id: 'genesis',
-    title: 'Genesis',
-    type: 'image',
-    display: '/genesis-logo.png',
-    date: 'Winter 2024',
-    description: 'The inception of the LMNL journey. This event marked the beginning of our mission to redefine creative spaces.',
-    media: []
-  }
-];
-
 export default function Events() {
   const [events, setEvents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -64,41 +23,16 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const timelineRef = useRef(null);
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--page-color', '#004ffa');
-    return () => document.documentElement.style.removeProperty('--page-color');
-  }, []);
+  usePageColor('#004ffa');
 
   useEffect(() => {
     async function fetchSupabaseEvents() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('event_date', { ascending: true });
-
-      if (!error && data && data.length > 0) {
-        const mapped = data.map(e => ({
-          id: e.id,
-          title: e.name,
-          type: e.image_url ? 'image' : 'text',
-          display: e.image_url || `[${e.name.toUpperCase()}]`,
-          link: e.metadata?.event_link || e.partiful_url || e.spotify_id || '',
-          date: e.event_date,
-          description: e.description,
-          performers: e.metadata?.performers || '',
-          artists: e.metadata?.artists || '',
-          media: e.metadata?.media || [],
-          is_featured: e.metadata?.is_featured || false,
-          is_home_notif: e.metadata?.is_home_notif || false,
-          location: e.location_name || 'LMNL Space, LA',
-          price: e.price,
-          is_private: e.is_private
-        }));
-        
+      try {
+        const mapped = await fetchTimelineEvents();
         setEvents(mapped);
         setSelectedId(mapped[0].id);
 
-        const feat = mapped.find(e => e.is_featured);
+        const feat = mapped.find((event) => event.is_featured);
         if (feat) {
           setFeaturedEvent({
             id: feat.id,
@@ -112,11 +46,13 @@ export default function Events() {
             is_home_notif: feat.is_home_notif
           });
         }
-      } else {
-        setEvents(eventsData);
-        setSelectedId(eventsData[0].id);
+      } catch (error) {
+        console.error('Failed to load events timeline:', error);
+        setEvents(fallbackEventsTimeline);
+        setSelectedId(fallbackEventsTimeline[0].id);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchSupabaseEvents();
   }, []);
@@ -178,7 +114,7 @@ export default function Events() {
           <h1 className="page-title events-title">EVENTS</h1>
         </div>
 
-        <div className="events-layout">
+        <div className="events-layout theme-shell-section">
           {/* Upcoming Event Highlight */}
           <div className="upcoming-event-section">
             <div className="upcoming-glow" />

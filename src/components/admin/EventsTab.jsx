@@ -362,7 +362,7 @@ export default function EventsTab({
             <button className="admin-btn" onClick={fetchEvents}>REFRESH</button>
           </div>
         ) : (
-          <div className="events-table-container">
+          <div className="events-table-container admin-table-shell">
             {eventLoading ? (
               <p className="loading-text">RETRIEVING EVENTS...</p>
             ) : (
@@ -403,10 +403,11 @@ export default function EventsTab({
                               {hasTickets ? (
                                 <button
                                   className={`ticket-toggle ${isExpanded ? 'expanded' : ''}`}
+                                  style={{ '--toggle-color': '#004ffa' }}
                                   onClick={() => toggleExpandedEvent(event.id)}
                                   title={isExpanded ? 'Hide ticket holders' : 'Show ticket holders'}
                                 >
-                                  <span className="ticket-toggle-arrow">▾</span>
+                                  <span className="admin-toggle-arrow ticket-toggle-arrow">▾</span>
                                   <span className="ticket-toggle-count">{eventTickets.length}</span>
                                 </button>
                               ) : (
@@ -547,7 +548,7 @@ export default function EventsTab({
           </div>
         </div>
 
-        <div className="requests-table-container">
+        <div className="requests-table-container admin-table-shell">
           {loading ? (
             <p className="loading-text">RETRIEVING DATA...</p>
           ) : (

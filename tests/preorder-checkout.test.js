@@ -13,18 +13,40 @@ test('getPreorderCheckoutView returns safe checkout config', async () => {
       id: 'pre_1',
       item_name: 'Archive Tee',
       description: 'Screen printed',
-      price: 5800,
+      square_item_id: 'item_1',
       metadata: { requires_shipping: true },
     }),
     getSquareLocationId: async () => 'loc_1',
     getSquareApplicationId: () => 'app_1',
     squareEnvironment: 'sandbox',
+    squareClient: {
+      catalog: {
+        object: {
+          get: async () => ({
+            object: {
+              type: 'ITEM',
+              itemData: {
+                variations: [
+                  {
+                    id: 'var_1',
+                    itemVariationData: {
+                      priceMoney: { amount: 5800 },
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        },
+      },
+    },
   });
 
   assert.equal(result.preorderId, 'pre_1');
   assert.equal(result.square.applicationId, 'app_1');
   assert.equal(result.square.locationId, 'loc_1');
   assert.equal(result.requiresShipping, true);
+  assert.equal(result.price, 5800);
 });
 
 test('createPaymentForPreorder creates shipment order and payment', async () => {
@@ -57,12 +79,30 @@ test('createPaymentForPreorder creates shipment order and payment', async () => 
       getPreorderById: async () => ({
         id: 'pre_2',
         item_name: 'Archive Tee',
-        price: 5800,
         square_item_id: 'item_1',
       }),
       getSquareLocationId: async () => 'loc_2',
       getBaseConfig: () => ({ siteUrl: 'https://lmnl.art' }),
       squareClient: {
+        catalog: {
+          object: {
+            get: async () => ({
+              object: {
+                type: 'ITEM',
+                itemData: {
+                  variations: [
+                    {
+                      id: 'var_2',
+                      itemVariationData: {
+                        priceMoney: { amount: 5800 },
+                      },
+                    },
+                  ],
+                },
+              },
+            }),
+          },
+        },
         orders: {
           create: async (payload) => {
             calls.orders.push(payload);
@@ -81,6 +121,8 @@ test('createPaymentForPreorder creates shipment order and payment', async () => 
 
   assert.equal(calls.orders.length, 1);
   assert.equal(calls.orders[0].order.fulfillments[0].type, 'SHIPMENT');
+  assert.equal(calls.orders[0].order.lineItems[0].catalogObjectId, 'var_2');
   assert.equal(calls.payments[0].orderId, 'order_2');
+  assert.equal(Number(calls.payments[0].amountMoney.amount), 5800);
   assert.equal(result.redirectUrl, 'https://lmnl.art/shop?checkout=success&preorderId=pre_2');
 });

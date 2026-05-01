@@ -9,6 +9,8 @@ const routes = [
   { path: 'events', title: 'LMNL | EVENTS', image: '/seo/events-seo.png' },
   { path: 'services', title: 'LMNL | SERVICES', image: '/seo/services-seo.png' },
   { path: 'community', title: 'LMNL | COMMUNITY', image: '/seo/community-seo.png' },
+  { path: 'community/share', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },
+  { path: 'share-your-work', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },
   { path: 'shop', title: 'LMNL | SHOP', image: '/seo/shop-seo.png' },
   { path: 'about', title: 'LMNL | ABOUT', image: '/seo/about-seo.png' },
   { path: 'blog', title: 'LMNL | BLOG', image: '/seo/blog-seo.png' },

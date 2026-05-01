@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import GenericPage from './GenericPage';
+import { fetchOpenProducts } from '../lib/siteData';
 import './Shop.css';
 
-function ProductCard({ product, onPurchase }) {
+function formatPrice(price) {
+  return `$${((price || 0) / 100).toFixed(2)}`;
+}
+
+function PreorderProductCard({ product, onPurchase }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isProcessing, setIsProcessing] = useState(false);
-  const isPreorder = product.goal_quantity > 0;
-  const progressPercent = isPreorder ? (product.current_quantity / product.goal_quantity) * 100 : 0;
+  const progressPercent = product.goal_quantity > 0 ? (product.current_quantity / product.goal_quantity) * 100 : 0;
 
   useEffect(() => {
-    if (!product.end_date || !isPreorder) return;
+    if (!product.end_date) return;
 
     const timer = setInterval(() => {
       const now = new Date().getTime();
@@ -32,7 +35,7 @@ function ProductCard({ product, onPurchase }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [product.end_date, isPreorder]);
+  }, [product.end_date]);
 
   const handleBuy = async () => {
     setIsProcessing(true);
@@ -44,7 +47,7 @@ function ProductCard({ product, onPurchase }) {
     <div className="drop-hero">
       {/* Left: Image */}
       <div className="drop-image-container">
-        <div className="drop-badge">{isPreorder ? 'PREORDER OPEN' : 'IN STOCK'}</div>
+        <div className="drop-badge">PREORDER OPEN</div>
         <img 
           src={product.image_url || "/lmnl_hoodie_mockup_1777568946142.png"} 
           alt={product.item_name} 
@@ -58,7 +61,7 @@ function ProductCard({ product, onPurchase }) {
         <div className="drop-title-wrap">
           <span className="drop-category">{product.category}</span>
           <h2 className="drop-name">{product.item_name}</h2>
-          <span className="drop-price">${((product.price || 0) / 100).toFixed(2)}</span>
+          <span className="drop-price">{formatPrice(product.price)}</span>
         </div>
 
         <p className="drop-description">{product.description}</p>
@@ -66,51 +69,43 @@ function ProductCard({ product, onPurchase }) {
 
       {/* Right: Timer, Progress & Purchase */}
       <div className="drop-actions-sidebar">
-        {isPreorder ? (
-          <>
-            <div className="drop-timer-wrap">
-              <span className="stats-label">Time Remaining</span>
-              <div className="drop-timer">
-                <div className="timer-unit">
-                  <span className="timer-value">{String(timeLeft.days).padStart(2, '0')}</span>
-                  <span className="timer-label">Days</span>
-                </div>
-                <div className="timer-unit">
-                  <span className="timer-value">{String(timeLeft.hours).padStart(2, '0')}</span>
-                  <span className="timer-label">Hrs</span>
-                </div>
-                <div className="timer-unit">
-                  <span className="timer-value">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                  <span className="timer-label">Min</span>
-                </div>
-                <div className="timer-unit">
-                  <span className="timer-value">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                  <span className="timer-label">Sec</span>
-                </div>
+        <>
+          <div className="drop-timer-wrap">
+            <span className="stats-label">Time Remaining</span>
+            <div className="drop-timer">
+              <div className="timer-unit">
+                <span className="timer-value">{String(timeLeft.days).padStart(2, '0')}</span>
+                <span className="timer-label">Days</span>
+              </div>
+              <div className="timer-unit">
+                <span className="timer-value">{String(timeLeft.hours).padStart(2, '0')}</span>
+                <span className="timer-label">Hrs</span>
+              </div>
+              <div className="timer-unit">
+                <span className="timer-value">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                <span className="timer-label">Min</span>
+              </div>
+              <div className="timer-unit">
+                <span className="timer-value">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                <span className="timer-label">Sec</span>
               </div>
             </div>
-
-            <div className="drop-progress-container">
-              <div className="progress-stats">
-                <span className="stats-label">Drop Progress</span>
-                <span className="stats-value">{product.current_quantity} / {product.goal_quantity} UNITS</span>
-              </div>
-              <div className="progress-bar-bg">
-                <div 
-                  className="progress-bar-fill" 
-                  style={{ width: `${Math.min(100, progressPercent)}%` }}
-                />
-              </div>
-              <span className="purchase-note">Production begins once 100% is reached.</span>
-            </div>
-          </>
-        ) : (
-          <div className="persistent-info">
-            <span className="stats-label" style={{ marginBottom: '10px' }}>Availability</span>
-            <div className="persistent-status">ALWAYS LIVE</div>
-            <p className="purchase-note" style={{ marginTop: '10px' }}>Ships within 3-5 business days.</p>
           </div>
-        )}
+
+          <div className="drop-progress-container">
+            <div className="progress-stats">
+              <span className="stats-label">Drop Progress</span>
+              <span className="stats-value">{product.current_quantity} / {product.goal_quantity} UNITS</span>
+            </div>
+            <div className="progress-bar-bg">
+              <div 
+                className="progress-bar-fill" 
+                style={{ width: `${Math.min(100, progressPercent)}%` }}
+              />
+            </div>
+            <span className="purchase-note">Production begins once 100% is reached.</span>
+          </div>
+        </>
 
         <div className="purchase-actions">
           <button 
@@ -128,17 +123,65 @@ function ProductCard({ product, onPurchase }) {
               </>
             ) : (
               <>
-                {isPreorder ? 'PREORDER' : 'BUY NOW'}
+                PREORDER
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
               </>
             )}
           </button>
-          {isPreorder && <p className="purchase-note">Estimated shipping: 3-4 weeks after drop ends.</p>}
+          <p className="purchase-note">Estimated shipping: 3-4 weeks after drop ends.</p>
         </div>
       </div>
     </div>
+  );
+}
+
+function PersistentProductCard({ product, onPurchase }) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleBuy = async () => {
+    setIsProcessing(true);
+    await onPurchase(product);
+    setIsProcessing(false);
+  };
+
+  return (
+    <article className="persistent-card">
+      <div className="persistent-card-image-wrap">
+        <img
+          src={product.image_url || "/lmnl_hoodie_mockup_1777568946142.png"}
+          alt={product.item_name}
+          decoding="async"
+          className="persistent-card-image"
+        />
+      </div>
+
+      <div className="persistent-card-body">
+        <div className="persistent-card-topline">
+          <span className="persistent-card-category">{product.category}</span>
+          <span className="persistent-card-price">{formatPrice(product.price)}</span>
+        </div>
+
+        <h3 className="persistent-card-name">{product.item_name}</h3>
+        <p className="persistent-card-description">{product.description}</p>
+
+        <div className="persistent-card-footer">
+          <div className="persistent-card-meta">
+            <span>Ready to ship</span>
+            <span>3-5 business days</span>
+          </div>
+
+          <button
+            className={`persistent-card-btn ${isProcessing ? 'loading' : ''}`}
+            onClick={handleBuy}
+            disabled={isProcessing}
+          >
+            {isProcessing ? 'OPENING...' : 'BUY NOW'}
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -149,22 +192,22 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const checkoutSuccess = searchParams.get('checkout') === 'success';
+  const preorderProducts = products.filter((product) => product.goal_quantity > 0);
+  const persistentProducts = products.filter((product) => product.goal_quantity <= 0);
 
   useEffect(() => {
     async function loadProducts() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('merch_preorders')
-        .select('*')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
+      setError(null);
 
-      if (!error && data) {
+      try {
+        const data = await fetchOpenProducts();
         setProducts(data);
-      } else if (error) {
+      } catch (error) {
         setError(error.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     loadProducts();
@@ -201,13 +244,47 @@ export default function Shop() {
         {products.length === 0 ? (
           <p className="loading-text" style={{ marginTop: '100px' }}>NO ACTIVE PRODUCTS AT THE MOMENT. CHECK BACK SOON.</p>
         ) : (
-          products.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              onPurchase={handlePurchase} 
-            />
-          ))
+          <>
+            {preorderProducts.length > 0 && (
+              <section className="shop-section">
+                <div className="shop-section-heading theme-section-heading">
+                  <span className="shop-section-kicker theme-section-kicker">Live Drops</span>
+                  <h2 className="shop-section-title theme-section-title">Open Preorders</h2>
+                </div>
+                <div className="shop-preorder-list">
+                  {preorderProducts.map((product) => (
+                    <PreorderProductCard
+                      key={product.id}
+                      product={product}
+                      onPurchase={handlePurchase}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {persistentProducts.length > 0 && (
+              <section className="shop-section shop-section-persistent">
+                <div className="shop-section-heading theme-section-heading">
+                  <span className="shop-section-kicker theme-section-kicker">Core Pieces</span>
+                  <h2 className="shop-section-title shop-section-title-compact theme-section-title">Permanent Collection</h2>
+                  <p className="shop-section-copy theme-section-copy">
+                    Staple LMNL pieces that stay in rotation and ship on a standard turnaround.
+                  </p>
+                </div>
+
+                <div className="persistent-grid">
+                  {persistentProducts.map((product) => (
+                    <PersistentProductCard
+                      key={product.id}
+                      product={product}
+                      onPurchase={handlePurchase}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
         {error && <p className="error-text" style={{ color: '#ff0000', fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>{error}</p>}
       </div>

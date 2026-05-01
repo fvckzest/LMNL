@@ -55,6 +55,18 @@ function initialFormState() {
   };
 }
 
+async function fetchCheckoutData({ checkoutMode, preorderId, requestId, eventId }) {
+  if (checkoutMode === 'request') {
+    return apiGet(`/api/request-checkout?requestId=${requestId}`);
+  }
+
+  if (checkoutMode === 'event') {
+    return apiGet(`/api/event-checkout?eventId=${eventId}`);
+  }
+
+  return apiGet(`/api/preorder-checkout?preorderId=${preorderId}`);
+}
+
 function buildBillingContact(form) {
   const { firstName, lastName } = splitName(form.fullName);
   return {
@@ -134,6 +146,9 @@ export default function ShopCheckout() {
   const [error, setError] = useState('');
   const requiresShipping = checkout?.requiresShipping;
   const checkoutMode = requestId ? 'request' : (eventId ? 'event' : 'preorder');
+  const paymentUnavailableMessage = checkout && (!checkout.square?.applicationId || !checkout.square?.locationId)
+    ? 'Payment is temporarily unavailable. Please try again shortly.'
+    : '';
 
   const onWalletPayment = useEffectEvent(async (method) => {
     const wallet = method === 'apple' ? applePayInstanceRef.current : googlePayInstanceRef.current;
@@ -164,11 +179,22 @@ export default function ShopCheckout() {
     async function loadCheckout() {
       setLoading(true);
       setError('');
+
       try {
-        const data = await apiGet(`/api/preorder-checkout?preorderId=${preorderId}`);
+        const data = await fetchCheckoutData({ checkoutMode, preorderId, requestId, eventId });
         if (!active) return;
+
         setCheckout(data);
-        setForm(initialFormState());
+        setInitializingPayment(false);
+        setForm(
+          checkoutMode === 'request'
+            ? {
+              ...initialFormState(),
+              fullName: data.request?.customerName || '',
+              email: data.request?.customerEmail || '',
+            }
+            : initialFormState()
+        );
       } catch (err) {
         if (!active) return;
         setError(err.message || 'Unable to load checkout.');
@@ -177,62 +203,15 @@ export default function ShopCheckout() {
       }
     }
 
-    async function loadRequestCheckout() {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await apiGet(`/api/request-checkout?requestId=${requestId}`);
-        if (!active) return;
-        setCheckout(data);
-        setForm(current => ({
-          ...current,
-          fullName: data.request?.customerName || '',
-          email: data.request?.customerEmail || '',
-        }));
-      } catch (err) {
-        if (!active) return;
-        setError(err.message || 'Unable to load checkout.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
+    loadCheckout();
 
-    async function loadEventCheckout() {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await apiGet(`/api/event-checkout?eventId=${eventId}`);
-        if (!active) return;
-        setCheckout(data);
-        setForm(initialFormState());
-      } catch (err) {
-        if (!active) return;
-        setError(err.message || 'Unable to load checkout.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    if (checkoutMode === 'request') {
-      loadRequestCheckout();
-    } else if (checkoutMode === 'event') {
-      loadEventCheckout();
-    } else {
-      loadCheckout();
-    }
     return () => {
       active = false;
     };
   }, [checkoutMode, preorderId, requestId, eventId]);
 
   useEffect(() => {
-    if (!checkout) {
-      return;
-    }
-
-    if (!checkout?.square?.applicationId || !checkout?.square?.locationId) {
-      setInitializingPayment(false);
-      setError('Payment is temporarily unavailable. Please try again shortly.');
+    if (!checkout || paymentUnavailableMessage) {
       return;
     }
 
@@ -321,7 +300,7 @@ export default function ShopCheckout() {
       googlePayInstanceRef.current = null;
       applePayInstanceRef.current = null;
     };
-  }, [checkout]);
+  }, [checkout, paymentUnavailableMessage]);
 
   const verificationDetails = useMemo(() => {
     if (!checkout) return null;
@@ -407,9 +386,9 @@ export default function ShopCheckout() {
   if (!checkout) {
     return (
       <GenericPage title="CHECKOUT" color="#ff0000">
-        <div className="checkout-error-panel">
+        <div className="checkout-error-panel theme-panel">
           <p>{error || 'Checkout is unavailable.'}</p>
-          <Link to="/shop" className="checkout-back-link">RETURN TO SHOP</Link>
+          <Link to="/shop" className="checkout-back-link theme-button">RETURN TO SHOP</Link>
         </div>
       </GenericPage>
     );
@@ -418,7 +397,7 @@ export default function ShopCheckout() {
   return (
     <GenericPage title="CHECKOUT" color="#ff0000">
       <div className="checkout-grid">
-        <section className="checkout-product-card">
+        <section className="checkout-product-card theme-panel">
           {checkout.imageUrl ? (
             <img src={checkout.imageUrl} alt={checkout.itemName} className="checkout-product-image" />
           ) : (
@@ -434,27 +413,27 @@ export default function ShopCheckout() {
           </div>
         </section>
 
-        <section className="checkout-form-card">
-          <form className="checkout-form" onSubmit={handleCardPayment}>
+        <section className="checkout-form-card theme-panel">
+          <form className="checkout-form theme-form" onSubmit={handleCardPayment}>
             <div className="checkout-section">
-              <label>
+              <label className="theme-field">
                 FULL NAME
-                <input name="fullName" value={form.fullName} onChange={updateField} required />
+                <input className="theme-input" name="fullName" value={form.fullName} onChange={updateField} required />
               </label>
-              <label>
+              <label className="theme-field">
                 EMAIL FOR DELIVERY
-                <input name="email" type="email" value={form.email} onChange={updateField} required />
+                <input className="theme-input" name="email" type="email" value={form.email} onChange={updateField} required />
               </label>
               <div className="checkout-row">
                 {requiresShipping && (
-                  <label>
+                  <label className="theme-field">
                     PHONE
-                    <input name="phone" value={form.phone} onChange={updateField} required />
+                    <input className="theme-input" name="phone" value={form.phone} onChange={updateField} required />
                   </label>
                 )}
-                <label>
+                <label className="theme-field">
                   ZIP CODE
-                  <input name="postalCode" value={form.postalCode} onChange={updateField} required placeholder="00000" />
+                  <input className="theme-input" name="postalCode" value={form.postalCode} onChange={updateField} required placeholder="00000" />
                 </label>
               </div>
             </div>
@@ -462,28 +441,28 @@ export default function ShopCheckout() {
             {requiresShipping && (
               <div className="checkout-section">
                 <p className="checkout-section-label">SHIPPING</p>
-                <label>
+                <label className="theme-field">
                   ADDRESS LINE 1
-                  <input name="addressLine1" value={form.addressLine1} onChange={updateField} required />
+                  <input className="theme-input" name="addressLine1" value={form.addressLine1} onChange={updateField} required />
                 </label>
-                <label>
+                <label className="theme-field">
                   ADDRESS LINE 2
-                  <input name="addressLine2" value={form.addressLine2} onChange={updateField} />
+                  <input className="theme-input" name="addressLine2" value={form.addressLine2} onChange={updateField} />
                 </label>
                 <div className="checkout-row">
-                  <label>
+                  <label className="theme-field">
                     CITY
-                    <input name="locality" value={form.locality} onChange={updateField} required />
+                    <input className="theme-input" name="locality" value={form.locality} onChange={updateField} required />
                   </label>
-                  <label>
+                  <label className="theme-field">
                     STATE
-                    <input name="administrativeDistrictLevel1" value={form.administrativeDistrictLevel1} onChange={updateField} required />
+                    <input className="theme-input" name="administrativeDistrictLevel1" value={form.administrativeDistrictLevel1} onChange={updateField} required />
                   </label>
                 </div>
                 <div className="checkout-row">
-                  <label>
+                  <label className="theme-field">
                     COUNTRY
-                    <input name="country" value={form.country} onChange={updateField} required />
+                    <input className="theme-input" name="country" value={form.country} onChange={updateField} required />
                   </label>
                   <div />
                 </div>
@@ -504,9 +483,9 @@ export default function ShopCheckout() {
               </p>
             </div>
 
-            {error && <p className="checkout-error">{error}</p>}
+            {(error || paymentUnavailableMessage) && <p className="checkout-error">{error || paymentUnavailableMessage}</p>}
 
-            <button type="submit" className="checkout-submit" disabled={initializingPayment || submitting}>
+            <button type="submit" className="checkout-submit theme-button" disabled={initializingPayment || submitting || Boolean(paymentUnavailableMessage)}>
               {submitting ? 'PROCESSING...' : `PAY ${formatPrice(checkout.price)}`}
             </button>
           </form>

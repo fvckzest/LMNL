@@ -1,13 +1,7 @@
 .content-page-shell__content {
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--lmnl-width-content);
   margin: 0 auto;
-  padding-top: calc(115px + 48px);
-  padding-bottom: 60px;
-}
-
-@media (max-width: 768px) {
-  .content-page-shell__content {
-    padding-top: calc(53px + 24px);
-  }
+  padding-top: var(--lmnl-shell-content-offset);
+  padding-bottom: var(--lmnl-shell-content-bottom);
 }
