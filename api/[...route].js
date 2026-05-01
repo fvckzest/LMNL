@@ -8,7 +8,7 @@ import { generateTicketPass } from './_lib/services/passkit.js';
 import { createPaymentForPreorder, getPreorderCheckoutView } from './_lib/services/preorder-checkout.js';
 import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services/request-checkout.js';
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
-import { getTicketView } from './_lib/services/tickets.js';
+import { checkInTicket, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { createAccessRequest, updateRequestStatus, deleteRequestById } from './_lib/repositories/requests.js';
@@ -269,6 +269,14 @@ async function handleGetTicket(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
+async function handleTicketCheckIn(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const scanValue = requireValue(body.scanValue, 'scanValue is required.');
+  const data = await checkInTicket(scanValue);
+  return sendJson(res, 200, { success: true, data });
+}
+
 async function handlePreorders(req, res) {
   allowMethods(req, ['POST']);
   const body = await parseJsonBody(req);
@@ -448,6 +456,7 @@ const handlers = {
   'generate-pass': handleGeneratePass,
   'preorder-checkout': handleGetPreorderCheckout,
   'get-ticket': handleGetTicket,
+  'ticket-check-in': handleTicketCheckIn,
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,

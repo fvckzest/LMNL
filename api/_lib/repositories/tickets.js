@@ -32,6 +32,37 @@ export async function getTicketWithEventById(id) {
   return { ticket, event };
 }
 
+export async function getTicketWithEventByQrPayload(qrPayload) {
+  const supabase = getAdminSupabase();
+  const { data: ticket, error } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('qr_code_payload', qrPayload)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!ticket) {
+    throw new AppError('Ticket not found', {
+      code: 'NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  let event = null;
+  if (ticket.event_id) {
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', ticket.event_id)
+      .maybeSingle();
+    if (eventError) throw eventError;
+    event = eventData;
+  }
+
+  return { ticket, event };
+}
+
 export async function findTicketBySquareOrderId(squareOrderId) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
@@ -50,6 +81,22 @@ export async function createTicket(payload) {
     .insert(payload)
     .select()
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function markTicketAsUsed(id, usedAt = new Date().toISOString()) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('tickets')
+    .update({
+      is_used: true,
+      used_at: usedAt,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
   if (error) throw error;
   return data;
 }

@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useState } from 'react';
-import { apiPost } from '../../lib/api';
+import { Fragment, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { apiGet, apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon } from './Icons';
 
 const MANAGED_METADATA_KEYS = new Set([
@@ -42,6 +42,18 @@ export default function EventsTab({
   updateStatus,
   deleteRequest
 }) {
+  const [scannerInput, setScannerInput] = useState('');
+  const [scannerStatus, setScannerStatus] = useState(null);
+  const [isScannerBusy, setIsScannerBusy] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerSupport] = useState(() => {
+    const hasWindow = typeof window !== 'undefined';
+    return {
+      barcode: hasWindow && 'BarcodeDetector' in window,
+      camera: typeof navigator !== 'undefined'
+        && Boolean(navigator.mediaDevices?.getUserMedia),
+    };
+  });
   const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [showArchivedRequests, setShowArchivedRequests] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +61,11 @@ export default function EventsTab({
   const [newTraitKey, setNewTraitKey] = useState('');
   const [newTraitValue, setNewTraitValue] = useState('');
   const [expandedEventId, setExpandedEventId] = useState(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const frameRef = useRef(null);
+  const detectorRef = useRef(null);
+  const processingScanRef = useRef(false);
 
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -333,8 +350,248 @@ export default function EventsTab({
     setExpandedEventId(current => current === eventId ? null : eventId);
   }
 
+  useEffect(() => {
+    if (scannerSupport.barcode) {
+      detectorRef.current = new window.BarcodeDetector({ formats: ['qr_code'] });
+    }
+
+    return () => {
+      stopScanner();
+    };
+  }, [scannerSupport.barcode]);
+
+  const startScanLoop = useEffectEvent(function startScanLoop() {
+    async function scanFrame() {
+      if (!videoRef.current || !detectorRef.current) {
+        return;
+      }
+
+      try {
+        if (!processingScanRef.current && videoRef.current.readyState >= 2) {
+          const codes = await detectorRef.current.detect(videoRef.current);
+          const value = codes?.[0]?.rawValue?.trim();
+
+          if (value) {
+            processingScanRef.current = true;
+            await runTicketCheckIn(value);
+            setScannerInput(value);
+          }
+        }
+      } catch (error) {
+        console.error('QR detection failed:', error);
+      } finally {
+        if (isScannerOpen && streamRef.current) {
+          frameRef.current = requestAnimationFrame(scanFrame);
+        }
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(scanFrame);
+  });
+
+  useEffect(() => {
+    if (!isScannerOpen) {
+      stopScanner();
+      return;
+    }
+
+    if (!scannerSupport.barcode || !scannerSupport.camera) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function startScanner() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+          },
+          audio: false,
+        });
+
+        if (isCancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          startScanLoop();
+        }
+      } catch (error) {
+        console.error('Unable to start QR scanner:', error);
+        setScannerStatus({
+          type: 'error',
+          title: 'Camera unavailable',
+          message: 'Camera access was blocked. You can still paste a ticket link or QR code value below.',
+        });
+      }
+    }
+
+    startScanner();
+
+    return () => {
+      isCancelled = true;
+      stopScanner();
+    };
+  }, [isScannerOpen, scannerSupport.barcode, scannerSupport.camera]);
+
+  function stopScanner() {
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }
+
+  async function runTicketCheckIn(scanValue) {
+    const normalizedValue = String(scanValue || '').trim();
+    if (!normalizedValue) {
+      setScannerStatus({
+        type: 'error',
+        title: 'Nothing to scan',
+        message: 'Use a live QR code or paste a ticket link / code first.',
+      });
+      return;
+    }
+
+    setIsScannerBusy(true);
+
+    try {
+      const result = await apiPost('/api/ticket-check-in', { scanValue: normalizedValue });
+      const ticketView = await apiGet(`/api/get-ticket?ticketId=${encodeURIComponent(result.ticket.id)}`);
+      const eventName = result.event?.name || ticketView.event?.name || 'LMNL Event';
+      const customerName = ticketView.ticket?.customer_name || result.ticket.customer_name || 'Guest';
+
+      setScannerStatus({
+        type: result.status === 'already_used' ? 'warning' : 'success',
+        title: result.status === 'already_used' ? 'Ticket already used' : 'Ticket checked in',
+        message: `${customerName} for ${eventName}`,
+        ticket: ticketView.ticket,
+        event: ticketView.event,
+      });
+
+      fetchTickets();
+
+      if (result.status === 'already_used') {
+        showToast('This ticket was already marked as used.', 'error');
+      } else {
+        showToast(`Checked in ${customerName}.`);
+      }
+    } catch (error) {
+      setScannerStatus({
+        type: 'error',
+        title: 'Scan failed',
+        message: error.message || 'The scanned code did not match a valid ticket.',
+      });
+      showToast(error.message || 'Unable to check in ticket.', 'error');
+    } finally {
+      setIsScannerBusy(false);
+      processingScanRef.current = false;
+    }
+  }
+
+  async function handleScannerSubmit(e) {
+    e.preventDefault();
+    await runTicketCheckIn(scannerInput);
+  }
+
   return (
     <>
+      <section className="admin-section" style={{ '--active-tab-color': '#004ffa', marginBottom: '40px' }}>
+        <div className="section-header-flex">
+          <h2 className="section-title">QR CHECK-IN</h2>
+          <button
+            type="button"
+            className={`admin-btn small ${isScannerOpen ? 'active' : ''}`}
+            onClick={() => setIsScannerOpen(current => !current)}
+          >
+            {isScannerOpen ? 'STOP CAMERA' : 'START CAMERA'}
+          </button>
+        </div>
+
+        <div className="admin-table-shell scanner-shell">
+          <div className="scanner-grid">
+            <div className="scanner-camera-panel">
+              <div className={`scanner-camera-frame ${isScannerOpen ? 'live' : ''}`}>
+                {scannerSupport.barcode && scannerSupport.camera ? (
+                  isScannerOpen ? (
+                    <video ref={videoRef} className="scanner-video" playsInline muted />
+                  ) : (
+                    <div className="scanner-placeholder">
+                      <p>Camera ready</p>
+                      <span>Open the scanner and point it at a ticket QR code.</span>
+                    </div>
+                  )
+                ) : (
+                  <div className="scanner-placeholder">
+                    <p>Manual mode</p>
+                    <span>This browser does not support live QR detection here. Paste the ticket URL or QR value to check someone in.</span>
+                  </div>
+                )}
+                <div className="scanner-target" aria-hidden="true" />
+              </div>
+            </div>
+
+            <div className="scanner-controls">
+              <form className="scanner-form" onSubmit={handleScannerSubmit}>
+                <label htmlFor="scanner-input" className="scanner-label">PASTE TICKET URL OR QR VALUE</label>
+                <textarea
+                  id="scanner-input"
+                  className="scanner-input"
+                  value={scannerInput}
+                  onChange={(e) => setScannerInput(e.target.value)}
+                  placeholder="https://lmnl.art/ticket/... or LMNL-..."
+                  rows={3}
+                />
+                <div className="scanner-actions">
+                  <button type="submit" className="admin-btn approve" disabled={isScannerBusy}>
+                    {isScannerBusy ? 'CHECKING...' : 'CHECK IN TICKET'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn reset"
+                    onClick={() => {
+                      setScannerInput('');
+                      setScannerStatus(null);
+                    }}
+                    disabled={isScannerBusy}
+                  >
+                    CLEAR
+                  </button>
+                </div>
+              </form>
+
+              {scannerStatus && (
+                <div className={`scanner-result scanner-result-${scannerStatus.type}`}>
+                  <p className="scanner-result-title">{scannerStatus.title}</p>
+                  <p className="scanner-result-message">{scannerStatus.message}</p>
+                  {scannerStatus.ticket && (
+                    <div className="scanner-result-meta">
+                      <span>{scannerStatus.event?.event_date || 'Date TBA'}</span>
+                      <span>{scannerStatus.ticket.used_at ? new Date(scannerStatus.ticket.used_at).toLocaleString() : 'Ready for entry'}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
         <div className="section-header-flex">
           <h2 className="section-title">EVENT MANAGEMENT</h2>
