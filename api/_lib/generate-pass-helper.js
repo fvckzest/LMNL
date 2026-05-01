@@ -3,7 +3,7 @@ import forge from 'node-forge';
 import fs from 'fs';
 import path from 'path';
 import { getApplePassConfig } from './env.js';
-import { applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './services/passkit-customization.js';
+import { applyPassTimingCustomization, applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './services/passkit-customization.js';
 
 /**
  * Generates an Apple Wallet .pkpass buffer for a given ticket and event.
@@ -58,16 +58,6 @@ export async function generatePassBuffer(ticket, eventData) {
     }
     const signerKey = forge.pki.privateKeyToPem(privateKey);
 
-    // Format date string nicely
-    let dateVal = 'TBA';
-    if (eventData?.event_date) {
-      dateVal = new Date(eventData.event_date + 'T00:00:00').toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      }).replace(/\//g, '.');
-    }
-
     // Create Pass using v3 API
     const wallet = getWalletPassConfig(eventData);
     const pass = await PKPass.from(
@@ -92,8 +82,8 @@ export async function generatePassBuffer(ticket, eventData) {
     }
     
     pass.secondaryFields.push(
-      { key: 'date', label: 'DATE', value: dateVal },
-      { key: 'time', label: 'TIME', value: eventData?.event_time || 'TBA' }
+      { key: 'date', label: 'DATE', value: wallet.displayDate || eventData?.event_date || 'TBA' },
+      { key: 'time', label: 'TIME', value: wallet.isMultiDay ? 'MULTI-DAY' : (eventData?.event_time || 'TBA') }
     );
     
     pass.auxiliaryFields.push(
@@ -103,6 +93,7 @@ export async function generatePassBuffer(ticket, eventData) {
 
     const barcodeMessage = ticket.qr_code_payload || ticket.id;
     pass.setBarcodes(barcodeMessage);
+    applyPassTimingCustomization(pass, eventData);
     await applyPassVisualCustomization(pass, eventData);
 
     // Generate Buffer

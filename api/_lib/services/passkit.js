@@ -4,7 +4,7 @@ import { PKPass } from 'passkit-generator';
 import forge from 'node-forge';
 import { getApplePassConfig } from '../env.js';
 import { getTicketView } from './tickets.js';
-import { applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './passkit-customization.js';
+import { applyPassTimingCustomization, applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './passkit-customization.js';
 
 let passAssets;
 
@@ -61,15 +61,6 @@ function getCertificateMaterial() {
   };
 }
 
-function formatEventDate(eventData) {
-  if (!eventData?.event_date) return 'TBA';
-  return new Date(`${eventData.event_date}T00:00:00`).toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).replace(/\//g, '.');
-}
-
 export async function generateTicketPass(ticketId) {
   const assets = loadPassAssets();
   const certificateMaterial = getCertificateMaterial();
@@ -104,8 +95,8 @@ export async function generateTicketPass(ticketId) {
   }
 
   pass.secondaryFields.push(
-    { key: 'date', label: 'DATE', value: formatEventDate(event) },
-    { key: 'time', label: 'TIME', value: event?.event_time || 'TBA' }
+    { key: 'date', label: 'DATE', value: wallet.displayDate || event?.event_date || 'TBA' },
+    { key: 'time', label: 'TIME', value: wallet.isMultiDay ? 'MULTI-DAY' : (event?.event_time || 'TBA') }
   );
 
   pass.auxiliaryFields.push(
@@ -115,6 +106,7 @@ export async function generateTicketPass(ticketId) {
 
   const barcodeMessage = ticket.qr_code_payload || ticket.id;
   pass.setBarcodes(barcodeMessage);
+  applyPassTimingCustomization(pass, event);
   await applyPassVisualCustomization(pass, event);
 
   return {

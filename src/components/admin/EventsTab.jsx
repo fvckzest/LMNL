@@ -17,6 +17,9 @@ const MANAGED_METADATA_KEYS = new Set([
   'wallet_foreground_color',
   'wallet_label_color',
   'wallet_notes',
+  'wallet_relevant_dates',
+  'wallet_expiration_date',
+  'wallet_time_zone',
 ]);
 
 export default function EventsTab({
@@ -793,6 +796,38 @@ export default function EventsTab({
                     onChange={e => updateMetadataField('wallet_strip_image_url', e.target.value)}
                   />
                   <p className="form-help">If blank, the pass falls back to the event image URL. Apple Wallet strip images work best as direct PNG files.</p>
+                </div>
+
+                <div className="form-group full">
+                  <label>WALLET RELEVANCE WINDOWS</label>
+                  <textarea
+                    rows="4"
+                    placeholder={`2026-08-21T13:00/2026-08-21T23:00\n2026-08-22T13:00/2026-08-22T23:00`}
+                    value={eventForm.metadata?.wallet_relevant_dates || ''}
+                    onChange={e => updateMetadataField('wallet_relevant_dates', e.target.value)}
+                  />
+                  <p className="form-help">Optional. Add one Wallet date window per line in the format START/END. This is how a two-day event should be represented.</p>
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET TIME ZONE</label>
+                  <input
+                    type="text"
+                    placeholder="America/Los_Angeles"
+                    value={eventForm.metadata?.wallet_time_zone || ''}
+                    onChange={e => updateMetadataField('wallet_time_zone', e.target.value)}
+                  />
+                  <p className="form-help">Used to turn the Wallet windows above into Apple-safe timestamps. Defaults to Los Angeles if blank.</p>
+                </div>
+
+                <div className="form-group">
+                  <label>WALLET EXPIRATION</label>
+                  <input
+                    type="datetime-local"
+                    value={eventForm.metadata?.wallet_expiration_date || ''}
+                    onChange={e => updateMetadataField('wallet_expiration_date', e.target.value)}
+                  />
+                  <p className="form-help">Optional. If blank, Wallet expires the pass after the final relevance window ends.</p>
                 </div>
 
                 <div className="form-group">
