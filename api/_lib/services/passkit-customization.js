@@ -95,8 +95,8 @@ function parseRelevantDateRanges(rawValue, timeZone) {
 function formatDisplayDate(date) {
   return date.toLocaleDateString('en-US', {
     day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+    month: 'numeric',
+    year: '2-digit',
   }).replace(/\//g, '.');
 }
 
@@ -107,7 +107,7 @@ function formatDateString(value) {
   }
 
   const [year, month, day] = normalized.split('-');
-  return `${month}.${day}.${year}`;
+  return `${Number(month)}.${day}.${year.slice(-2)}`;
 }
 
 function getDisplayDateRange(relevantDates) {

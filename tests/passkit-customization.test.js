@@ -71,18 +71,18 @@ test('getWalletPassConfig parses multi-day wallet windows from event metadata', 
     },
   ]);
   assert.equal(config.expirationDate, '2026-08-22T23:00:00-07:00');
-  assert.equal(config.displayDate, '08.21.2026 - 08.22.2026');
+  assert.equal(config.displayDate, '8.21.26 - 8.22.26');
   assert.equal(config.isMultiDay, true);
 });
 
-test('getWalletPassConfig formats single-day event dates as mm.dd.yyyy', () => {
+test('getWalletPassConfig formats single-day event dates as m.dd.yy', () => {
   const config = getWalletPassConfig({
     event_date: '2026-08-21',
     event_time: '13:00',
     metadata: {},
   });
 
-  assert.equal(config.displayDate, '08.21.2026');
+  assert.equal(config.displayDate, '8.21.26');
   assert.equal(config.isMultiDay, false);
 });
 
