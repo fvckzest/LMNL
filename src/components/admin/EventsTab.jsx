@@ -551,7 +551,7 @@ export default function EventsTab({
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {req.square_order_id ? (
+                      {req.status === 'fulfilled' && req.square_order_id ? (
                         <a
                           href={`/success?requestId=${req.id}`}
                           target="_blank"
