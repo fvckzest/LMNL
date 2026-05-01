@@ -25,6 +25,15 @@ test('getSquareConfig reads sandbox token', () => {
   assert.equal(config.applicationId, 'sandbox-app');
 });
 
+test('getSquareConfig throws when application id is missing', () => {
+  process.env.SQUARE_ENVIRONMENT = 'production';
+  process.env.SQUARE_PROD_ACCESS_TOKEN = 'prod-token';
+  delete process.env.SQUARE_PROD_APPLICATION_ID;
+  delete process.env.SQUARE_APPLICATION_ID;
+
+  assert.throws(() => getSquareConfig(), /Square application ID is missing/);
+});
+
 test('getSupabaseConfig throws when service credentials are missing', () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;

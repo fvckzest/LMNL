@@ -46,6 +46,18 @@ export function getSquareConfig() {
     });
   }
 
+  if (!applicationId) {
+    throw new AppError('Square application ID is missing.', {
+      code: 'CONFIG_MISSING',
+      status: 500,
+      details: {
+        scope: 'square',
+        missing: [environment === 'production' ? 'SQUARE_PROD_APPLICATION_ID' : 'SQUARE_SANDBOX_APPLICATION_ID'],
+      },
+      expose: true,
+    });
+  }
+
   return {
     environment,
     token,

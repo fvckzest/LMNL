@@ -226,7 +226,17 @@ export default function ShopCheckout() {
   }, [checkoutMode, preorderId, requestId, eventId]);
 
   useEffect(() => {
-    if (!checkout?.square?.applicationId || !checkout?.square?.locationId || !cardRef.current) {
+    if (!checkout) {
+      return;
+    }
+
+    if (!checkout?.square?.applicationId || !checkout?.square?.locationId) {
+      setInitializingPayment(false);
+      setError('Payment is temporarily unavailable. Please try again shortly.');
+      return;
+    }
+
+    if (!cardRef.current) {
       return;
     }
 
