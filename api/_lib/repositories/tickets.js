@@ -34,11 +34,16 @@ export async function getTicketWithEventById(id) {
 
 export async function getTicketWithEventByQrPayload(qrPayload) {
   const supabase = getAdminSupabase();
-  const { data: ticket, error } = await supabase
-    .from('tickets')
-    .select('*')
-    .eq('qr_code_payload', qrPayload)
-    .maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(qrPayload);
+  const query = supabase.from('tickets').select('*');
+  
+  if (isUuid) {
+    query.or(`qr_code_payload.eq.${qrPayload},id.eq.${qrPayload}`);
+  } else {
+    query.eq('qr_code_payload', qrPayload);
+  }
+
+  const { data: ticket, error } = await query.maybeSingle();
 
   if (error) throw error;
   if (!ticket) {

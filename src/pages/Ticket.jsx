@@ -18,8 +18,9 @@ export default function Ticket() {
   const appleWalletUrl = ticketId
     ? `/api/generate-pass?ticketId=${encodeURIComponent(ticketId)}`
     : '#';
-  const checkInUrl = ticket?.qr_code_payload
-    ? buildAdminCheckInUrl(ticket.qr_code_payload)
+  const qrPayload = ticket?.qr_code_payload || ticket?.id;
+  const checkInUrl = (ticket?.qr_code_payload || ticket?.id)
+    ? buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id)
     : '';
 
   useEffect(() => {
