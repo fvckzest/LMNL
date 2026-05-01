@@ -3,6 +3,8 @@ import { getSquareClient, getSquareLocationId } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getPreorderById } from '../repositories/preorders.js';
+import { createAccessRequest, attachOrderIdToRequest, getRequestById } from '../repositories/requests.js';
+import { getEventById, getLatestEventByName } from '../repositories/events.js';
 
 async function resolveVariationId(squareItemId) {
   const squareClient = getSquareClient();
@@ -39,6 +41,25 @@ async function resolveVariationId(squareItemId) {
     status: 400,
     expose: true,
   });
+}
+
+function readString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeBuyer(payload = {}) {
+  return {
+    fullName: readString(payload.fullName),
+    email: readString(payload.email),
+    phone: readString(payload.phone),
+  };
+}
+
+function buildPrePopulatedData(buyer) {
+  return {
+    buyerEmail: buyer.email || undefined,
+    buyerPhoneNumber: buyer.phone || undefined,
+  };
 }
 
 export async function createCheckoutForPreorder(preorderId, deps = {}) {
@@ -90,11 +111,16 @@ export async function createCheckoutForPreorder(preorderId, deps = {}) {
           catalogObjectId: variationId,
         },
       ],
+      pricingOptions: {
+        autoApplyDiscounts: true,
+      },
     },
     checkoutOptions: {
       redirectUrl: `${siteUrl}/shop?checkout=success&preorderId=${preorderId}`,
       askForShippingAddress: true,
+      enableCoupon: true,
     },
+    prePopulatedData: buildPrePopulatedData(normalizeBuyer(deps.buyer)),
   });
 
   const paymentLink = response.paymentLink || response.result?.paymentLink;
@@ -111,4 +137,170 @@ export async function createCheckoutForPreorder(preorderId, deps = {}) {
     orderId: paymentLink.orderId || null,
     variationId,
   };
+}
+
+async function loadEventOrThrow(eventId, deps = {}) {
+  const event = await (deps.getEventById || getEventById)(eventId);
+
+  if (!event) {
+    throw new AppError('Event not found.', {
+      code: 'EVENT_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  if (event.is_private) {
+    throw new AppError('This event requires approval before checkout.', {
+      code: 'EVENT_PRIVATE',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return event;
+}
+
+async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
+  const squareClient = deps.squareClient || getSquareClient();
+  const locationId = await (deps.getSquareLocationId || getSquareLocationId)();
+
+  if (!locationId) {
+    throw new AppError('No active Square location found.', {
+      code: 'SQUARE_LOCATION_MISSING',
+      status: 500,
+      expose: true,
+    });
+  }
+
+  const { siteUrl } = (deps.getBaseConfig || getBaseConfig)();
+  const response = await squareClient.checkout.paymentLinks.create({
+    idempotencyKey: crypto.randomUUID(),
+    order: {
+      locationId,
+      referenceId: String(request.id),
+      metadata: {
+        requestId: String(request.id),
+        eventId: String(event.id),
+      },
+      lineItems: event.square_variation_id
+        ? [{
+          quantity: '1',
+          catalogObjectId: event.square_variation_id,
+        }]
+        : [{
+          quantity: '1',
+          name: `${event.name} - Access Ticket`,
+          basePriceMoney: {
+            amount: BigInt(Math.round(Number(event.price || 0))),
+            currency: 'USD',
+          },
+        }],
+      pricingOptions: {
+        autoApplyDiscounts: true,
+      },
+      fulfillments: [
+        {
+          type: 'DIGITAL',
+        },
+      ],
+    },
+    checkoutOptions: {
+      redirectUrl: `${siteUrl}/success?requestId=${request.id}`,
+      enableCoupon: true,
+    },
+    prePopulatedData: buildPrePopulatedData(buyer),
+    paymentNote: `LMNL ticket checkout for ${event.name}`,
+  });
+
+  const paymentLink = response.paymentLink || response.result?.paymentLink;
+  if (!paymentLink?.url) {
+    throw new AppError('Square did not return a checkout URL.', {
+      code: 'SQUARE_CHECKOUT_FAILED',
+      status: 502,
+      expose: true,
+    });
+  }
+
+  if (paymentLink.orderId) {
+    await (deps.attachOrderIdToRequest || attachOrderIdToRequest)(request.id, paymentLink.orderId);
+  }
+
+  return {
+    checkoutUrl: paymentLink.url,
+    orderId: paymentLink.orderId || null,
+    requestId: request.id,
+  };
+}
+
+export async function createCheckoutForEvent(eventId, payload = {}, deps = {}) {
+  const event = await loadEventOrThrow(eventId, deps);
+  const buyer = normalizeBuyer(payload.buyer);
+
+  if (!buyer.fullName || !buyer.email) {
+    throw new AppError('Name and email are required.', {
+      code: 'INVALID_INPUT',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  const request = await (deps.createAccessRequest || createAccessRequest)({
+    event_name: event.name,
+    customer_name: buyer.fullName,
+    customer_email: buyer.email,
+    status: 'approved',
+  });
+
+  return createHostedTicketLink({ request, event, buyer, deps });
+}
+
+export async function createCheckoutForRequest(requestId, payload = {}, deps = {}) {
+  const request = await (deps.getRequestById || getRequestById)(requestId);
+
+  if (!request) {
+    throw new AppError('Request not found.', {
+      code: 'REQUEST_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  if (request.status !== 'approved' && request.status !== 'fulfilled') {
+    throw new AppError('This invite is not approved for checkout.', {
+      code: 'REQUEST_NOT_APPROVED',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  const event = await (deps.getLatestEventByName || getLatestEventByName)(request.event_name);
+  if (!event) {
+    throw new AppError('Event not found for this request.', {
+      code: 'EVENT_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  const buyer = normalizeBuyer({
+    fullName: payload.buyer?.fullName || request.customer_name,
+    email: payload.buyer?.email || request.customer_email,
+    phone: payload.buyer?.phone,
+  });
+
+  if (!buyer.email) {
+    throw new AppError('Email is required.', {
+      code: 'INVALID_INPUT',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return createHostedTicketLink({
+    request,
+    event,
+    buyer,
+    deps,
+  });
 }

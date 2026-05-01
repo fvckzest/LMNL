@@ -18,6 +18,7 @@ test('getEventCheckoutView returns public event checkout details', async () => {
   assert.equal(result.mode, 'event');
   assert.equal(result.requiresShipping, false);
   assert.equal(result.event.id, 'event_1');
+  assert.equal(result.price, 1800);
 });
 
 test('createPaymentForEvent creates approved request, order, payment, and success redirect', async () => {
@@ -76,5 +77,6 @@ test('createPaymentForEvent creates approved request, order, payment, and succes
   assert.equal(calls.requests[0].status, 'approved');
   assert.equal(calls.orders[0].order.metadata.requestId, 'req_public_1');
   assert.equal(calls.attach[0].orderId, 'order_public_1');
+  assert.equal(Number(calls.payments[0].amountMoney.amount), 1800);
   assert.equal(result.redirectUrl, 'https://lmnl.art/success?requestId=req_public_1');
 });

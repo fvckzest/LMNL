@@ -26,6 +26,7 @@ test('getRequestCheckoutView returns approved ticket checkout details', async ()
   assert.equal(result.requiresShipping, false);
   assert.equal(result.request.customerEmail, 'ada@example.com');
   assert.equal(result.square.locationId, 'loc_1');
+  assert.equal(result.price, 2500);
 });
 
 test('createPaymentForRequest creates order, attaches request id, and returns success redirect', async () => {
@@ -87,5 +88,6 @@ test('createPaymentForRequest creates order, attaches request id, and returns su
   assert.equal(calls.orders[0].order.metadata.requestId, 'req_2');
   assert.equal(calls.attached[0].orderId, 'order_req_2');
   assert.equal(calls.payments[0].orderId, 'order_req_2');
+  assert.equal(Number(calls.payments[0].amountMoney.amount), 2500);
   assert.equal(result.redirectUrl, 'https://lmnl.art/success?requestId=req_2');
 });

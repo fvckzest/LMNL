@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError } from './_lib/http.js';
 import { requireAdminUser } from './_lib/auth.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
-import { createCheckoutForPreorder } from './_lib/services/checkout.js';
+import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
 import { getVariationInventory } from './_lib/services/inventory.js';
 import { generateTicketPass } from './_lib/services/passkit.js';
@@ -82,7 +82,29 @@ async function handleCreateCheckout(req, res) {
   allowMethods(req, ['POST']);
   const body = await parseJsonBody(req);
   const preorderId = requireValue(body.preorderId, 'preorderId is required.');
-  const data = await createCheckoutForPreorder(preorderId);
+  const data = await createCheckoutForPreorder(preorderId, {
+    buyer: body.buyer || {},
+  });
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleCreateEventCheckout(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const eventId = requireValue(body.eventId, 'eventId is required.');
+  const data = await createCheckoutForEvent(eventId, {
+    buyer: body.buyer || {},
+  });
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleCreateRequestCheckout(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const requestId = requireValue(body.requestId, 'requestId is required.');
+  const data = await createCheckoutForRequest(requestId, {
+    buyer: body.buyer || {},
+  });
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -451,6 +473,8 @@ const handlers = {
   'check-inventory': handleCheckInventory,
   'confirm-ticket': handleConfirmTicket,
   'create-checkout': handleCreateCheckout,
+  'create-event-checkout': handleCreateEventCheckout,
+  'create-request-checkout': handleCreateRequestCheckout,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,
