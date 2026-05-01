@@ -17,7 +17,6 @@ test('getWalletPassConfig falls back to event defaults', () => {
   assert.equal(config.stripImageUrl, 'https://cdn.example.com/default-strip.png');
   assert.equal(config.logoText, 'SPACE');
   assert.equal(config.description, 'LMNL Event Ticket');
-  assert.equal(config.primaryValue, '');
   assert.equal(config.locationValue, 'LMNL COMPOUND');
 });
 
@@ -33,7 +32,6 @@ test('buildPassOverrides prefers per-event wallet metadata', () => {
         wallet_background_color: 'rgb(10, 10, 10)',
         wallet_foreground_color: 'rgb(255, 255, 255)',
         wallet_label_color: 'rgb(180, 180, 180)',
-        wallet_primary_override: 'MIDNIGHT SESSION',
         wallet_location_override: 'SECRET ROOM',
       },
     },

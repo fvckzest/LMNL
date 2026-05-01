@@ -73,19 +73,11 @@ export async function generatePassBuffer(ticket, eventData) {
     );
 
     // Push dynamic fields programmatically
-    if (wallet.primaryValue) {
-      pass.primaryFields.push({ 
-        key: 'event', 
-        label: 'EVENT', 
-        value: wallet.primaryValue
-      });
-    }
-    
     pass.secondaryFields.push(
       { key: 'date', label: 'DATE', value: wallet.displayDate || eventData?.event_date || 'TBA' },
       { key: 'time', label: 'TIME', value: wallet.isMultiDay ? 'MULTI-DAY' : (eventData?.event_time || 'TBA') }
     );
-    
+
     pass.auxiliaryFields.push(
       { key: 'location', label: 'LOCATION', value: wallet.locationValue },
       { key: 'guest', label: 'GUEST', value: ticket.customer_name }

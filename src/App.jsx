@@ -112,7 +112,7 @@ function App() {
           <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
           <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
 
-          <Route path="*" element={<Space />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </Router>

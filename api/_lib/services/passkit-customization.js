@@ -141,7 +141,6 @@ export function getWalletPassConfig(event = {}) {
     backgroundColor: readColor(metadata.wallet_background_color, DEFAULT_WALLET_COLORS.backgroundColor),
     foregroundColor: readColor(metadata.wallet_foreground_color, DEFAULT_WALLET_COLORS.foregroundColor),
     labelColor: readColor(metadata.wallet_label_color, DEFAULT_WALLET_COLORS.labelColor),
-    primaryValue: readString(metadata.wallet_primary_override),
     locationValue: readString(metadata.wallet_location_override) || event?.location_name || 'TBA',
     notes,
     eventLink,

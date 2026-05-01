@@ -86,14 +86,6 @@ export async function generateTicketPass(ticketId) {
     buildPassOverrides(ticket, event, certificateMaterial)
   );
 
-  if (wallet.primaryValue) {
-    pass.primaryFields.push({
-      key: 'event',
-      label: 'EVENT',
-      value: wallet.primaryValue,
-    });
-  }
-
   pass.secondaryFields.push(
     { key: 'date', label: 'DATE', value: wallet.displayDate || event?.event_date || 'TBA' },
     { key: 'time', label: 'TIME', value: wallet.isMultiDay ? 'MULTI-DAY' : (event?.event_time || 'TBA') }

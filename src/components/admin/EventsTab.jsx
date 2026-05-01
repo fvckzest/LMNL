@@ -901,16 +901,6 @@ export default function EventsTab({
                 </div>
 
                 <div className="form-group">
-                  <label>WALLET TITLE OVERRIDE</label>
-                  <input
-                    type="text"
-                    placeholder="Defaults to event name"
-                    value={eventForm.metadata?.wallet_primary_override || ''}
-                    onChange={e => updateMetadataField('wallet_primary_override', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
                   <label>WALLET LOCATION OVERRIDE</label>
                   <input
                     type="text"
