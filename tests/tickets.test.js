@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  checkInTicket,
-  extractTicketIdFromScanValue,
+  buildAdminCheckInUrl,
+  confirmCheckInTicket,
+  getCheckInTicketView,
   getTicketView,
 } from '../api/_lib/services/tickets.js';
 
@@ -18,15 +19,27 @@ test('getTicketView returns ticket and event payload', async () => {
   assert.equal(result.event.name, 'LMNL Event');
 });
 
-test('extractTicketIdFromScanValue reads ticket id from ticket url', () => {
+test('buildAdminCheckInUrl points public site tokens at the admin subdomain', () => {
   assert.equal(
-    extractTicketIdFromScanValue('https://lmnl.art/ticket/ticket_123?ref=door'),
-    'ticket_123',
+    buildAdminCheckInUrl('LMNL-qr-token', { siteUrl: 'https://lmnl.art' }),
+    'https://admin.lmnl.art/check-in/LMNL-qr-token',
   );
 });
 
-test('checkInTicket marks a valid unused ticket as used from qr payload', async () => {
-  const result = await checkInTicket('LMNL-qr-token', {
+test('getCheckInTicketView resolves a valid unused ticket', async () => {
+  const result = await getCheckInTicketView('LMNL-qr-token', {
+    getTicketWithEventByQrPayload: async () => ({
+      ticket: { id: 'ticket_1', is_used: false },
+      event: { id: 'event_1', name: 'LMNL Event' },
+    }),
+  });
+
+  assert.equal(result.status, 'valid');
+  assert.equal(result.ticket.id, 'ticket_1');
+});
+
+test('confirmCheckInTicket marks a valid unused ticket as used', async () => {
+  const result = await confirmCheckInTicket('LMNL-qr-token', {
     getTicketWithEventByQrPayload: async () => ({
       ticket: { id: 'ticket_1', is_used: false },
       event: { id: 'event_1', name: 'LMNL Event' },
@@ -43,10 +56,10 @@ test('checkInTicket marks a valid unused ticket as used from qr payload', async 
   assert.equal(result.event.name, 'LMNL Event');
 });
 
-test('checkInTicket reports already used tickets without updating them', async () => {
+test('confirmCheckInTicket reports already used tickets without updating them', async () => {
   let updated = false;
-  const result = await checkInTicket('https://lmnl.art/ticket/ticket_2', {
-    getTicketWithEventById: async () => ({
+  const result = await confirmCheckInTicket('LMNL-qr-token', {
+    getTicketWithEventByQrPayload: async () => ({
       ticket: { id: 'ticket_2', is_used: true, used_at: '2026-05-01T11:00:00.000Z' },
       event: { id: 'event_1', name: 'LMNL Event' },
     }),

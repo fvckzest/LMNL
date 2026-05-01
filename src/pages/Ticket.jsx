@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { apiGet } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import { buildAdminCheckInUrl } from '../utils/checkInUrl';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './Ticket.css';
 
@@ -17,6 +18,9 @@ export default function Ticket() {
   const appleWalletUrl = ticketId
     ? `/api/generate-pass?ticketId=${encodeURIComponent(ticketId)}`
     : '#';
+  const checkInUrl = ticket?.qr_code_payload
+    ? buildAdminCheckInUrl(ticket.qr_code_payload)
+    : '';
 
   useEffect(() => {
     if (!ticketId) {
@@ -115,7 +119,7 @@ export default function Ticket() {
                 )}
                 <div className={`ticket-qr-wrapper ${ticket.is_used ? 'is-used' : ''}`}>
                   <QRCodeSVG
-                    value={ticket.qr_code_payload}
+                    value={checkInUrl}
                     size={280}
                     bgColor={"#ffffff"}
                     fgColor={"#000000"}

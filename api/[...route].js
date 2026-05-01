@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError } from './_lib/http.js';
+import { requireAdminUser } from './_lib/auth.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
 import { createCheckoutForPreorder } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
@@ -8,7 +9,7 @@ import { generateTicketPass } from './_lib/services/passkit.js';
 import { createPaymentForPreorder, getPreorderCheckoutView } from './_lib/services/preorder-checkout.js';
 import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services/request-checkout.js';
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
-import { checkInTicket, getTicketView } from './_lib/services/tickets.js';
+import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { createAccessRequest, updateRequestStatus, deleteRequestById } from './_lib/repositories/requests.js';
@@ -269,11 +270,16 @@ async function handleGetTicket(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
-async function handleTicketCheckIn(req, res) {
-  allowMethods(req, ['POST']);
-  const body = await parseJsonBody(req);
-  const scanValue = requireValue(body.scanValue, 'scanValue is required.');
-  const data = await checkInTicket(scanValue);
+async function handleCheckInTicket(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+  const token = requireValue(req.query?.token || body.token, 'token is required.');
+  const data = req.method === 'POST'
+    ? await confirmCheckInTicket(token)
+    : await getCheckInTicketView(token);
+
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -456,7 +462,7 @@ const handlers = {
   'generate-pass': handleGeneratePass,
   'preorder-checkout': handleGetPreorderCheckout,
   'get-ticket': handleGetTicket,
-  'ticket-check-in': handleTicketCheckIn,
+  'check-in-ticket': handleCheckInTicket,
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,

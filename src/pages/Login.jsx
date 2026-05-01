@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import HeaderBar from '../components/HeaderBar';
 import './Login.css';
@@ -10,6 +10,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('next') || '/';
+  }, [location.search]);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -25,7 +30,7 @@ export default function Login() {
       setError(authError.message);
       setLoading(false);
     } else {
-      navigate('/');
+      navigate(nextPath, { replace: true });
     }
   }
 

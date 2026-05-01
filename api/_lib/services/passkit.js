@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { PKPass } from 'passkit-generator';
 import forge from 'node-forge';
-import { getApplePassConfig, getApplePassConfigMissingFields } from '../env.js';
-import { getTicketView } from './tickets.js';
+import { getApplePassConfig, getApplePassConfigMissingFields, getBaseConfig } from '../env.js';
+import { buildAdminCheckInUrl, getTicketView } from './tickets.js';
 import { applyPassTimingCustomization, applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './passkit-customization.js';
 
 let passAssets;
@@ -112,7 +112,9 @@ export async function generateTicketPass(ticketId) {
     { key: 'guest', label: 'GUEST', value: ticket.customer_name }
   );
 
-  const barcodeMessage = ticket.qr_code_payload || ticket.id;
+  const barcodeMessage = buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id, {
+    siteUrl: getBaseConfig().siteUrl,
+  });
   pass.setBarcodes(barcodeMessage);
   applyPassTimingCustomization(pass, event);
   await applyPassVisualCustomization(pass, event);

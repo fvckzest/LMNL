@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import Home from './pages/Home';
 import './index.css';
@@ -7,6 +7,7 @@ const GenericPage = lazy(() => import('./pages/GenericPage'));
 const Space = lazy(() => import('./pages/Space'));
 const Events = lazy(() => import('./pages/Events'));
 const Admin = lazy(() => import('./pages/Admin'));
+const CheckIn = lazy(() => import('./pages/CheckIn'));
 const Login = lazy(() => import('./pages/Login'));
 const Ticket = lazy(() => import('./pages/Ticket'));
 const Success = lazy(() => import('./pages/Success'));
@@ -19,6 +20,7 @@ const ShopCheckout = lazy(() => import('./pages/ShopCheckout'));
 // Protected Route Component
 function ProtectedRoute({ children }) {
   const [session, setSession] = useState(undefined);
+  const location = useLocation();
 
   useEffect(() => {
     let isMounted = true;
@@ -50,7 +52,13 @@ function ProtectedRoute({ children }) {
   }, []);
 
   if (session === undefined) return null; // Loading state
-  return session ? children : <Navigate to="/login" />;
+
+  if (!session) {
+    const next = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
+
+  return children;
 }
 
 function App() {
@@ -83,6 +91,11 @@ function App() {
               <Route path="/" element={
                 <ProtectedRoute>
                   <Admin />
+                </ProtectedRoute>
+              } />
+              <Route path="/check-in/:token" element={
+                <ProtectedRoute>
+                  <CheckIn />
                 </ProtectedRoute>
               } />
               {/* Allow viewing the public home via /home on the subdomain */}

@@ -1,0 +1,133 @@
+.checkin-content {
+  width: 100%;
+}
+
+.checkin-body {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(115px + 48px) 20px 72px;
+}
+
+.checkin-card {
+  border: 2px solid #004ffa;
+  background:
+    linear-gradient(180deg, rgba(0, 79, 250, 0.05), rgba(0, 79, 250, 0.01)),
+    #ffffff;
+  padding: 24px;
+  display: grid;
+  gap: 24px;
+}
+
+.checkin-status {
+  width: fit-content;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 2px solid currentColor;
+}
+
+.checkin-status-valid {
+  color: #0f7a38;
+  background: #ebfff1;
+}
+
+.checkin-status-checked_in {
+  color: #ffffff;
+  background: #004ffa;
+}
+
+.checkin-status-already_used,
+.checkin-status-invalid {
+  color: #b91c1c;
+  background: #fff1f2;
+}
+
+.checkin-section {
+  display: grid;
+  gap: 6px;
+}
+
+.checkin-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.checkin-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #5f6b85;
+}
+
+.checkin-value,
+.checkin-meta-value,
+.checkin-note {
+  margin: 0;
+  color: #111;
+}
+
+.checkin-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.checkin-meta-value,
+.checkin-note {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.checkin-primary-button {
+  width: 100%;
+  border: none;
+  background: #004ffa;
+  color: #ffffff;
+  padding: 18px 20px;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.checkin-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.checkin-primary-button:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+@media (max-width: 640px) {
+  .checkin-body {
+    padding-top: 112px;
+  }
+
+  .checkin-card {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .checkin-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkin-value {
+    font-size: 26px;
+  }
+
+  .checkin-primary-button {
+    min-height: 68px;
+  }
+}
