@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { getSquareApplicationId, getSquareClient, getSquareLocationId } from '../clients.js';
+import { getSquareApplicationId, getSquareClient, getSquareEnvironmentName, getSquareLocationId } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getEventById } from '../repositories/events.js';
@@ -83,7 +83,7 @@ export async function getEventCheckoutView(eventId, deps = {}) {
     square: {
       applicationId: deps.getSquareApplicationId ? deps.getSquareApplicationId() : getSquareApplicationId(),
       locationId,
-      environment: deps.squareEnvironment || 'sandbox',
+      environment: deps.squareEnvironment || getSquareEnvironmentName(),
       currencyCode: 'USD',
       countryCode: 'US',
     },

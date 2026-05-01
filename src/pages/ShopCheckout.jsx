@@ -1,7 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import GenericPage from './GenericPage';
 import { apiGet, apiPost } from '../lib/api';
 import './ShopCheckout.css';
 
@@ -158,10 +157,6 @@ export default function ShopCheckout() {
     }
   });
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--page-color', '#ff0000');
-    return () => document.documentElement.style.removeProperty('--page-color');
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -393,137 +388,117 @@ export default function ShopCheckout() {
 
   if (loading) {
     return (
-      <div className="page-container checkout-page">
-        <HeaderBar />
-        <div className="page-content checkout-content">
-          <div className="checkout-loading">PREPARING CHECKOUT...</div>
-        </div>
-        <Footer />
-      </div>
+      <GenericPage title="CHECKOUT" color="#ff0000">
+        <div className="checkout-loading">PREPARING CHECKOUT...</div>
+      </GenericPage>
     );
   }
 
   if (!checkout) {
     return (
-      <div className="page-container checkout-page">
-        <HeaderBar />
-        <div className="page-content checkout-content">
-          <div className="checkout-error-panel">
-            <p>{error || 'Checkout is unavailable.'}</p>
-            <Link to="/shop" className="checkout-back-link">RETURN TO SHOP</Link>
-          </div>
+      <GenericPage title="CHECKOUT" color="#ff0000">
+        <div className="checkout-error-panel">
+          <p>{error || 'Checkout is unavailable.'}</p>
+          <Link to="/shop" className="checkout-back-link">RETURN TO SHOP</Link>
         </div>
-        <Footer />
-      </div>
+      </GenericPage>
     );
   }
 
   return (
-    <div className="page-container checkout-page">
-      <HeaderBar />
-      <div className="page-content checkout-content">
-        <div className="checkout-header">
-          <div className="checkout-header-mark" />
-          <div>
-            <p className="checkout-kicker">LMNL CHECKOUT</p>
-            <h1 className="checkout-title">{checkout.itemName}</h1>
+    <GenericPage title="CHECKOUT" color="#ff0000">
+      <div className="checkout-grid">
+        <section className="checkout-product-card">
+          {checkout.imageUrl ? (
+            <img src={checkout.imageUrl} alt={checkout.itemName} className="checkout-product-image" />
+          ) : (
+            <div className="checkout-product-image placeholder" />
+          )}
+          <div className="checkout-product-meta">
+            <span className="checkout-category">{checkout.category || checkout.checkoutCategory}</span>
+            <p className="checkout-description">{checkout.description || 'Limited LMNL release.'}</p>
           </div>
-        </div>
+          <div className="checkout-summary-row">
+            <span>TOTAL</span>
+            <strong>{formatPrice(checkout.price)}</strong>
+          </div>
+        </section>
 
-        <div className="checkout-grid">
-          <section className="checkout-product-card">
-            {checkout.imageUrl ? (
-              <img src={checkout.imageUrl} alt={checkout.itemName} className="checkout-product-image" />
-            ) : (
-              <div className="checkout-product-image placeholder" />
-            )}
-            <div className="checkout-product-meta">
-              <span className="checkout-category">{checkout.category || checkout.checkoutCategory}</span>
-              <p className="checkout-description">{checkout.description || 'Limited LMNL release.'}</p>
-            </div>
-            <div className="checkout-summary-row">
-              <span>TOTAL</span>
-              <strong>{formatPrice(checkout.price)}</strong>
-            </div>
-          </section>
+        <section className="checkout-form-card">
+          <div className="checkout-wallets">
+            <div id="apple-pay-button" className="wallet-button-slot" />
+            <div id="google-pay-button" className="wallet-button-slot" />
+          </div>
 
-          <section className="checkout-form-card">
-            <div className="checkout-wallets">
-              <div id="apple-pay-button" className="wallet-button-slot" />
-              <div id="google-pay-button" className="wallet-button-slot" />
-            </div>
+          <div className="checkout-divider">
+            <span>OR PAY WITH CARD</span>
+          </div>
 
-            <div className="checkout-divider">
-              <span>OR PAY WITH CARD</span>
-            </div>
-
-            <form className="checkout-form" onSubmit={handleCardPayment}>
-              <div className="checkout-section">
-                <label>
-                  FULL NAME
-                  <input name="fullName" value={form.fullName} onChange={updateField} required />
-                </label>
-                <label>
-                  EMAIL
-                  <input name="email" type="email" value={form.email} onChange={updateField} required />
-                </label>
-                {requiresShipping && (
-                  <label>
-                    PHONE
-                    <input name="phone" value={form.phone} onChange={updateField} required />
-                  </label>
-                )}
-              </div>
-
+          <form className="checkout-form" onSubmit={handleCardPayment}>
+            <div className="checkout-section">
+              <label>
+                FULL NAME
+                <input name="fullName" value={form.fullName} onChange={updateField} required />
+              </label>
+              <label>
+                EMAIL
+                <input name="email" type="email" value={form.email} onChange={updateField} required />
+              </label>
               {requiresShipping && (
-                <div className="checkout-section">
-                  <p className="checkout-section-label">SHIPPING</p>
-                  <label>
-                    ADDRESS LINE 1
-                    <input name="addressLine1" value={form.addressLine1} onChange={updateField} required />
-                  </label>
-                  <label>
-                    ADDRESS LINE 2
-                    <input name="addressLine2" value={form.addressLine2} onChange={updateField} />
-                  </label>
-                  <div className="checkout-row">
-                    <label>
-                      CITY
-                      <input name="locality" value={form.locality} onChange={updateField} required />
-                    </label>
-                    <label>
-                      STATE
-                      <input name="administrativeDistrictLevel1" value={form.administrativeDistrictLevel1} onChange={updateField} required />
-                    </label>
-                  </div>
-                  <div className="checkout-row">
-                    <label>
-                      ZIP
-                      <input name="postalCode" value={form.postalCode} onChange={updateField} required />
-                    </label>
-                    <label>
-                      COUNTRY
-                      <input name="country" value={form.country} onChange={updateField} required />
-                    </label>
-                  </div>
-                </div>
+                <label>
+                  PHONE
+                  <input name="phone" value={form.phone} onChange={updateField} required />
+                </label>
               )}
+            </div>
 
+            {requiresShipping && (
               <div className="checkout-section">
-                <p className="checkout-section-label">PAYMENT</p>
-                <div ref={cardRef} id="checkout-card-slot" className="checkout-card-slot" />
+                <p className="checkout-section-label">SHIPPING</p>
+                <label>
+                  ADDRESS LINE 1
+                  <input name="addressLine1" value={form.addressLine1} onChange={updateField} required />
+                </label>
+                <label>
+                  ADDRESS LINE 2
+                  <input name="addressLine2" value={form.addressLine2} onChange={updateField} />
+                </label>
+                <div className="checkout-row">
+                  <label>
+                    CITY
+                    <input name="locality" value={form.locality} onChange={updateField} required />
+                  </label>
+                  <label>
+                    STATE
+                    <input name="administrativeDistrictLevel1" value={form.administrativeDistrictLevel1} onChange={updateField} required />
+                  </label>
+                </div>
+                <div className="checkout-row">
+                  <label>
+                    ZIP
+                    <input name="postalCode" value={form.postalCode} onChange={updateField} required />
+                  </label>
+                  <label>
+                    COUNTRY
+                    <input name="country" value={form.country} onChange={updateField} required />
+                  </label>
+                </div>
               </div>
+            )}
 
-              {error && <p className="checkout-error">{error}</p>}
+            <div className="checkout-section">
+              <p className="checkout-section-label">PAYMENT</p>
+              <div ref={cardRef} id="checkout-card-slot" className="checkout-card-slot" />
+            </div>
 
-              <button type="submit" className="checkout-submit" disabled={initializingPayment || submitting}>
-                {submitting ? 'PROCESSING...' : `PAY ${formatPrice(checkout.price)}`}
-              </button>
-            </form>
-          </section>
-        </div>
+            {error && <p className="checkout-error">{error}</p>}
+
+            <button type="submit" className="checkout-submit" disabled={initializingPayment || submitting}>
+              {submitting ? 'PROCESSING...' : `PAY ${formatPrice(checkout.price)}`}
+            </button>
+          </form>
+        </section>
       </div>
-      <Footer />
-    </div>
+    </GenericPage>
   );
 }

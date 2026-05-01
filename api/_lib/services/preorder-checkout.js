@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { getSquareApplicationId, getSquareClient, getSquareLocationId } from '../clients.js';
+import { getSquareApplicationId, getSquareClient, getSquareEnvironmentName, getSquareLocationId } from '../clients.js';
 import { AppError } from '../errors.js';
 import { getPreorderById } from '../repositories/preorders.js';
 import { getBaseConfig } from '../env.js';
@@ -227,7 +227,7 @@ export async function getPreorderCheckoutView(preorderId, deps = {}) {
   return buildCheckoutView(preorder, {
     applicationId: deps.getSquareApplicationId ? deps.getSquareApplicationId() : getSquareApplicationId(),
     locationId,
-    environment: deps.squareEnvironment || 'sandbox',
+    environment: deps.squareEnvironment || getSquareEnvironmentName(),
   });
 }
 

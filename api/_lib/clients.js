@@ -61,3 +61,7 @@ export async function getSquareLocationId() {
 export function getSquareApplicationId() {
   return getSquareConfig().applicationId || '';
 }
+
+export function getSquareEnvironmentName() {
+  return getSquareConfig().environment;
+}
