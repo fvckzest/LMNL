@@ -13,17 +13,9 @@ export default function Ticket() {
   const [loading, setLoading] = useState(() => Boolean(ticketId));
   const [error, setError] = useState(ticketId ? null : 'Missing ticket ID.');
 
-  function handleAppleWalletClick(event) {
-    event.preventDefault();
-
-    if (!ticketId) {
-      return;
-    }
-
-    const passUrl = new URL('/api/generate-pass', window.location.origin);
-    passUrl.searchParams.set('ticketId', ticketId);
-    window.location.assign(passUrl.toString());
-  }
+  const appleWalletUrl = ticketId
+    ? `/api/generate-pass?ticketId=${encodeURIComponent(ticketId)}`
+    : '#';
 
   useEffect(() => {
     if (!ticketId) {
@@ -108,9 +100,10 @@ export default function Ticket() {
                 {!ticket.is_used && (
                   <div className="ticket-section wallet-section">
                     <a 
-                      href={`/api/generate-pass?ticketId=${encodeURIComponent(ticketId)}`}
+                      href={appleWalletUrl}
                       className="apple-wallet-button"
-                      onClick={handleAppleWalletClick}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <svg className="apple-icon" viewBox="0 0 384 512" width="16" height="16" fill="currentColor">
                         <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 91.2c12.8 45.6 39 95.7 78 95.7 19.5 0 37.5-12 65-12 27.8 0 44.8 12 65 12 38.8 0 64.5-45.4 77.3-92.8 15-50.4 21.1-100.1 21.1-101.4-.9-.7-68.5-26.1-68.5-97.3zm-68.2-121.5c14.2-18 23-43 19.2-68.7-21.9 1-49.3 14.8-65 33.9-13.1 15.8-23.9 41.3-19 66.2 24.9 2 49.2-11.5 64.8-31.4z"/>
