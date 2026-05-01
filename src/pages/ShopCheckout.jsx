@@ -490,6 +490,11 @@ export default function ShopCheckout() {
             <div className="checkout-section">
               <p className="checkout-section-label">PAYMENT</p>
               <div ref={cardRef} id="checkout-card-slot" className="checkout-card-slot" />
+              <p className="checkout-payment-trust">
+                Payments on this page are powered by Square. Your card details are entered through Square&apos;s
+                PCI-compliant payment fields, tokenized in the browser, and protected with buyer verification
+                before the payment is processed.
+              </p>
             </div>
 
             {error && <p className="checkout-error">{error}</p>}
