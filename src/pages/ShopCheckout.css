@@ -68,53 +68,6 @@
   padding: 28px;
 }
 
-.checkout-wallets {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.wallet-button-slot {
-  min-height: 48px;
-}
-
-.wallet-trigger {
-  min-height: 48px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  cursor: pointer;
-}
-
-.wallet-trigger.google {
-  background: #fff;
-  color: #111;
-}
-
-.wallet-trigger:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.checkout-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 24px 0;
-  color: #858585;
-  font-size: 11px;
-  letter-spacing: 0.24em;
-}
-
-.checkout-divider::before,
-.checkout-divider::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
 .checkout-form {
   display: flex;
   flex-direction: column;
@@ -217,7 +170,6 @@
     padding: 20px;
   }
 
-  .checkout-wallets,
   .checkout-row {
     grid-template-columns: 1fr;
   }

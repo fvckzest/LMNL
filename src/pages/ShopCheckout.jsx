@@ -424,19 +424,10 @@ export default function ShopCheckout() {
           </div>
         </section>
 
-        <section className="checkout-form-card">
-          <div className="checkout-wallets">
-            <div id="apple-pay-button" className="wallet-button-slot" />
-            <div id="google-pay-button" className="wallet-button-slot" />
-          </div>
-
-          <div className="checkout-divider">
-            <span>OR PAY WITH CARD</span>
-          </div>
-
-          <form className="checkout-form" onSubmit={handleCardPayment}>
-            <div className="checkout-section">
-              <label>
+          <section className="checkout-form-card">
+            <form className="checkout-form" onSubmit={handleCardPayment}>
+              <div className="checkout-section">
+                <label>
                 FULL NAME
                 <input name="fullName" value={form.fullName} onChange={updateField} required />
               </label>
