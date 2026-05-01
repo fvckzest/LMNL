@@ -253,7 +253,7 @@ export default function ShopCheckout() {
         const payments = Square.payments(checkout.square.applicationId, checkout.square.locationId);
         squareInstanceRef.current = payments;
 
-        const card = await payments.card();
+        const card = await payments.card({ includePostalCode: false });
         if (!active) return;
         await card.attach('#checkout-card-slot');
         cardInstanceRef.current = card;
@@ -316,7 +316,7 @@ export default function ShopCheckout() {
         applePayInstanceRef.current?.destroy?.(),
       ].filter(Boolean);
 
-      Promise.allSettled(cleanups).catch(() => {});
+      Promise.allSettled(cleanups).catch(() => { });
       cardInstanceRef.current = null;
       googlePayInstanceRef.current = null;
       applePayInstanceRef.current = null;
@@ -434,23 +434,29 @@ export default function ShopCheckout() {
           </div>
         </section>
 
-          <section className="checkout-form-card">
-            <form className="checkout-form" onSubmit={handleCardPayment}>
-              <div className="checkout-section">
-                <label>
+        <section className="checkout-form-card">
+          <form className="checkout-form" onSubmit={handleCardPayment}>
+            <div className="checkout-section">
+              <label>
                 FULL NAME
                 <input name="fullName" value={form.fullName} onChange={updateField} required />
               </label>
               <label>
-                EMAIL
+                EMAIL FOR DELIVERY
                 <input name="email" type="email" value={form.email} onChange={updateField} required />
               </label>
-              {requiresShipping && (
+              <div className="checkout-row">
+                {requiresShipping && (
+                  <label>
+                    PHONE
+                    <input name="phone" value={form.phone} onChange={updateField} required />
+                  </label>
+                )}
                 <label>
-                  PHONE
-                  <input name="phone" value={form.phone} onChange={updateField} required />
+                  ZIP CODE
+                  <input name="postalCode" value={form.postalCode} onChange={updateField} required placeholder="00000" />
                 </label>
-              )}
+              </div>
             </div>
 
             {requiresShipping && (
@@ -476,22 +482,23 @@ export default function ShopCheckout() {
                 </div>
                 <div className="checkout-row">
                   <label>
-                    ZIP
-                    <input name="postalCode" value={form.postalCode} onChange={updateField} required />
-                  </label>
-                  <label>
                     COUNTRY
                     <input name="country" value={form.country} onChange={updateField} required />
                   </label>
+                  <div />
                 </div>
               </div>
             )}
 
             <div className="checkout-section">
               <p className="checkout-section-label">PAYMENT</p>
-              <div ref={cardRef} id="checkout-card-slot" className="checkout-card-slot" />
+              <div 
+                ref={cardRef} 
+                id="checkout-card-slot" 
+                className={`checkout-card-slot ${!requiresShipping ? 'minimal' : ''}`} 
+              />
               <p className="checkout-payment-trust">
-                Payments on this page are powered by Square. Your card details are entered through Square&apos;s
+                Payments are powered by Square. Your card details are entered through Square&apos;s
                 PCI-compliant payment fields, tokenized in the browser, and protected with buyer verification
                 before the payment is processed.
               </p>

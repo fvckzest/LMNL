@@ -103,6 +103,7 @@
   font: inherit;
   font-size: 15px;
   letter-spacing: 0.02em;
+  border-radius: 0;
 }
 
 .checkout-row {
@@ -116,6 +117,14 @@
   padding: 16px 14px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: #fff;
+}
+
+.checkout-card-slot.minimal {
+  border: 0;
+  padding: 0;
+  min-height: 48px;
+  background: transparent;
+  border-radius: 0;
 }
 
 .checkout-payment-trust {
