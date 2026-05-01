@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { getApplePassConfig, getBaseConfig, getResendConfig, getSquareConfig, getSupabaseConfig } from '../api/_lib/env.js';
+import { getApplePassConfig, getApplePassConfigMissingFields, getBaseConfig, getResendConfig, getSquareConfig, getSupabaseConfig } from '../api/_lib/env.js';
 
 test('getBaseConfig provides stable defaults', () => {
   delete process.env.SITE_URL;
@@ -74,4 +74,17 @@ test('getApplePassConfig can load certificate contents from a file path', () => 
 
   fs.rmSync(tempDir, { recursive: true, force: true });
   delete process.env.APPLE_PASS_CERTIFICATE_PATH;
+});
+
+test('getApplePassConfigMissingFields reports the missing wallet inputs', () => {
+  delete process.env.APPLE_PASS_TYPE_IDENTIFIER;
+  delete process.env.APPLE_TEAM_ID;
+  delete process.env.APPLE_PASS_CERTIFICATE;
+  delete process.env.APPLE_PASS_CERTIFICATE_PATH;
+
+  assert.deepEqual(getApplePassConfigMissingFields(), [
+    'APPLE_PASS_TYPE_IDENTIFIER',
+    'APPLE_TEAM_ID',
+    'APPLE_PASS_CERTIFICATE or APPLE_PASS_CERTIFICATE_PATH',
+  ]);
 });

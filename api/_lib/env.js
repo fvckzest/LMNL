@@ -114,3 +114,21 @@ export function getApplePassConfig() {
     certificatePath: resolvedCertificatePath,
   };
 }
+
+export function getApplePassConfigMissingFields(config = getApplePassConfig()) {
+  const missing = [];
+
+  if (!config.passTypeIdentifier) {
+    missing.push('APPLE_PASS_TYPE_IDENTIFIER');
+  }
+
+  if (!config.teamIdentifier) {
+    missing.push('APPLE_TEAM_ID');
+  }
+
+  if (!config.certificateBase64) {
+    missing.push('APPLE_PASS_CERTIFICATE or APPLE_PASS_CERTIFICATE_PATH');
+  }
+
+  return missing;
+}

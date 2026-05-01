@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { PKPass } from 'passkit-generator';
 import forge from 'node-forge';
-import { getApplePassConfig } from '../env.js';
+import { getApplePassConfig, getApplePassConfigMissingFields } from '../env.js';
 import { getTicketView } from './tickets.js';
 import { applyPassTimingCustomization, applyPassVisualCustomization, buildPassOverrides, getWalletPassConfig } from './passkit-customization.js';
 
@@ -63,12 +63,28 @@ function getCertificateMaterial() {
 
 export async function generateTicketPass(ticketId) {
   const assets = loadPassAssets();
+  const applePassConfig = getApplePassConfig();
+  const missingApplePassFields = getApplePassConfigMissingFields(applePassConfig);
   const certificateMaterial = getCertificateMaterial();
 
-  if (!assets || !certificateMaterial) {
+  if (!assets || missingApplePassFields.length || !certificateMaterial) {
+    const reasons = [];
+
+    if (!assets) {
+      reasons.push('WWDR certificate asset is unavailable');
+    }
+
+    if (missingApplePassFields.length) {
+      reasons.push(`missing ${missingApplePassFields.join(', ')}`);
+    }
+
+    if (!missingApplePassFields.length && !certificateMaterial) {
+      reasons.push('Apple pass certificate could not be read');
+    }
+
     return {
       kind: 'unavailable',
-      reason: 'Apple Wallet integration is pending configuration.',
+      reason: `Apple Wallet integration is unavailable: ${reasons.join('; ')}.`,
     };
   }
 
