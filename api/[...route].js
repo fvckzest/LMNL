@@ -5,6 +5,9 @@ import { createCheckoutForPreorder } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
 import { getVariationInventory } from './_lib/services/inventory.js';
 import { generateTicketPass } from './_lib/services/passkit.js';
+import { createPaymentForPreorder, getPreorderCheckoutView } from './_lib/services/preorder-checkout.js';
+import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services/request-checkout.js';
+import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
 import { getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
@@ -66,6 +69,76 @@ async function handleCreateCheckout(req, res) {
   const body = await parseJsonBody(req);
   const preorderId = requireValue(body.preorderId, 'preorderId is required.');
   const data = await createCheckoutForPreorder(preorderId);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleGetPreorderCheckout(req, res) {
+  allowMethods(req, ['GET']);
+  const preorderId = requireValue(req.query?.preorderId, 'preorderId is required.');
+  const data = await getPreorderCheckoutView(preorderId);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handlePayPreorder(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const preorderId = requireValue(body.preorderId, 'preorderId is required.');
+  const sourceId = requireValue(body.sourceId, 'sourceId is required.');
+
+  const data = await createPaymentForPreorder(preorderId, {
+    sourceId,
+    verificationToken: body.verificationToken,
+    buyer: body.buyer || {},
+    billingAddress: body.billingAddress || {},
+    shippingAddress: body.shippingAddress || {},
+  });
+
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleGetRequestCheckout(req, res) {
+  allowMethods(req, ['GET']);
+  const requestId = requireValue(req.query?.requestId, 'requestId is required.');
+  const data = await getRequestCheckoutView(requestId);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleGetEventCheckout(req, res) {
+  allowMethods(req, ['GET']);
+  const eventId = requireValue(req.query?.eventId, 'eventId is required.');
+  const data = await getEventCheckoutView(eventId);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handlePayRequest(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const requestId = requireValue(body.requestId, 'requestId is required.');
+  const sourceId = requireValue(body.sourceId, 'sourceId is required.');
+
+  const data = await createPaymentForRequest(requestId, {
+    sourceId,
+    verificationToken: body.verificationToken,
+    buyer: body.buyer || {},
+    billingAddress: body.billingAddress || {},
+  });
+
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handlePayEvent(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const eventId = requireValue(body.eventId, 'eventId is required.');
+  const sourceId = requireValue(body.sourceId, 'sourceId is required.');
+
+  const data = await createPaymentForEvent(eventId, {
+    sourceId,
+    verificationToken: body.verificationToken,
+    buyer: body.buyer || {},
+    billingAddress: body.billingAddress || {},
+  });
+
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -301,10 +374,16 @@ const handlers = {
   'check-inventory': handleCheckInventory,
   'confirm-ticket': handleConfirmTicket,
   'create-checkout': handleCreateCheckout,
+  'event-checkout': handleGetEventCheckout,
+  'request-checkout': handleGetRequestCheckout,
+  'pay-event': handlePayEvent,
+  'pay-preorder': handlePayPreorder,
+  'pay-request': handlePayRequest,
   'create-test-item': handleCreateTestItem,
   'enable-square-tracking': handleEnableSquareTracking,
   events: handleEvents,
   'generate-pass': handleGeneratePass,
+  'preorder-checkout': handleGetPreorderCheckout,
   'get-ticket': handleGetTicket,
   preorders: handlePreorders,
   requests: handleRequests,

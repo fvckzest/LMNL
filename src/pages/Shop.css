@@ -5,6 +5,16 @@
   width: 100%;
 }
 
+.shop-success-banner {
+  padding: 18px 22px;
+  border: 1px solid #ff0000;
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.06), rgba(0, 0, 0, 0));
+  color: #111;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
 /* Drop Hero Section */
 .drop-hero {
   width: 100%;

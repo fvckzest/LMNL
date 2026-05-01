@@ -13,6 +13,7 @@ const Success = lazy(() => import('./pages/Success'));
 const Services = lazy(() => import('./pages/Services'));
 const Community = lazy(() => import('./pages/Community'));
 const Shop = lazy(() => import('./pages/Shop'));
+const ShopCheckout = lazy(() => import('./pages/ShopCheckout'));
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -101,6 +102,9 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/community" element={<Community />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/checkout/:preorderId" element={<ShopCheckout />} />
+          <Route path="/checkout/event/:eventId" element={<ShopCheckout />} />
+          <Route path="/checkout/request/:requestId" element={<ShopCheckout />} />
           <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
           <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
           <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />

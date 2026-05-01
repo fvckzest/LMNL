@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { apiPost } from '../lib/api';
 import GenericPage from './GenericPage';
 import './Shop.css';
 
@@ -143,9 +143,12 @@ function ProductCard({ product, onPurchase }) {
 }
 
 export default function Shop() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const checkoutSuccess = searchParams.get('checkout') === 'success';
 
   useEffect(() => {
     async function loadProducts() {
@@ -170,10 +173,7 @@ export default function Shop() {
   async function handlePurchase(product) {
     setError(null);
     try {
-      const result = await apiPost('/api/create-checkout', {
-        preorderId: product.id,
-      });
-      window.location.href = result.checkoutUrl;
+      navigate(`/checkout/${product.id}`);
     } catch (err) {
       console.error('Purchase Error:', err);
       setError('Failed to start checkout. Please try again.');
@@ -193,6 +193,11 @@ export default function Shop() {
   return (
     <GenericPage title="SHOP" color="#ff0000">
       <div className="shop-layout">
+        {checkoutSuccess && (
+          <div className="shop-success-banner">
+            PAYMENT RECEIVED. YOUR ORDER IS LOCKED IN.
+          </div>
+        )}
         {products.length === 0 ? (
           <p className="loading-text" style={{ marginTop: '100px' }}>NO ACTIVE PRODUCTS AT THE MOMENT. CHECK BACK SOON.</p>
         ) : (

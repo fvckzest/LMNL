@@ -11,8 +11,10 @@ import './Admin.css';
 export default function Admin() {
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eventLoading, setEventLoading] = useState(true);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
@@ -43,6 +45,7 @@ export default function Admin() {
   useEffect(() => {
     fetchRequests();
     fetchEvents();
+    fetchTickets();
     fetchServiceInquiries();
     fetchCommunityCredits();
     fetchSquareCatalog();
@@ -84,6 +87,22 @@ export default function Admin() {
       setEvents(data || []);
     }
     setEventLoading(false);
+  }
+
+  async function fetchTickets() {
+    setTicketsLoading(true);
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      setTickets([]);
+    } else {
+      setTickets(data || []);
+    }
+    setTicketsLoading(false);
   }
 
   async function fetchServiceInquiries() {
@@ -235,12 +254,15 @@ export default function Admin() {
       {(activeTab === 'events' || activeTab === 'all') && (
         <EventsTab 
           events={events}
+          tickets={tickets}
           eventLoading={eventLoading}
+          ticketsLoading={ticketsLoading}
           tableMissing={tableMissing}
           squareItems={squareItems}
           fetchingCatalog={fetchingCatalog}
           squareError={squareError}
           fetchEvents={fetchEvents}
+          fetchTickets={fetchTickets}
           fetchRequests={fetchRequests}
           showToast={showToast}
           triggerConfirm={triggerConfirm}

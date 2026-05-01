@@ -17,10 +17,12 @@ test('getBaseConfig provides stable defaults', () => {
 test('getSquareConfig reads sandbox token', () => {
   process.env.SQUARE_ENVIRONMENT = 'sandbox';
   process.env.SQUARE_ACCESS_TOKEN = 'sandbox-token';
+  process.env.SQUARE_SANDBOX_APPLICATION_ID = 'sandbox-app';
 
   const config = getSquareConfig();
   assert.equal(config.environment, 'sandbox');
   assert.equal(config.token, 'sandbox-token');
+  assert.equal(config.applicationId, 'sandbox-app');
 });
 
 test('getSupabaseConfig throws when service credentials are missing', () => {

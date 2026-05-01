@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
@@ -6,6 +7,7 @@ import { apiPost } from '../lib/api';
 import './Space.css';
 
 export default function Space() {
+  const navigate = useNavigate();
   useEffect(() => {
     document.documentElement.style.setProperty('--page-color', '#000000');
     return () => document.documentElement.style.removeProperty('--page-color');
@@ -167,7 +169,10 @@ export default function Space() {
             <PriceIndicator 
               price={eventData.price} 
               eventStatus={eventData.status}
+              isPrivate={eventData.is_private}
+              eventId={eventData.id}
               onInvite={() => setShowRequestForm(true)}
+              onPurchase={() => navigate(`/checkout/event/${eventData.id}`)}
               onDonate={() => setShowDonationModal(true)}
             />
               
@@ -408,7 +413,7 @@ function OccupancyCounter({ sold, capacity }) {
   );
 }
 
-function PriceIndicator({ price, eventStatus, onInvite, onDonate }) {
+function PriceIndicator({ price, eventStatus, isPrivate, eventId, onInvite, onPurchase, onDonate }) {
   const isLoaded = price !== undefined;
   const formattedPrice = isLoaded ? (price / 100).toFixed(2) : '---';
 
@@ -431,8 +436,8 @@ function PriceIndicator({ price, eventStatus, onInvite, onDonate }) {
               sold out
             </button>
           ) : (
-            <button className="space-button" onClick={onInvite}>
-              request invite
+            <button className="space-button" onClick={isPrivate ? onInvite : onPurchase} disabled={!eventId}>
+              {isPrivate ? 'request invite' : 'purchase'}
             </button>
           )}
           <button className="space-button" onClick={onDonate}>

@@ -59,6 +59,30 @@ export async function approveRequestWithOrderId(id, squareOrderId) {
   return data;
 }
 
+export async function approveRequest(id) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('requests')
+    .update({ status: 'approved' })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function attachOrderIdToRequest(id, squareOrderId) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('requests')
+    .update({ square_order_id: squareOrderId })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function fulfillApprovedRequestById(id) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase

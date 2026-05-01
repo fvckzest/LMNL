@@ -1,19 +1,7 @@
-import crypto from 'crypto';
-import { getAdminSupabase, getResendClient, getSquareClient, getSquareLocationId } from '../clients.js';
+import { getResendClient } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
-import { getRequestById, approveRequestWithOrderId } from '../repositories/requests.js';
-
-async function getEventPricing(eventName) {
-  const supabase = getAdminSupabase();
-  const { data, error } = await supabase
-    .from('events')
-    .select('price, square_variation_id')
-    .eq('name', eventName)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
+import { approveRequest, getRequestById } from '../repositories/requests.js';
 
 async function sendApprovalEmail(to, eventName, checkoutUrl) {
   const resend = getResendClient();
@@ -65,65 +53,14 @@ export async function approveRequestAndSendCheckout(requestId) {
     });
   }
 
-  const squareClient = getSquareClient();
-  const locationId = await getSquareLocationId();
-  if (!locationId) {
-    throw new AppError('No active Square location found.', {
-      code: 'SQUARE_LOCATION_MISSING',
-      status: 500,
-      expose: true,
-    });
-  }
-
-  const eventData = await getEventPricing(request.event_name);
   const { siteUrl } = getBaseConfig();
-  const order = {
-    locationId,
-    metadata: {
-      requestId,
-    },
-  };
-
-  if (eventData?.square_variation_id) {
-    order.lineItems = [{
-      quantity: '1',
-      catalogObjectId: eventData.square_variation_id,
-    }];
-  } else {
-    order.lineItems = [{
-      quantity: '1',
-      name: `${request.event_name} - Access Ticket`,
-      basePriceMoney: {
-        amount: BigInt(eventData?.price || 100),
-        currency: 'USD',
-      },
-    }];
-  }
-
-  const paymentLinkResponse = await squareClient.checkout.paymentLinks.create({
-    idempotencyKey: crypto.randomUUID(),
-    order,
-    checkoutOptions: {
-      redirectUrl: `${siteUrl}/success?requestId=${requestId}`,
-      askForShippingAddress: true,
-    },
-  });
-
-  const paymentLink = paymentLinkResponse.paymentLink || paymentLinkResponse.result?.paymentLink;
-  if (!paymentLink?.url) {
-    throw new AppError('Square did not return a payment link.', {
-      code: 'SQUARE_CHECKOUT_FAILED',
-      status: 502,
-      expose: true,
-    });
-  }
-
-  await sendApprovalEmail(request.customer_email, request.event_name, paymentLink.url);
-  const updatedRequest = await approveRequestWithOrderId(requestId, paymentLink.orderId);
+  const checkoutUrl = `${siteUrl}/checkout/request/${requestId}`;
+  await sendApprovalEmail(request.customer_email, request.event_name, checkoutUrl);
+  const updatedRequest = await approveRequest(requestId);
 
   return {
-    checkoutUrl: paymentLink.url,
+    checkoutUrl,
     status: updatedRequest.status,
-    orderId: paymentLink.orderId || null,
+    orderId: updatedRequest.square_order_id || null,
   };
 }

@@ -33,6 +33,9 @@ export function getSquareConfig() {
   const token = environment === 'production'
     ? (readEnv('SQUARE_PROD_ACCESS_TOKEN') || readEnv('SQUARE_ACCESS_TOKEN'))
     : readEnv('SQUARE_ACCESS_TOKEN');
+  const applicationId = environment === 'production'
+    ? (readEnv('SQUARE_PROD_APPLICATION_ID') || readEnv('SQUARE_APPLICATION_ID'))
+    : (readEnv('SQUARE_SANDBOX_APPLICATION_ID') || readEnv('SQUARE_APPLICATION_ID'));
 
   if (!token) {
     throw new AppError('Square access token is missing.', {
@@ -46,6 +49,7 @@ export function getSquareConfig() {
   return {
     environment,
     token,
+    applicationId,
     locationId: readEnv('SQUARE_LOCATION_ID'),
     webhookSignatureKey: readEnv('SQUARE_WEBHOOK_SIGNATURE_KEY'),
   };

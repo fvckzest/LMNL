@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { apiPost } from '../../lib/api';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon } from './Icons';
 
@@ -24,12 +24,15 @@ const MANAGED_METADATA_KEYS = new Set([
 
 export default function EventsTab({
   events,
+  tickets,
   eventLoading,
+  ticketsLoading,
   tableMissing,
   squareItems,
   fetchingCatalog,
   squareError,
   fetchEvents,
+  fetchTickets,
   fetchRequests,
   showToast,
   triggerConfirm,
@@ -45,6 +48,7 @@ export default function EventsTab({
   const [editingEvent, setEditingEvent] = useState(null);
   const [newTraitKey, setNewTraitKey] = useState('');
   const [newTraitValue, setNewTraitValue] = useState('');
+  const [expandedEventId, setExpandedEventId] = useState(null);
 
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -316,6 +320,18 @@ export default function EventsTab({
   }
 
   const customMetadataEntries = Object.entries(eventForm.metadata || {}).filter(([key]) => !MANAGED_METADATA_KEYS.has(key));
+  const ticketsByEventId = useMemo(() => {
+    return (tickets || []).reduce((acc, ticket) => {
+      if (!ticket.event_id) return acc;
+      if (!acc[ticket.event_id]) acc[ticket.event_id] = [];
+      acc[ticket.event_id].push(ticket);
+      return acc;
+    }, {});
+  }, [tickets]);
+
+  function toggleExpandedEvent(eventId) {
+    setExpandedEventId(current => current === eventId ? null : eventId);
+  }
 
   return (
     <>
@@ -355,6 +371,7 @@ export default function EventsTab({
                   <tr>
                     <th>STATUS</th>
                     <th>NAME</th>
+                    <th style={{ textAlign: 'center' }}>TICKETS</th>
                     <th>PRICE</th>
                     <th>DATE</th>
                     <th>LOCATION</th>
@@ -366,89 +383,141 @@ export default function EventsTab({
                 <tbody>
                   {events
                     .filter(event => showArchivedEvents ? true : event.status !== 'archived')
-                    .map((event) => (
-                    <tr key={event.id}>
-                      <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
-                      <td>
-                        {event.name.toUpperCase() === 'SPACE' ? (
-                          <a href="/space" target="_blank" className="event-name-link">{event.name}</a>
-                        ) : (
-                          <strong>{event.name}</strong>
-                        )}
-                      </td>
-                      <td>${(event.price / 100).toFixed(2)}</td>
-                      <td>{event.event_date || 'TBD'}</td>
-                      <td>{event.location_name || 'TBD'}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          onClick={() => toggleHighlightEvent(event)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '20px',
-                            color: event.metadata?.is_featured ? '#004ffa' : '#ccc',
-                            padding: '5px',
-                            transition: 'color 0.2s ease'
-                          }}
-                          title={event.metadata?.is_featured ? 'Highlighted as Upcoming' : 'Highlight this event as Upcoming'}
-                        >
-                          {event.metadata?.is_featured ? '★' : '☆'}
-                        </button>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          onClick={() => toggleHomeNotification(event)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '20px',
-                            color: event.metadata?.is_home_notif ? '#004ffa' : '#ccc',
-                            padding: '5px',
-                            transition: 'color 0.2s ease'
-                          }}
-                          title={event.metadata?.is_home_notif ? 'Show on Home Page' : 'Turn on Home Notification'}
-                        >
-                          {event.metadata?.is_home_notif ? '★' : '☆'}
-                        </button>
-                      </td>
-                      <td className="actions-cell">
-                        <div className="actions-wrapper">
-                          <div className="main-actions">
-                            <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
-                          </div>
-                          <div className="secondary-actions" style={{ display: 'flex', gap: '10px' }}>
-                            {event.status !== 'archived' ? (
+                    .map((event) => {
+                      const eventTickets = ticketsByEventId[event.id] || [];
+                      const hasTickets = eventTickets.length > 0;
+                      const isExpanded = expandedEventId === event.id;
+
+                      return (
+                        <Fragment key={event.id}>
+                          <tr className={isExpanded ? 'event-row-expanded' : ''}>
+                            <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
+                            <td>
+                              {event.name.toUpperCase() === 'SPACE' ? (
+                                <a href="/space" target="_blank" className="event-name-link">{event.name}</a>
+                              ) : (
+                                <strong>{event.name}</strong>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {hasTickets ? (
+                                <button
+                                  className={`ticket-toggle ${isExpanded ? 'expanded' : ''}`}
+                                  onClick={() => toggleExpandedEvent(event.id)}
+                                  title={isExpanded ? 'Hide ticket holders' : 'Show ticket holders'}
+                                >
+                                  <span className="ticket-toggle-arrow">▾</span>
+                                  <span className="ticket-toggle-count">{eventTickets.length}</span>
+                                </button>
+                              ) : (
+                                <span className="ticket-toggle-empty">0</span>
+                              )}
+                            </td>
+                            <td>${(event.price / 100).toFixed(2)}</td>
+                            <td>{event.event_date || 'TBD'}</td>
+                            <td>{event.location_name || 'TBD'}</td>
+                            <td style={{ textAlign: 'center' }}>
                               <button
-                                className="icon-btn archive-btn"
-                                title="Archive Event"
-                                onClick={() => updateEventStatus(event.id, 'archived')}
+                                onClick={() => toggleHighlightEvent(event)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '20px',
+                                  color: event.metadata?.is_featured ? '#004ffa' : '#ccc',
+                                  padding: '5px',
+                                  transition: 'color 0.2s ease'
+                                }}
+                                title={event.metadata?.is_featured ? 'Highlighted as Upcoming' : 'Highlight this event as Upcoming'}
                               >
-                                <ArchiveIcon />
+                                {event.metadata?.is_featured ? '★' : '☆'}
                               </button>
-                            ) : (
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
                               <button
-                                className="icon-btn unarchive-btn"
-                                title="Unarchive Event"
-                                onClick={() => updateEventStatus(event.id, 'active')}
+                                onClick={() => toggleHomeNotification(event)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '20px',
+                                  color: event.metadata?.is_home_notif ? '#004ffa' : '#ccc',
+                                  padding: '5px',
+                                  transition: 'color 0.2s ease'
+                                }}
+                                title={event.metadata?.is_home_notif ? 'Show on Home Page' : 'Turn on Home Notification'}
                               >
-                                <UnarchiveIcon />
+                                {event.metadata?.is_home_notif ? '★' : '☆'}
                               </button>
-                            )}
-                            <button
-                              className="icon-btn delete-btn"
-                              style={{ color: '#991b1b' }}
-                              title="Delete Event"
-                              onClick={() => deleteEvent(event.id)}
-                            >
-                              <TrashIcon />
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            </td>
+                            <td className="actions-cell">
+                              <div className="actions-wrapper">
+                                <div className="main-actions">
+                                  <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
+                                </div>
+                                <div className="secondary-actions" style={{ display: 'flex', gap: '10px' }}>
+                                  {event.status !== 'archived' ? (
+                                    <button
+                                      className="icon-btn archive-btn"
+                                      title="Archive Event"
+                                      onClick={() => updateEventStatus(event.id, 'archived')}
+                                    >
+                                      <ArchiveIcon />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="icon-btn unarchive-btn"
+                                      title="Unarchive Event"
+                                      onClick={() => updateEventStatus(event.id, 'active')}
+                                    >
+                                      <UnarchiveIcon />
+                                    </button>
+                                  )}
+                                  <button
+                                    className="icon-btn delete-btn"
+                                    style={{ color: '#991b1b' }}
+                                    title="Delete Event"
+                                    onClick={() => deleteEvent(event.id)}
+                                  >
+                                    <TrashIcon />
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          {hasTickets && isExpanded && (
+                            <tr className="ticket-holders-row">
+                              <td colSpan="9">
+                                <div className="ticket-holders-panel">
+                                  <div className="ticket-holders-header">
+                                    <span>Ticket Holders</span>
+                                    <button className="admin-btn small" onClick={fetchTickets} disabled={ticketsLoading}>
+                                      {ticketsLoading ? 'LOADING...' : 'REFRESH'}
+                                    </button>
+                                  </div>
+                                  <div className="ticket-holder-list">
+                                    {eventTickets.map((ticket) => (
+                                      <div key={ticket.id} className="ticket-holder-card">
+                                        <div>
+                                          <p className="ticket-holder-name">{ticket.customer_name || 'Guest'}</p>
+                                          <p className="ticket-holder-email">{ticket.customer_email || 'No email on file'}</p>
+                                        </div>
+                                        <div className="ticket-holder-meta">
+                                          <span className={`status-pill ${ticket.is_used ? 'past' : 'approved'}`}>
+                                            {ticket.is_used ? 'used' : 'valid'}
+                                          </span>
+                                          <span>{ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                 </tbody>
               </table>
             )}
