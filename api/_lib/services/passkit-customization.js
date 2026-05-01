@@ -100,6 +100,16 @@ function formatDisplayDate(date) {
   }).replace(/\//g, '.');
 }
 
+function formatDateString(value) {
+  const normalized = readString(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return '';
+  }
+
+  const [year, month, day] = normalized.split('-');
+  return `${month}.${day}.${year}`;
+}
+
 function getDisplayDateRange(relevantDates) {
   const firstWindow = relevantDates[0];
   const lastWindow = relevantDates[relevantDates.length - 1];
@@ -148,7 +158,7 @@ export function getWalletPassConfig(event = {}) {
     relevantDates,
     singleRelevantDate,
     expirationDate: expirationDate || relevantDates[relevantDates.length - 1]?.endDate || '',
-    displayDate: relevantDates.length ? getDisplayDateRange(relevantDates) : '',
+    displayDate: relevantDates.length ? getDisplayDateRange(relevantDates) : formatDateString(event?.event_date),
     isMultiDay: relevantDates.length > 1,
   };
 }

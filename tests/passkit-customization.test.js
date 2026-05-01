@@ -75,6 +75,17 @@ test('getWalletPassConfig parses multi-day wallet windows from event metadata', 
   assert.equal(config.isMultiDay, true);
 });
 
+test('getWalletPassConfig formats single-day event dates as mm.dd.yyyy', () => {
+  const config = getWalletPassConfig({
+    event_date: '2026-08-21',
+    event_time: '13:00',
+    metadata: {},
+  });
+
+  assert.equal(config.displayDate, '08.21.2026');
+  assert.equal(config.isMultiDay, false);
+});
+
 test('applyPassTimingCustomization falls back to the single event date/time when no custom windows exist', () => {
   const calls = {
     relevantDates: null,
