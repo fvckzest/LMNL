@@ -1,0 +1,19 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  version="1.2"
+  baseProfile="tiny-ps"
+  viewBox="0 0 120 120"
+  width="120"
+  height="120"
+>
+  <title>LMNL</title>
+  <rect width="120" height="120" fill="#ffffff" />
+  <circle cx="60.36945" cy="14.32645" r="9.32645" fill="#FF5BB8" />
+  <circle cx="25.91235" cy="26.58235" r="9.32645" fill="#FF0000" />
+  <circle cx="14.32645" cy="60.79435" r="9.32645" fill="#FF9300" />
+  <circle cx="25.85735" cy="94.89625" r="9.32645" fill="#FFDE00" />
+  <circle cx="60.36945" cy="105.67345" r="9.32645" fill="#90E937" />
+  <circle cx="94.55155" cy="94.89625" r="9.32645" fill="#000000" />
+  <circle cx="105.67355" cy="60.79435" r="9.32645" fill="#004FFA" />
+  <circle cx="94.55155" cy="26.58235" r="9.32645" fill="#6222D8" />
+</svg>

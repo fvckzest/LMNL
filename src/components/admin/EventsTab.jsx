@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiPost } from '../../lib/api';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
+import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon } from './Icons';
 
 const MANAGED_METADATA_KEYS = new Set([
   'event_link',
@@ -34,8 +34,7 @@ export default function EventsTab({
   requests,
   loading,
   updateStatus,
-  deleteRequest,
-  hasBoughtTicket
+  deleteRequest
 }) {
   const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [showArchivedRequests, setShowArchivedRequests] = useState(false);
@@ -552,8 +551,22 @@ export default function EventsTab({
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {hasBoughtTicket(req) ? (
-                        <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>✓</span>
+                      {req.square_order_id ? (
+                        <a
+                          href={`/success?requestId=${req.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open ticket success page"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#004ffa',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <LinkIcon />
+                        </a>
                       ) : (
                         <span style={{ color: '#999', fontSize: '14px' }}>--</span>
                       )}

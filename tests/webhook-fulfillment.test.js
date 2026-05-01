@@ -60,6 +60,56 @@ test('processSquareOrderUpdate creates ticket when order is fulfillable', async 
   assert.deepEqual(result, { success: true, ticketId: 'ticket_new' });
 });
 
+test('processSquareOrderUpdate fulfills completed payment.updated events', async () => {
+  const createdTickets = [];
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'payment.updated',
+      data: {
+        id: 'payment_1',
+        object: {
+          payment: {
+            id: 'payment_1',
+            order_id: 'order_3',
+            status: 'COMPLETED',
+          },
+        },
+      },
+    },
+    {},
+    {
+      verifySignature: () => {},
+      findTicketBySquareOrderId: async () => null,
+      squareClient: {
+        orders: {
+          get: async () => ({
+            order: {
+              id: 'order_3',
+              state: 'COMPLETED',
+              metadata: { requestId: 'req_3' },
+              lineItems: [{ catalogObjectId: 'var_3' }],
+              tenders: [{ id: 'tender_3' }],
+            },
+          }),
+        },
+      },
+      fulfillApprovedRequestById: async () => ({ id: 'req_3' }),
+      fulfillApprovedRequestByOrderId: async () => null,
+      getEventBySquareVariationIds: async () => ({ id: 'event_3', name: 'Space' }),
+      resolveCustomer: async () => ({ customerName: 'Zest', customerEmail: 'zest@example.org' }),
+      createTicket: async (payload) => {
+        createdTickets.push(payload);
+        return { id: 'ticket_payment', ...payload };
+      },
+      sendTicketEmail: async () => {},
+    }
+  );
+
+  assert.equal(createdTickets.length, 1);
+  assert.equal(createdTickets[0].square_order_id, 'order_3');
+  assert.deepEqual(result, { success: true, ticketId: 'ticket_payment' });
+});
+
 test('resolveCustomer falls back to request email when Square provides placeholder recipient email', async () => {
   const customer = await resolveCustomer(
     {
@@ -114,4 +164,34 @@ test('sendTicketEmail falls back to resend onboarding sender when branded sender
   assert.equal(resendCalls[1].from, 'onboarding@resend.dev');
   assert.equal(resendCalls[1].to, 'ada@example.com');
   assert.deepEqual(result, { id: 'email_123' });
+});
+
+test('sendTicketEmail still sends when pass generation throws', async () => {
+  const resendCalls = [];
+  process.env.RESEND_API_KEY = 're_test';
+
+  const result = await sendTicketEmail(
+    { id: 'ticket_2', square_order_id: 'order_4' },
+    { name: 'Launch' },
+    'ada@example.com',
+    'Ada',
+    {
+      resendClient: {
+        emails: {
+          send: async (payload) => {
+            resendCalls.push(payload);
+            return { data: { id: 'email_456' } };
+          },
+        },
+      },
+      generateTicketPass: async () => {
+        throw new Error('Bad certificate');
+      },
+    }
+  );
+
+  assert.equal(resendCalls.length, 1);
+  assert.equal(resendCalls[0].from, 'LMNL <tickets@lmnl.art>');
+  assert.equal(resendCalls[0].attachments, undefined);
+  assert.deepEqual(result, { id: 'email_456' });
 });

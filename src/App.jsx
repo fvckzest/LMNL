@@ -9,6 +9,7 @@ const Events = lazy(() => import('./pages/Events'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Login = lazy(() => import('./pages/Login'));
 const Ticket = lazy(() => import('./pages/Ticket'));
+const Success = lazy(() => import('./pages/Success'));
 const Services = lazy(() => import('./pages/Services'));
 const Community = lazy(() => import('./pages/Community'));
 const Shop = lazy(() => import('./pages/Shop'));
@@ -64,6 +65,7 @@ function App() {
         <Routes>
           {/* SHARED / PUBLIC CONTENT */}
           <Route path="/ticket/:ticketId" element={<Ticket />} />
+          <Route path="/success" element={<Success />} />
           <Route path="/events" element={<Events />} />
           <Route path="/space" element={<Space />} />
           <Route path="/about" element={

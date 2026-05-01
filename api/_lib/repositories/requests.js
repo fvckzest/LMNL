@@ -106,3 +106,14 @@ export async function getRequestCustomerByOrderId(squareOrderId) {
   if (error) throw error;
   return data;
 }
+
+export async function getRequestByOrderId(squareOrderId) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('requests')
+    .select('*')
+    .eq('square_order_id', squareOrderId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}

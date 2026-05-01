@@ -90,7 +90,9 @@ export default function Ticket() {
                     {ticket.is_used ? 'SCANNED / USED' : 'VALID ENTRY'}
                   </div>
                 </div>
+              </div>
 
+              <div className="ticket-qr-col">
                 {!ticket.is_used && (
                   <div className="ticket-section wallet-section">
                     <a 
@@ -106,9 +108,6 @@ export default function Ticket() {
                     </a>
                   </div>
                 )}
-              </div>
-
-              <div className="ticket-qr-col">
                 <div className={`ticket-qr-wrapper ${ticket.is_used ? 'is-used' : ''}`}>
                   <QRCodeSVG
                     value={ticket.qr_code_payload}

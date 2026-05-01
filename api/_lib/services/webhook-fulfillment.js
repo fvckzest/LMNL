@@ -6,6 +6,8 @@ import { getEventBySquareVariationIds } from '../repositories/events.js';
 import {
   fulfillApprovedRequestById,
   fulfillApprovedRequestByOrderId,
+  getRequestById,
+  getRequestByOrderId,
   getRequestCustomerById,
   getRequestCustomerByOrderId,
 } from '../repositories/requests.js';
@@ -90,7 +92,13 @@ export async function resolveCustomer(order, squareOrderId, deps = {}) {
 }
 
 export async function sendTicketEmail(ticket, event, customerEmail, customerName, deps = {}) {
-  if (!customerEmail) return;
+  if (!customerEmail) {
+    console.warn('[webhook] ticket email skipped: missing customer email', {
+      ticketId: ticket?.id || null,
+      squareOrderId: ticket?.square_order_id || null,
+    });
+    return { skipped: true, reason: 'Missing customer email.' };
+  }
 
   const resend = deps.resendClient || getResendClient();
   const { siteUrl } = getBaseConfig();
@@ -108,12 +116,19 @@ export async function sendTicketEmail(ticket, event, customerEmail, customerName
   };
 
   const makePass = deps.generateTicketPass || generateTicketPass;
-  const passResult = await makePass(ticket.id);
-  if (passResult.kind === 'buffer') {
-    emailOptions.attachments = [{
-      filename: passResult.filename,
-      content: passResult.buffer,
-    }];
+  try {
+    const passResult = await makePass(ticket.id);
+    if (passResult.kind === 'buffer') {
+      emailOptions.attachments = [{
+        filename: passResult.filename,
+        content: passResult.buffer,
+      }];
+    }
+  } catch (error) {
+    console.error('[webhook] pass generation failed; sending ticket email without attachment', {
+      ticketId: ticket.id,
+      error,
+    });
   }
 
   const response = await resend.emails.send(emailOptions);
@@ -145,26 +160,94 @@ export async function sendTicketEmail(ticket, event, customerEmail, customerName
   return response.data;
 }
 
-export async function processSquareOrderUpdate(payload, headers, deps = {}) {
-  const verify = deps.verifySignature || verifySignature;
+function getPayloadType(payload) {
+  return payload?.type || payload?.event_type || '';
+}
+
+function getOrderIdFromOrderPayload(payload) {
+  return payload.data?.object?.order_updated?.order_id
+    || payload.data?.id
+    || payload.data?.object?.id
+    || null;
+}
+
+async function getOrderIdFromPaymentPayload(payload, deps = {}) {
+  const payment = payload.data?.object?.payment || null;
+  const paymentId = payment?.id || payload.data?.id || payload.data?.object?.id || null;
+  const paymentStatus = payment?.status || '';
+  const orderId = payment?.orderId || payment?.order_id || null;
+
+  if (paymentStatus && paymentStatus !== 'COMPLETED') {
+    return {
+      orderId,
+      ignored: true,
+      reason: `Payment status ${paymentStatus} is not fulfillable`,
+    };
+  }
+
+  if (orderId) {
+    return { orderId };
+  }
+
+  if (!paymentId) {
+    return {
+      orderId: null,
+      ignored: true,
+      reason: 'No payment ID found in payload',
+    };
+  }
+
+  const squareClient = deps.squareClient || getSquareClient();
+  const paymentResponse = await squareClient.payments.get({ paymentId });
+  const hydratedPayment = paymentResponse.payment || paymentResponse.result?.payment;
+  const hydratedOrderId = hydratedPayment?.orderId || hydratedPayment?.order_id || null;
+
+  if ((hydratedPayment?.status || '') && hydratedPayment.status !== 'COMPLETED') {
+    return {
+      orderId: hydratedOrderId,
+      ignored: true,
+      reason: `Payment status ${hydratedPayment.status} is not fulfillable`,
+    };
+  }
+
+  return { orderId: hydratedOrderId };
+}
+
+async function resolveSquareOrderIdFromPayload(payload, deps = {}) {
+  const eventType = getPayloadType(payload);
+
+  if (eventType === 'order.updated') {
+    const orderId = getOrderIdFromOrderPayload(payload);
+    return orderId
+      ? { orderId }
+      : { orderId: null, ignored: true, reason: 'No order ID found in payload' };
+  }
+
+  if (eventType === 'payment.updated') {
+    return getOrderIdFromPaymentPayload(payload, deps);
+  }
+
+  return {
+    orderId: null,
+    ignored: true,
+    reason: `Unhandled event type: ${eventType || 'unknown'}`,
+  };
+}
+
+function isFulfillableOrder(order) {
+  const isPaid = Array.isArray(order.tenders) && order.tenders.length > 0;
+  return order.state === 'COMPLETED' || (order.state === 'OPEN' && isPaid);
+}
+
+export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const loadTicketByOrderId = deps.findTicketBySquareOrderId || findTicketBySquareOrderId;
   const fulfillById = deps.fulfillApprovedRequestById || fulfillApprovedRequestById;
   const fulfillByOrderId = deps.fulfillApprovedRequestByOrderId || fulfillApprovedRequestByOrderId;
+  const loadRequestBySquareOrderId = deps.getRequestByOrderId || getRequestByOrderId;
   const loadEvent = deps.getEventBySquareVariationIds || getEventBySquareVariationIds;
   const loadCustomer = deps.resolveCustomer || resolveCustomer;
   const insertTicket = deps.createTicket || createTicket;
   const sendEmail = deps.sendTicketEmail || sendTicketEmail;
-
-  verify(payload, headers);
-
-  if (payload.type !== 'order.updated') {
-    return { ignored: true, reason: `Unhandled event type: ${payload.type}` };
-  }
-
-  const squareOrderId = payload.data?.object?.order_updated?.order_id || payload.data?.id || payload.data?.object?.id;
-  if (!squareOrderId) {
-    return { ignored: true, reason: 'No order ID found in payload' };
-  }
 
   const existingTicket = await loadTicketByOrderId(squareOrderId);
   if (existingTicket) {
@@ -183,8 +266,7 @@ export async function processSquareOrderUpdate(payload, headers, deps = {}) {
     });
   }
 
-  const isPaid = Array.isArray(order.tenders) && order.tenders.length > 0;
-  if (order.state !== 'COMPLETED' && !(order.state === 'OPEN' && isPaid)) {
+  if (!isFulfillableOrder(order)) {
     return { ignored: true, reason: `Order state ${order.state} is not fulfillable` };
   }
 
@@ -194,6 +276,9 @@ export async function processSquareOrderUpdate(payload, headers, deps = {}) {
   }
   if (!lockedRequest) {
     lockedRequest = await fulfillByOrderId(squareOrderId);
+  }
+  if (!lockedRequest && deps.allowExistingRequestLookup) {
+    lockedRequest = await loadRequestBySquareOrderId(squareOrderId);
   }
 
   if (!lockedRequest) {
@@ -234,4 +319,45 @@ export async function processSquareOrderUpdate(payload, headers, deps = {}) {
   }
 
   return { success: true, ticketId: ticket.id };
+}
+
+export async function reconcileApprovedRequestTicket(requestId, deps = {}) {
+  const loadRequest = deps.getRequestById || getRequestById;
+  const request = await loadRequest(requestId);
+
+  if (!request) {
+    throw new AppError('Request not found.', {
+      code: 'REQUEST_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  if (!request.square_order_id) {
+    throw new AppError('This request is not linked to a Square order yet.', {
+      code: 'SQUARE_ORDER_MISSING',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return fulfillTicketForSquareOrder(request.square_order_id, {
+    ...deps,
+    allowExistingRequestLookup: true,
+  });
+}
+
+export async function processSquareOrderUpdate(payload, headers, deps = {}) {
+  const verify = deps.verifySignature || verifySignature;
+  verify(payload, headers);
+
+  const { orderId, ignored, reason } = await resolveSquareOrderIdFromPayload(payload, deps);
+  if (!orderId) {
+    return { ignored: true, reason: reason || 'No order ID found in payload' };
+  }
+  if (ignored) {
+    return { ignored, reason };
+  }
+
+  return fulfillTicketForSquareOrder(orderId, deps);
 }

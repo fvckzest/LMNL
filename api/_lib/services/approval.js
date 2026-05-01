@@ -104,7 +104,7 @@ export async function approveRequestAndSendCheckout(requestId) {
     idempotencyKey: crypto.randomUUID(),
     order,
     checkoutOptions: {
-      redirectUrl: `${siteUrl}/events?approval=success&requestId=${requestId}`,
+      redirectUrl: `${siteUrl}/success?requestId=${requestId}`,
       askForShippingAddress: true,
     },
   });

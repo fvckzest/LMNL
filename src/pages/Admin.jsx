@@ -17,7 +17,6 @@ export default function Admin() {
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('events'); 
-  const [tickets, setTickets] = useState([]);
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
@@ -45,7 +44,6 @@ export default function Admin() {
     fetchRequests();
     fetchEvents();
     fetchServiceInquiries();
-    fetchTickets();
     fetchCommunityCredits();
     fetchSquareCatalog();
     fetchPreorders();
@@ -86,13 +84,6 @@ export default function Admin() {
       setEvents(data || []);
     }
     setEventLoading(false);
-  }
-
-  async function fetchTickets() {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*');
-    if (!error) setTickets(data || []);
   }
 
   async function fetchServiceInquiries() {
@@ -192,16 +183,6 @@ export default function Admin() {
     }
   }
 
-  function hasBoughtTicket(request) {
-    const matchedEvent = events.find(e => e.name === request.event_name);
-    if (!matchedEvent) return false;
-    
-    return tickets.some(ticket => 
-      ticket.event_id === matchedEvent.id && 
-      ticket.customer_email?.toLowerCase() === request.customer_email?.toLowerCase()
-    );
-  }
-
   return (
     <div className="page-container">
       <HeaderBar />
@@ -266,10 +247,8 @@ export default function Admin() {
           fetchSquareCatalog={fetchSquareCatalog}
           requests={requests}
           loading={loading}
-          tickets={tickets}
           updateStatus={updateStatus}
           deleteRequest={deleteRequest}
-          hasBoughtTicket={hasBoughtTicket}
         />
       )}
 
