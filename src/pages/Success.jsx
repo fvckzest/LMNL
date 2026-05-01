@@ -7,7 +7,9 @@ import './Success.css';
 
 function formatDate(value) {
   if (!value) return 'TBA';
-  return new Date(value).toLocaleDateString('en-US', {
+  // Use T00:00:00 to force local timezone interpretation, consistent with other pages
+  const dateStr = value.includes('T') ? value : `${value}T00:00:00`;
+  return new Date(dateStr).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
