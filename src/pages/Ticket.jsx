@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { apiGet } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './Ticket.css';
 
 export default function Ticket() {
@@ -70,11 +71,11 @@ export default function Ticket() {
                 <div className="ticket-section-group">
                   <div className="ticket-section">
                     <p className="ticket-label">DATE</p>
-                    <p className="ticket-value">{eventData?.event_date ? new Date(eventData.event_date + 'T00:00:00').toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : 'TBA'}</p>
+                    <p className="ticket-value">{formatEventDate(eventData?.event_date)}</p>
                   </div>
                   <div className="ticket-section">
                     <p className="ticket-label">TIME</p>
-                    <p className="ticket-value">{eventData?.event_time || 'TBA'}</p>
+                    <p className="ticket-value">{formatEventTime(eventData?.event_time)}</p>
                   </div>
                 </div>
 
