@@ -221,11 +221,6 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
         pricingOptions: {
           autoApplyDiscounts: true,
         },
-        fulfillments: [
-          {
-            type: 'DIGITAL',
-          },
-        ],
       },
       checkoutOptions: {
         redirectUrl: `${siteUrl}/success?requestId=${request.id}`,
