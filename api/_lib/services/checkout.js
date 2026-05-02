@@ -222,7 +222,7 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
     });
   }
 
-  if (paymentLink.orderId) {
+  if (paymentLink.orderId && deps.persistOrderId !== false) {
     await (deps.attachOrderIdToRequest || attachOrderIdToRequest)(request.id, paymentLink.orderId);
   }
 
@@ -231,6 +231,46 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
     orderId: paymentLink.orderId || null,
     requestId: request.id,
   };
+}
+
+export async function createCheckoutForRequestRecord(request, payload = {}, deps = {}) {
+  if (!request) {
+    throw new AppError('Request not found.', {
+      code: 'REQUEST_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  const event = await (deps.getLatestEventByName || getLatestEventByName)(request.event_name);
+  if (!event) {
+    throw new AppError('Event not found for this request.', {
+      code: 'EVENT_NOT_FOUND',
+      status: 404,
+      expose: true,
+    });
+  }
+
+  const buyer = normalizeBuyer({
+    fullName: payload.buyer?.fullName || request.customer_name,
+    email: payload.buyer?.email || request.customer_email,
+    phone: payload.buyer?.phone,
+  });
+
+  if (!buyer.email) {
+    throw new AppError('Email is required.', {
+      code: 'INVALID_INPUT',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return createHostedTicketLink({
+    request,
+    event,
+    buyer,
+    deps,
+  });
 }
 
 export async function createCheckoutForEvent(eventId, payload = {}, deps = {}) {
@@ -271,33 +311,5 @@ export async function createCheckoutForRequest(requestId, payload = {}, deps = {
     });
   }
 
-  const event = await (deps.getLatestEventByName || getLatestEventByName)(request.event_name);
-  if (!event) {
-    throw new AppError('Event not found for this request.', {
-      code: 'EVENT_NOT_FOUND',
-      status: 404,
-      expose: true,
-    });
-  }
-
-  const buyer = normalizeBuyer({
-    fullName: payload.buyer?.fullName || request.customer_name,
-    email: payload.buyer?.email || request.customer_email,
-    phone: payload.buyer?.phone,
-  });
-
-  if (!buyer.email) {
-    throw new AppError('Email is required.', {
-      code: 'INVALID_INPUT',
-      status: 400,
-      expose: true,
-    });
-  }
-
-  return createHostedTicketLink({
-    request,
-    event,
-    buyer,
-    deps,
-  });
+  return createCheckoutForRequestRecord(request, payload, deps);
 }

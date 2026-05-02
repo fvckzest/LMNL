@@ -185,9 +185,28 @@ export default function Admin() {
   async function updateStatus(id, newStatus, requestRecord) {
     try {
       if (newStatus === 'approved') {
-        await apiPost('/api/requests', { action: 'approve', requestId: id });
+        const result = await apiPost('/api/requests', { action: 'approve', requestId: id });
         fetchRequests();
-        showToast(`Approved & email sent to ${requestRecord.customer_name}`);
+        if (result.warning) {
+          let copiedCheckoutLink = false;
+
+          try {
+            if (result.checkoutUrl && navigator?.clipboard?.writeText) {
+              await navigator.clipboard.writeText(result.checkoutUrl);
+              copiedCheckoutLink = true;
+            }
+          } catch (clipboardError) {
+            console.warn('Unable to copy checkout link after approval warning:', clipboardError);
+          }
+
+          showToast(
+            copiedCheckoutLink
+              ? `${result.warning} Checkout link copied for ${requestRecord.customer_name}.`
+              : `${result.warning} Please use the generated checkout link for ${requestRecord.customer_name}.`
+          );
+        } else {
+          showToast(`Approved & email sent to ${requestRecord.customer_name}`);
+        }
       } else {
         await apiPost('/api/requests', { action: 'update', id, status: newStatus });
         fetchRequests();

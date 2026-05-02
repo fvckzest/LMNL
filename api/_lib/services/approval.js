@@ -1,8 +1,8 @@
-import { createCheckoutForRequest } from './checkout.js';
+import { createCheckoutForRequest, createCheckoutForRequestRecord } from './checkout.js';
 import { getResendClient } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
-import { approveRequest, getRequestById } from '../repositories/requests.js';
+import { approveRequest, approveRequestWithOrderId, getRequestById } from '../repositories/requests.js';
 import { buildApprovalEmail } from '../email-templates.js';
 
 async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
@@ -80,8 +80,15 @@ async function sendApprovalEmail(to, eventName, checkoutUrl) {
   );
 }
 
-export async function approveRequestAndSendCheckout(requestId) {
-  const request = await getRequestById(requestId);
+export async function approveRequestAndSendCheckout(requestId, deps = {}) {
+  const loadRequest = deps.getRequestById || getRequestById;
+  const markApproved = deps.approveRequest || approveRequest;
+  const markApprovedWithOrderId = deps.approveRequestWithOrderId || approveRequestWithOrderId;
+  const buildCheckout = deps.createCheckoutForRequestRecord || createCheckoutForRequestRecord;
+  const buildCheckoutForApprovedRequest = deps.createCheckoutForRequest || createCheckoutForRequest;
+  const deliverApprovalEmail = deps.sendApprovalEmail || sendApprovalEmail;
+
+  const request = await loadRequest(requestId);
   if (!request) {
     throw new AppError('Request not found.', {
       code: 'REQUEST_NOT_FOUND',
@@ -90,13 +97,32 @@ export async function approveRequestAndSendCheckout(requestId) {
     });
   }
 
-  const updatedRequest = await approveRequest(requestId);
-  const { checkoutUrl, orderId } = await createCheckoutForRequest(updatedRequest.id);
-  await sendApprovalEmail(updatedRequest.customer_email, updatedRequest.event_name, checkoutUrl);
+  const alreadyApproved = request.status === 'approved' || request.status === 'fulfilled';
+
+  const checkout = alreadyApproved
+    ? await buildCheckoutForApprovedRequest(request.id, {}, deps)
+    : await buildCheckout(request, {}, { ...deps, persistOrderId: false });
+
+  const updatedRequest = alreadyApproved
+    ? request
+    : await (checkout.orderId
+      ? markApprovedWithOrderId(requestId, checkout.orderId)
+      : markApproved(requestId));
+
+  let warning = null;
+
+  try {
+    await deliverApprovalEmail(updatedRequest.customer_email, updatedRequest.event_name, checkout.checkoutUrl);
+  } catch (error) {
+    console.error('[approval-email] failed after invite approval', error);
+    warning = 'Invite approved, but the approval email could not be sent. The checkout link was still created.';
+  }
 
   return {
-    checkoutUrl,
+    checkoutUrl: checkout.checkoutUrl,
     status: updatedRequest.status,
-    orderId: orderId || updatedRequest.square_order_id || null,
+    orderId: checkout.orderId || updatedRequest.square_order_id || null,
+    emailSent: !warning,
+    warning,
   };
 }
