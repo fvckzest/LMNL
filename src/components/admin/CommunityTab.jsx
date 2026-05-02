@@ -364,6 +364,197 @@ export default function CommunityTab({
     <>
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
+          <h2 className="section-title">ARTIST INTEREST</h2>
+          {!artistInterestTableMissing && (
+            <div className="action-buttons">
+              <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
+            </div>
+          )}
+        </div>
+
+        {artistInterestTableMissing ? (
+          <div className="setup-guide">
+            <div className="guide-header">
+              <span className="warning-icon">⚠️</span>
+              <h3>DATABASE SETUP REQUIRED</h3>
+            </div>
+            <p>Please create the <code>artist_interest</code> table in your Supabase SQL Editor.</p>
+            <pre style={{ 
+              background: '#111', 
+              color: '#fff', 
+              padding: '15px', 
+              borderRadius: '4px', 
+              textAlign: 'left',
+              fontSize: '11px',
+              overflowX: 'auto',
+              marginTop: '10px',
+              marginBottom: '20px',
+              fontFamily: 'monospace'
+            }}>
+{`CREATE TABLE IF NOT EXISTS artist_interest (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    project_name TEXT DEFAULT '',
+    location TEXT DEFAULT '',
+    practice TEXT NOT NULL,
+    format TEXT DEFAULT '',
+    links TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE artist_interest ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public insert access" ON artist_interest FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated read access" ON artist_interest FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING (auth.role() = 'authenticated');`}
+            </pre>
+            <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
+          </div>
+        ) : (
+          <div className="events-table-container admin-table-shell">
+            {artistInterestLoading ? (
+              <p className="loading-text">RETRIEVING ARTIST INTEREST...</p>
+            ) : artistInterest.length === 0 ? (
+              <p className="loading-text">NO ARTIST INTEREST SUBMISSIONS YET.</p>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>NAME</th>
+                    <th>CONTACT</th>
+                    <th>PRACTICE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {artistInterest.map((entry) => {
+                    const isExpanded = Boolean(expandedArtistInterest[entry.id]);
+
+                    return (
+                      <Fragment key={entry.id}>
+                        <tr className={`${isExpanded ? 'artist-row-expanded' : ''} status-${entry.status || 'pending'}`}>
+                          <td className="artist-interest-toggle-cell">
+                            <button
+                              type="button"
+                              className={`artist-interest-toggle ${isExpanded ? 'expanded' : ''}`}
+                              style={{ '--toggle-color': '#ff5bb8' }}
+                              onClick={() => toggleArtistInterest(entry.id)}
+                              aria-expanded={isExpanded}
+                              aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                            >
+                              <span className="admin-toggle-arrow artist-interest-toggle-arrow">▶</span>
+                            </button>
+                          </td>
+                          <td><strong>{entry.name}</strong></td>
+                          <td>{entry.email}</td>
+                          <td>{entry.practice}</td>
+                          <td className="actions-cell">
+                            <div className="actions-wrapper">
+                              <div className="main-actions">
+                                {entry.status === 'pending' && (
+                                  <button
+                                    className="admin-btn approve"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'reviewed')}
+                                  >
+                                    MARK REVIEWED
+                                  </button>
+                                )}
+                                {entry.status === 'reviewed' && (
+                                  <button
+                                    className="admin-btn reset"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
+                                  >
+                                    RESET
+                                  </button>
+                                )}
+                              </div>
+                              <div className="secondary-actions">
+                                {entry.status !== 'archived' ? (
+                                  <button
+                                    className="icon-btn archive-btn"
+                                    title="Archive"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'archived')}
+                                  >
+                                    <ArchiveIcon />
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="icon-btn unarchive-btn"
+                                    title="Unarchive"
+                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
+                                  >
+                                    <UnarchiveIcon />
+                                  </button>
+                                )}
+                                <button
+                                  className="icon-btn delete-btn"
+                                  style={{ color: '#991b1b' }}
+                                  title="Delete Artist Interest"
+                                  onClick={() => deleteArtistInterest(entry.id)}
+                                >
+                                  <TrashIcon />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="artist-interest-details-row">
+                            <td></td>
+                            <td colSpan="4">
+                              <div className="artist-interest-details-panel">
+                                <div className="artist-interest-details-grid">
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Submitted</span>
+                                    <span>{entry.created_at ? new Date(entry.created_at).toLocaleDateString() : '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Location</span>
+                                    <span>{entry.location || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Project or collective</span>
+                                    <span>{entry.project_name || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Open to sharing</span>
+                                    <span>{entry.format || '-'}</span>
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Links</span>
+                                    {entry.links ? (
+                                      <a href={entry.links} target="_blank" rel="noopener noreferrer" className="artist-interest-detail-link">
+                                        {entry.links}
+                                      </a>
+                                    ) : (
+                                      <span>-</span>
+                                    )}
+                                  </div>
+                                  <div className="artist-interest-detail-block">
+                                    <span className="artist-interest-detail-label">Tell us a little</span>
+                                    <p className="artist-interest-detail-notes">{entry.notes || '-'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+        <div className="section-header-flex">
           <h2 className="section-title">COMMUNITY CREDITS (PERFORMERS & ARTISTS)</h2>
           {!communityTableMissing && (
             <div className="action-buttons">
@@ -441,11 +632,22 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                 <tbody>
                   {communityEventGroups.map((group) => {
                     const isExpanded = Boolean(expandedCommunityEvents[group.key]);
+                    
+                    // Calculate total rows for rowSpan: 
+                    // 1 (header) + credits.length + any expanded credit details
+                    const expandedCount = isExpanded 
+                      ? group.credits.filter(c => expandedCredits[c.id]).length 
+                      : 0;
+                    const totalRows = 1 + (isExpanded ? group.credits.length + expandedCount : 0);
 
                     return (
                       <Fragment key={group.key}>
                         <tr className={isExpanded ? 'event-row-expanded' : ''}>
-                          <td>
+                          <td 
+                            className="community-event-toggle-cell"
+                            rowSpan={totalRows} 
+                            style={{ verticalAlign: 'middle' }}
+                          >
                             <button
                               type="button"
                               className={`community-event-toggle ${isExpanded ? 'expanded' : ''}`}
@@ -471,7 +673,6 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                           return (
                             <Fragment key={credit.id}>
                               <tr className={`community-credit-row ${isCreditExpanded ? 'credit-row-expanded' : ''}`}>
-                                <td></td>
                                 <td className="ticket-detail-toggle-cell">
                                   <button
                                     type="button"
@@ -507,7 +708,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                               </tr>
                               {isCreditExpanded && (
                                 <tr className="credit-metadata-row">
-                                  <td colSpan="6">
+                                  <td colSpan="5">
                                     <div className="credit-metadata-panel">
                                       <div className="credit-metadata-grid">
                                         <div className="credit-metadata-item">
@@ -604,196 +805,6 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
             </table>
           )}
         </div>
-      </section>
-
-      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
-        <div className="section-header-flex">
-          <h2 className="section-title">ARTIST INTEREST</h2>
-          {!artistInterestTableMissing && (
-            <div className="action-buttons">
-              <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
-            </div>
-          )}
-        </div>
-
-        {artistInterestTableMissing ? (
-          <div className="setup-guide">
-            <div className="guide-header">
-              <span className="warning-icon">⚠️</span>
-              <h3>DATABASE SETUP REQUIRED</h3>
-            </div>
-            <p>Please create the <code>artist_interest</code> table in your Supabase SQL Editor.</p>
-            <pre style={{ 
-              background: '#111', 
-              color: '#fff', 
-              padding: '15px', 
-              borderRadius: '4px', 
-              textAlign: 'left',
-              fontSize: '11px',
-              overflowX: 'auto',
-              marginTop: '10px',
-              marginBottom: '20px',
-              fontFamily: 'monospace'
-            }}>
-{`CREATE TABLE IF NOT EXISTS artist_interest (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    project_name TEXT DEFAULT '',
-    location TEXT DEFAULT '',
-    practice TEXT NOT NULL,
-    format TEXT DEFAULT '',
-    links TEXT DEFAULT '',
-    notes TEXT DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
-ALTER TABLE artist_interest ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow public insert access" ON artist_interest FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow authenticated read access" ON artist_interest FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING (auth.role() = 'authenticated');`}
-            </pre>
-            <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
-          </div>
-        ) : (
-          <div className="events-table-container admin-table-shell">
-            {artistInterestLoading ? (
-              <p className="loading-text">RETRIEVING ARTIST INTEREST...</p>
-            ) : artistInterest.length === 0 ? (
-              <p className="loading-text">NO ARTIST INTEREST SUBMISSIONS YET.</p>
-            ) : (
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>NAME</th>
-                    <th>CONTACT</th>
-                    <th>PRACTICE</th>
-                    <th>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {artistInterest.map((entry) => {
-                    const isExpanded = Boolean(expandedArtistInterest[entry.id]);
-
-                    return (
-                      <Fragment key={entry.id}>
-                        <tr className={`${isExpanded ? 'event-row-expanded' : ''} status-${entry.status || 'pending'}`}>
-                          <td className="artist-interest-toggle-cell">
-                            <button
-                              type="button"
-                              className={`artist-interest-toggle ${isExpanded ? 'expanded' : ''}`}
-                              style={{ '--toggle-color': '#ff5bb8' }}
-                              onClick={() => toggleArtistInterest(entry.id)}
-                              aria-expanded={isExpanded}
-                              aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
-                            >
-                              <span className="admin-toggle-arrow artist-interest-toggle-arrow">▶</span>
-                            </button>
-                          </td>
-                          <td><strong>{entry.name}</strong></td>
-                          <td>{entry.email}</td>
-                          <td>{entry.practice}</td>
-                          <td className="actions-cell">
-                            <div className="actions-wrapper">
-                              <div className="main-actions">
-                                {entry.status === 'pending' && (
-                                  <button
-                                    className="admin-btn approve"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'reviewed')}
-                                  >
-                                    MARK REVIEWED
-                                  </button>
-                                )}
-                                {entry.status === 'reviewed' && (
-                                  <button
-                                    className="admin-btn reset"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
-                                  >
-                                    RESET
-                                  </button>
-                                )}
-                              </div>
-                              <div className="secondary-actions">
-                                {entry.status !== 'archived' ? (
-                                  <button
-                                    className="icon-btn archive-btn"
-                                    title="Archive"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'archived')}
-                                  >
-                                    <ArchiveIcon />
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="icon-btn unarchive-btn"
-                                    title="Unarchive"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
-                                  >
-                                    <UnarchiveIcon />
-                                  </button>
-                                )}
-                                <button
-                                  className="icon-btn delete-btn"
-                                  style={{ color: '#991b1b' }}
-                                  title="Delete Artist Interest"
-                                  onClick={() => deleteArtistInterest(entry.id)}
-                                >
-                                  <TrashIcon />
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr className="artist-interest-details-row">
-                            <td colSpan="5">
-                              <div className="artist-interest-details-panel">
-                                <div className="artist-interest-details-grid">
-                                  <div className="artist-interest-detail-block">
-                                    <span className="artist-interest-detail-label">Submitted</span>
-                                    <span>{entry.created_at ? new Date(entry.created_at).toLocaleDateString() : '-'}</span>
-                                  </div>
-                                  <div className="artist-interest-detail-block">
-                                    <span className="artist-interest-detail-label">Location</span>
-                                    <span>{entry.location || '-'}</span>
-                                  </div>
-                                  <div className="artist-interest-detail-block">
-                                    <span className="artist-interest-detail-label">Project or collective</span>
-                                    <span>{entry.project_name || '-'}</span>
-                                  </div>
-                                  <div className="artist-interest-detail-block">
-                                    <span className="artist-interest-detail-label">Open to sharing</span>
-                                    <span>{entry.format || '-'}</span>
-                                  </div>
-                                  <div className="artist-interest-detail-block artist-interest-detail-block-wide">
-                                    <span className="artist-interest-detail-label">Links</span>
-                                    {entry.links ? (
-                                      <a href={entry.links} target="_blank" rel="noopener noreferrer" className="artist-interest-detail-link">
-                                        {entry.links}
-                                      </a>
-                                    ) : (
-                                      <span>-</span>
-                                    )}
-                                  </div>
-                                  <div className="artist-interest-detail-block artist-interest-detail-block-wide">
-                                    <span className="artist-interest-detail-label">Tell us a little</span>
-                                    <p className="artist-interest-detail-notes">{entry.notes || '-'}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
       </section>
 
       {/* COMMUNITY MODAL */}
