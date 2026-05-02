@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getResendClient, getSquareClient } from '../clients.js';
-import { buildTicketEmail } from '../../../shared/emailTemplates.js';
+import { buildTicketEmail } from '../email-templates.js';
 import { getEventBySquareVariationIds } from '../repositories/events.js';
 import {
   fulfillApprovedRequestById,

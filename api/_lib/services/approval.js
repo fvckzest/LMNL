@@ -3,7 +3,7 @@ import { getResendClient } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { approveRequest, getRequestById } from '../repositories/requests.js';
-import { buildApprovalEmail } from '../../../shared/emailTemplates.js';
+import { buildApprovalEmail } from '../email-templates.js';
 
 async function sendApprovalEmail(to, eventName, checkoutUrl) {
   const resend = getResendClient();
