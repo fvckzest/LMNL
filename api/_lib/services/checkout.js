@@ -236,23 +236,20 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
 export async function createCheckoutForEvent(eventId, payload = {}, deps = {}) {
   const event = await loadEventOrThrow(eventId, deps);
   const buyer = normalizeBuyer(payload.buyer);
-
-  if (!buyer.fullName || !buyer.email) {
-    throw new AppError('Name and email are required.', {
-      code: 'INVALID_INPUT',
-      status: 400,
-      expose: true,
-    });
-  }
+  const requestBuyer = {
+    fullName: buyer.fullName || 'Guest',
+    email: buyer.email || `guest-${crypto.randomUUID()}@example.com`,
+    phone: buyer.phone,
+  };
 
   const request = await (deps.createAccessRequest || createAccessRequest)({
     event_name: event.name,
-    customer_name: buyer.fullName,
-    customer_email: buyer.email,
+    customer_name: requestBuyer.fullName,
+    customer_email: requestBuyer.email,
     status: 'approved',
   });
 
-  return createHostedTicketLink({ request, event, buyer, deps });
+  return createHostedTicketLink({ request, event, buyer: requestBuyer, deps });
 }
 
 export async function createCheckoutForRequest(requestId, payload = {}, deps = {}) {

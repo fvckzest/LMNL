@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getResendClient, getSquareClient } from '../clients.js';
+import { buildTicketEmail } from '../../../shared/emailTemplates.js';
 import { getEventBySquareVariationIds } from '../repositories/events.js';
 import {
   fulfillApprovedRequestById,
@@ -107,12 +108,19 @@ export async function sendTicketEmail(ticket, event, customerEmail, customerName
   const primaryFrom = process.env.RESEND_API_KEY?.startsWith('re_')
     ? 'LMNL <tickets@lmnl.art>'
     : 'onboarding@resend.dev';
+  const email = buildTicketEmail({
+    eventName,
+    ticketUrl,
+    customerName,
+    logoUrl: `${siteUrl.replace(/\/$/, '')}/lmnl-logo-black.png`,
+  });
 
   const emailOptions = {
     from: primaryFrom,
     to: customerEmail,
-    subject: `Your Ticket: ${eventName}`,
-    html: `<p>Your ticket for ${eventName} is ready. View it here: <a href="${ticketUrl}">${ticketUrl}</a></p><p>Guest: ${customerName}</p>`,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
   };
 
   const makePass = deps.generateTicketPass || generateTicketPass;
@@ -244,6 +252,7 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const fulfillById = deps.fulfillApprovedRequestById || fulfillApprovedRequestById;
   const fulfillByOrderId = deps.fulfillApprovedRequestByOrderId || fulfillApprovedRequestByOrderId;
   const loadRequestBySquareOrderId = deps.getRequestByOrderId || getRequestByOrderId;
+  const loadEventById = deps.getEventById || null;
   const loadEvent = deps.getEventBySquareVariationIds || getEventBySquareVariationIds;
   const loadCustomer = deps.resolveCustomer || resolveCustomer;
   const insertTicket = deps.createTicket || createTicket;
@@ -290,10 +299,13 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   }
 
   const catalogObjectIds = (order.lineItems || []).map((lineItem) => lineItem.catalogObjectId).filter(Boolean);
-  const [event, customer] = await Promise.all([
+  const eventIdFromMetadata = order.metadata?.eventId || order.metadata?.event_id || null;
+  const [eventFromMetadata, eventFromCatalog, customer] = await Promise.all([
+    eventIdFromMetadata && loadEventById ? loadEventById(eventIdFromMetadata) : Promise.resolve(null),
     loadEvent(catalogObjectIds),
     loadCustomer(order, squareOrderId),
   ]);
+  const event = eventFromMetadata || eventFromCatalog || null;
 
   let ticket;
   try {

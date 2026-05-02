@@ -60,6 +60,48 @@ test('processSquareOrderUpdate creates ticket when order is fulfillable', async 
   assert.deepEqual(result, { success: true, ticketId: 'ticket_new' });
 });
 
+test('processSquareOrderUpdate prefers order metadata event ID when catalog variation lookup is unavailable', async () => {
+  const createdTickets = [];
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_metadata_event' } } },
+    },
+    {},
+    {
+      verifySignature: () => {},
+      findTicketBySquareOrderId: async () => null,
+      squareClient: {
+        orders: {
+          get: async () => ({
+            order: {
+              id: 'order_metadata_event',
+              state: 'COMPLETED',
+              metadata: { requestId: 'req_meta', eventId: 'event_meta' },
+              lineItems: [{ name: 'Launch - Access Ticket' }],
+              tenders: [{ id: 'tender_meta' }],
+            },
+          }),
+        },
+      },
+      fulfillApprovedRequestById: async () => ({ id: 'req_meta' }),
+      fulfillApprovedRequestByOrderId: async () => null,
+      getEventById: async (id) => ({ id, name: 'Launch' }),
+      getEventBySquareVariationIds: async () => null,
+      resolveCustomer: async () => ({ customerName: 'Ada', customerEmail: 'ada@example.com' }),
+      createTicket: async (payload) => {
+        createdTickets.push(payload);
+        return { id: 'ticket_meta', ...payload };
+      },
+      sendTicketEmail: async () => {},
+    }
+  );
+
+  assert.equal(createdTickets.length, 1);
+  assert.equal(createdTickets[0].event_id, 'event_meta');
+  assert.deepEqual(result, { success: true, ticketId: 'ticket_meta' });
+});
+
 test('processSquareOrderUpdate fulfills completed payment.updated events', async () => {
   const createdTickets = [];
   const result = await processSquareOrderUpdate(

@@ -15,7 +15,7 @@ const Services = lazy(() => import('./pages/Services'));
 const Community = lazy(() => import('./pages/Community'));
 const ArtistInterest = lazy(() => import('./pages/ArtistInterest'));
 const Shop = lazy(() => import('./pages/Shop'));
-const ShopCheckout = lazy(() => import('./pages/ShopCheckout'));
+const EmailLab = lazy(() => import('./pages/EmailLab'));
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -101,6 +101,7 @@ function App() {
               {/* Allow viewing the public home via /home on the subdomain */}
               <Route path="/home" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
             </>
           ) : (
             <>
@@ -109,6 +110,7 @@ function App() {
               {/* Block /admin and /login on the public site */}
               <Route path="/admin" element={<Navigate to="/" />} />
               <Route path="/login" element={<Navigate to="/" />} />
+              {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
             </>
           )}
 
@@ -118,9 +120,6 @@ function App() {
           <Route path="/community/share" element={<ArtistInterest />} />
           <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
           <Route path="/shop" element={<Shop />} />
-          <Route path="/checkout/:preorderId" element={<ShopCheckout />} />
-          <Route path="/checkout/event/:eventId" element={<ShopCheckout />} />
-          <Route path="/checkout/request/:requestId" element={<ShopCheckout />} />
           <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
           <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
           <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />

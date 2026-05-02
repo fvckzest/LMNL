@@ -126,6 +126,41 @@
   font-weight: 600;
 }
 
+.event-ticket-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-ticket-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  background: transparent;
+  color: #004ffa;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.event-ticket-toggle:hover {
+  color: #004ffa;
+}
+
+.event-ticket-toggle-arrow {
+  color: #004ffa;
+}
+
+.event-ticket-toggle.expanded .event-ticket-toggle-arrow {
+  transform: rotate(90deg);
+}
+
+.event-ticket-toggle-count {
+  color: #004ffa;
+  font-weight: 700;
+}
+
 .ticket-holders-row td {
   background: #fbfcff;
   padding: 0;
@@ -249,49 +284,6 @@
   text-transform: uppercase;
   color: #004ffa;
 }
-
-.ticket-holder-list {
-  display: grid;
-  gap: 10px;
-}
-
-.ticket-holder-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border: 1px solid #e7ecff;
-  background: white;
-}
-
-.ticket-holder-name,
-.ticket-holder-email {
-  margin: 0;
-}
-
-.ticket-holder-name {
-  font-weight: 700;
-  color: #111;
-}
-
-.ticket-holder-email {
-  margin-top: 4px;
-  color: #666;
-  word-break: break-word;
-}
-
-.ticket-holder-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  color: #666;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
 
 .status-pending { background-color: #fff; }
 .status-approved { background-color: #f0fff0; }
@@ -430,6 +422,92 @@
 .admin-table-shell .ticket-holders-row td {
   background: #fbfcff;
   border-bottom: 1px solid #dbe3ff;
+}
+
+.issued-tickets-table td {
+  vertical-align: top;
+}
+
+.inline-issued-tickets-table {
+  background: white;
+  border: 1px solid #e7ecff;
+}
+
+.inline-issued-tickets-table td {
+  background: white;
+}
+
+.ticket-detail-toggle-cell {
+  text-align: center;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ticket-detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  background: transparent;
+  color: #004ffa;
+  cursor: pointer;
+  font-size: 12px;
+  min-width: 20px;
+  transition: transform 0.2s ease;
+}
+
+.ticket-detail-toggle:hover {
+  color: #004ffa;
+}
+
+.ticket-detail-toggle .ticket-toggle-arrow {
+  color: #004ffa;
+}
+
+.ticket-detail-toggle.expanded .ticket-toggle-arrow {
+  transform: rotate(90deg);
+}
+
+.inline-issued-tickets-table tbody td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ticket-metadata-row td {
+  background: #f8faff;
+  border-top: none;
+}
+
+.ticket-metadata-panel {
+  padding: 14px 16px;
+}
+
+.ticket-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+}
+
+.ticket-metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.ticket-metadata-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #004ffa;
+}
+
+.issued-ticket-mono {
+  font-family: "SFMono-Regular", "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 
@@ -900,13 +978,90 @@
   background: #fee2e2 !important;
 }
 
-@keyframes slideIn {
+@keyframes slideInUp {
   from {
-    transform: translateY(100px);
+    transform: translateY(20px);
     opacity: 0;
   }
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+.admin-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: black;
+  color: white;
+  padding: 16px 24px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  z-index: 2000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  animation: slideInUp 0.3s ease-out;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.admin-toast.error {
+  background: #ff0000;
+}
+
+.admin-confirm-notification {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 350px;
+  background: white;
+  border: 2px solid black;
+  padding: 24px;
+  z-index: 2000;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.admin-confirm-notification .confirm-message {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #000;
+}
+
+.admin-confirm-notification .modal-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  display: flex;
+  gap: 12px;
+}
+
+.admin-confirm-notification .admin-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 12px;
+  text-align: center;
+  justify-content: center;
+}
+
+.admin-confirm-notification .admin-btn.approve {
+  background: black;
+  color: white;
+}
+
+.admin-confirm-notification .admin-btn.approve:hover {
+  background: #333;
+}
+
+@media (max-width: 768px) {
+  .admin-confirm-notification {
+    bottom: 20px;
+    right: 20px;
+    left: 20px;
+    width: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   }
 }

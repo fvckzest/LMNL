@@ -18,7 +18,7 @@ export default function Admin() {
   const [tableMissing, setTableMissing] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('events'); 
+  const [activeTab, setActiveTab] = useState('all'); 
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
@@ -95,18 +95,15 @@ export default function Admin() {
 
   async function fetchTickets() {
     setTicketsLoading(true);
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const data = await apiGet('/api/admin-tickets', { auth: true });
+      setTickets(data || []);
+    } catch (error) {
       console.error('Error fetching tickets:', error);
       setTickets([]);
-    } else {
-      setTickets(data || []);
+    } finally {
+      setTicketsLoading(false);
     }
-    setTicketsLoading(false);
   }
 
   async function fetchServiceInquiries() {
@@ -367,32 +364,27 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Notification */}
       {confirmModal && (
-        <div className="admin-modal-overlay">
-          <div className="admin-modal confirm-modal">
-            <div className="modal-header">
-              <h3>CONFIRM ACTION</h3>
-            </div>
-            <p className="confirm-message">{confirmModal.message}</p>
-            <div className="modal-actions">
-              <button 
-                className="admin-btn cancel"
-                onClick={() => setConfirmModal(null)}
-              >
-                CANCEL
-              </button>
-              <button 
-                className="admin-btn approve"
-                onClick={async () => {
-                  const callback = confirmModal.onConfirm;
-                  setConfirmModal(null);
-                  await callback();
-                }}
-              >
-                CONFIRM
-              </button>
-            </div>
+        <div className="admin-confirm-notification">
+          <p className="confirm-message">{confirmModal.message}</p>
+          <div className="modal-actions">
+            <button 
+              className="admin-btn cancel"
+              onClick={() => setConfirmModal(null)}
+            >
+              CANCEL
+            </button>
+            <button 
+              className="admin-btn approve"
+              onClick={async () => {
+                const callback = confirmModal.onConfirm;
+                setConfirmModal(null);
+                await callback();
+              }}
+            >
+              CONFIRM
+            </button>
           </div>
         </div>
       )}

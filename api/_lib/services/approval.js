@@ -1,19 +1,28 @@
+import { createCheckoutForRequest } from './checkout.js';
 import { getResendClient } from '../clients.js';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { approveRequest, getRequestById } from '../repositories/requests.js';
+import { buildApprovalEmail } from '../../../shared/emailTemplates.js';
 
 async function sendApprovalEmail(to, eventName, checkoutUrl) {
   const resend = getResendClient();
+  const { siteUrl } = getBaseConfig();
   const primaryFrom = process.env.RESEND_API_KEY?.startsWith('re_')
     ? 'LMNL <tickets@lmnl.art>'
     : 'onboarding@resend.dev';
+  const email = buildApprovalEmail({
+    eventName,
+    checkoutUrl,
+    logoUrl: `${siteUrl.replace(/\/$/, '')}/lmnl-logo-black.png`,
+  });
 
   const payload = {
     from: primaryFrom,
     to,
-    subject: `Approved: Your Invite to ${eventName}`,
-    html: `<p>Your invite to ${eventName} is approved. Pay here: <a href="${checkoutUrl}">${checkoutUrl}</a></p>`,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
   };
 
   const response = await resend.emails.send(payload);
@@ -53,14 +62,13 @@ export async function approveRequestAndSendCheckout(requestId) {
     });
   }
 
-  const { siteUrl } = getBaseConfig();
-  const checkoutUrl = `${siteUrl}/checkout/request/${requestId}`;
-  await sendApprovalEmail(request.customer_email, request.event_name, checkoutUrl);
   const updatedRequest = await approveRequest(requestId);
+  const { checkoutUrl, orderId } = await createCheckoutForRequest(updatedRequest.id);
+  await sendApprovalEmail(updatedRequest.customer_email, updatedRequest.event_name, checkoutUrl);
 
   return {
     checkoutUrl,
     status: updatedRequest.status,
-    orderId: updatedRequest.square_order_id || null,
+    orderId: orderId || updatedRequest.square_order_id || null,
   };
 }

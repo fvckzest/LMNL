@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import GenericPage from './GenericPage';
+import { apiPost } from '../lib/api';
 import { fetchOpenProducts } from '../lib/siteData';
 import './Shop.css';
 
@@ -186,7 +187,6 @@ function PersistentProductCard({ product, onPurchase }) {
 }
 
 export default function Shop() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -216,7 +216,10 @@ export default function Shop() {
   async function handlePurchase(product) {
     setError(null);
     try {
-      navigate(`/checkout/${product.id}`);
+      const result = await apiPost('/api/create-checkout', {
+        preorderId: product.id,
+      });
+      window.location.assign(result.checkoutUrl);
     } catch (err) {
       console.error('Purchase Error:', err);
       setError('Failed to start checkout. Please try again.');

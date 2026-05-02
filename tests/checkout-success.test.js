@@ -39,6 +39,42 @@ test('getCheckoutSuccessView returns request, ticket, and event details', async 
   assert.equal(result.event.locationName, 'LMNL Space');
 });
 
+test('getCheckoutSuccessView prefers ticket customer details over placeholder request values', async () => {
+  process.env.SITE_URL = 'https://lmnl.art';
+
+  const result = await getCheckoutSuccessView('req_guest', {
+    getRequestById: async () => ({
+      id: 'req_guest',
+      event_name: 'SPACE',
+      customer_name: 'Guest',
+      customer_email: 'guest-123@example.com',
+      status: 'fulfilled',
+      square_order_id: 'order_guest',
+      created_at: '2026-05-01T00:00:00.000Z',
+    }),
+    findTicketBySquareOrderId: async () => ({
+      id: 'ticket_guest',
+      event_id: 'event_1',
+      customer_name: 'Real Guest',
+      customer_email: 'real@example.org',
+      created_at: '2026-05-01T00:05:00.000Z',
+      is_used: false,
+    }),
+    getEventById: async () => ({
+      id: 'event_1',
+      name: 'SPACE',
+      event_date: '2026-05-15',
+      event_time: '9:00 PM',
+      location_name: 'LMNL Space',
+      price: 2000,
+    }),
+    getLatestEventByName: async () => null,
+  });
+
+  assert.equal(result.request.customerName, 'Real Guest');
+  assert.equal(result.request.customerEmail, 'real@example.org');
+});
+
 test('getCheckoutSuccessViewByTicketId builds summary without request id', async () => {
   process.env.SITE_URL = 'https://lmnl.art';
 

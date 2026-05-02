@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import SpaceCountdown from '../components/space/SpaceCountdown';
@@ -12,11 +11,11 @@ import { fetchSpaceEventSnapshot } from '../lib/siteData';
 import './Space.css';
 
 export default function Space() {
-  const navigate = useNavigate();
   usePageColor('#000000');
 
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState('idle');
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [eventData, setEventData] = useState({ 
@@ -87,6 +86,21 @@ export default function Space() {
     }
   };
 
+  const handlePurchase = async () => {
+    if (!eventData.id) return;
+
+    setPurchaseStatus('loading');
+    try {
+      const result = await apiPost('/api/create-event-checkout', {
+        eventId: eventData.id,
+      });
+      window.location.assign(result.checkoutUrl);
+    } catch (error) {
+      console.error('Error creating event checkout:', error);
+      setPurchaseStatus('error');
+    }
+  };
+
   return (
     <div className="page-container space-page">
       <HeaderBar />
@@ -123,9 +137,12 @@ export default function Space() {
               isPrivate={eventData.is_private}
               eventId={eventData.id}
               onInvite={() => setShowRequestForm(true)}
-              onPurchase={() => navigate(`/checkout/event/${eventData.id}`)}
+              onPurchase={handlePurchase}
               onDonate={() => setShowDonationModal(true)}
             />
+            {purchaseStatus === 'error' && (
+              <p className="error-message">Unable to open checkout right now. Please try again.</p>
+            )}
               
               <div className="space-description">
                 <p className="description-label">brief</p>

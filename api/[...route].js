@@ -16,6 +16,7 @@ import { createAccessRequest, updateRequestStatus, deleteRequestById } from './_
 import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
 import { upsertPreorder, updatePreorderStatus, deletePreorderById } from './_lib/repositories/preorders.js';
 import { upsertEvent, updateEventMetadata, updateEventStatus, deleteEventById } from './_lib/repositories/events.js';
+import { listTickets } from './_lib/repositories/tickets.js';
 
 function throwMissingArtistInterestTable(error) {
   if (error?.code === 'PGRST205' && error?.message?.includes('artist_interest')) {
@@ -305,6 +306,13 @@ async function handleCheckInTicket(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
+async function handleAdminTickets(req, res) {
+  allowMethods(req, ['GET']);
+  await requireAdminUser(req);
+  const data = await listTickets();
+  return sendJson(res, 200, { success: true, data });
+}
+
 async function handlePreorders(req, res) {
   allowMethods(req, ['POST']);
   const body = await parseJsonBody(req);
@@ -487,6 +495,7 @@ const handlers = {
   'preorder-checkout': handleGetPreorderCheckout,
   'get-ticket': handleGetTicket,
   'check-in-ticket': handleCheckInTicket,
+  'admin-tickets': handleAdminTickets,
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,

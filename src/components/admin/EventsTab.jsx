@@ -49,6 +49,7 @@ export default function EventsTab({
   const [newTraitKey, setNewTraitKey] = useState('');
   const [newTraitValue, setNewTraitValue] = useState('');
   const [expandedEventId, setExpandedEventId] = useState(null);
+  const [expandedTicketIds, setExpandedTicketIds] = useState({});
 
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -320,17 +321,72 @@ export default function EventsTab({
   }
 
   const customMetadataEntries = Object.entries(eventForm.metadata || {}).filter(([key]) => !MANAGED_METADATA_KEYS.has(key));
-  const ticketsByEventId = useMemo(() => {
-    return (tickets || []).reduce((acc, ticket) => {
-      if (!ticket.event_id) return acc;
-      if (!acc[ticket.event_id]) acc[ticket.event_id] = [];
-      acc[ticket.event_id].push(ticket);
+  const eventsByName = useMemo(() => {
+    return (events || []).reduce((acc, event) => {
+      const normalizedName = String(event.name || '').trim().toLowerCase();
+      if (!normalizedName) return acc;
+      if (!acc[normalizedName]) acc[normalizedName] = [];
+      acc[normalizedName].push(event);
+      acc[normalizedName].sort((a, b) => {
+        const aTime = new Date(a.created_at || a.event_date || 0).getTime();
+        const bTime = new Date(b.created_at || b.event_date || 0).getTime();
+        return bTime - aTime;
+      });
       return acc;
     }, {});
-  }, [tickets]);
+  }, [events]);
+
+  const requestsByOrderId = useMemo(() => {
+    return (requests || []).reduce((acc, request) => {
+      if (!request.square_order_id) return acc;
+      acc[request.square_order_id] = request;
+      return acc;
+    }, {});
+  }, [requests]);
+
+  const ticketRecords = useMemo(() => {
+    return (tickets || []).map((ticket) => {
+      let resolvedEvent = null;
+
+      if (ticket.event_id) {
+        resolvedEvent = (events || []).find((event) => event.id === ticket.event_id) || null;
+      }
+
+      if (!resolvedEvent && ticket.square_order_id) {
+        const linkedRequest = requestsByOrderId[ticket.square_order_id];
+        const matchedEvents = linkedRequest?.event_name
+          ? eventsByName[String(linkedRequest.event_name).trim().toLowerCase()] || []
+          : [];
+        resolvedEvent = matchedEvents[0] || null;
+      }
+
+      return {
+        ...ticket,
+        resolvedEvent,
+        resolvedEventId: resolvedEvent?.id || ticket.event_id || null,
+        resolvedEventName: resolvedEvent?.name || 'Unlinked ticket',
+      };
+    });
+  }, [events, eventsByName, requestsByOrderId, tickets]);
+
+  const ticketsByEventId = useMemo(() => {
+    return ticketRecords.reduce((acc, ticket) => {
+      if (!ticket.resolvedEventId) return acc;
+      if (!acc[ticket.resolvedEventId]) acc[ticket.resolvedEventId] = [];
+      acc[ticket.resolvedEventId].push(ticket);
+      return acc;
+    }, {});
+  }, [ticketRecords]);
 
   function toggleExpandedEvent(eventId) {
     setExpandedEventId(current => current === eventId ? null : eventId);
+  }
+
+  function toggleExpandedTicket(ticketId) {
+    setExpandedTicketIds((current) => ({
+      ...current,
+      [ticketId]: !current[ticketId],
+    }));
   }
 
   return (
@@ -401,15 +457,16 @@ export default function EventsTab({
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               {hasTickets ? (
-                                <button
-                                  className={`ticket-toggle ${isExpanded ? 'expanded' : ''}`}
-                                  style={{ '--toggle-color': '#004ffa' }}
-                                  onClick={() => toggleExpandedEvent(event.id)}
-                                  title={isExpanded ? 'Hide ticket holders' : 'Show ticket holders'}
-                                >
-                                  <span className="admin-toggle-arrow ticket-toggle-arrow">▾</span>
-                                  <span className="ticket-toggle-count">{eventTickets.length}</span>
-                                </button>
+                                <div className="event-ticket-toggle-wrap">
+                                  <button
+                                    className={`event-ticket-toggle ${isExpanded ? 'expanded' : ''}`}
+                                    onClick={() => toggleExpandedEvent(event.id)}
+                                    title={isExpanded ? 'Hide ticket holders' : 'Show ticket holders'}
+                                  >
+                                    <span className="admin-toggle-arrow event-ticket-toggle-arrow">▶</span>
+                                  </button>
+                                  <span className="event-ticket-toggle-count">{eventTickets.length}</span>
+                                </div>
                               ) : (
                                 <span className="ticket-toggle-empty">0</span>
                               )}
@@ -491,27 +548,79 @@ export default function EventsTab({
                               <td colSpan="9">
                                 <div className="ticket-holders-panel">
                                   <div className="ticket-holders-header">
-                                    <span>Ticket Holders</span>
+                                    <span>Issued Tickets</span>
                                     <button className="admin-btn small" onClick={fetchTickets} disabled={ticketsLoading}>
                                       {ticketsLoading ? 'LOADING...' : 'REFRESH'}
                                     </button>
                                   </div>
-                                  <div className="ticket-holder-list">
-                                    {eventTickets.map((ticket) => (
-                                      <div key={ticket.id} className="ticket-holder-card">
-                                        <div>
-                                          <p className="ticket-holder-name">{ticket.customer_name || 'Guest'}</p>
-                                          <p className="ticket-holder-email">{ticket.customer_email || 'No email on file'}</p>
-                                        </div>
-                                        <div className="ticket-holder-meta">
-                                          <span className={`status-pill ${ticket.is_used ? 'past' : 'approved'}`}>
-                                            {ticket.is_used ? 'used' : 'valid'}
-                                          </span>
-                                          <span>{ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <table className="admin-table issued-tickets-table inline-issued-tickets-table">
+                                    <thead>
+                                      <tr>
+                                        <th style={{ width: '1%', textAlign: 'center' }}></th>
+                                        <th>GUEST</th>
+                                        <th>EMAIL</th>
+                                        <th>STATUS</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {eventTickets.map((ticket) => {
+                                        const isTicketExpanded = Boolean(expandedTicketIds[ticket.id]);
+
+                                        return (
+                                          <Fragment key={ticket.id}>
+                                            <tr className={isTicketExpanded ? 'ticket-detail-row-expanded' : ''}>
+                                              <td className="ticket-detail-toggle-cell">
+                                                <button
+                                                  className={`ticket-detail-toggle ${isTicketExpanded ? 'expanded' : ''}`}
+                                                  onClick={() => toggleExpandedTicket(ticket.id)}
+                                                  title={isTicketExpanded ? 'Hide ticket metadata' : 'Show ticket metadata'}
+                                                >
+                                                  <span className="admin-toggle-arrow ticket-toggle-arrow">▶</span>
+                                                </button>
+                                              </td>
+                                              <td>{ticket.customer_name || 'Guest'}</td>
+                                              <td>{ticket.customer_email || 'No email on file'}</td>
+                                              <td>
+                                                <span className={`status-pill ${ticket.is_used ? 'past' : 'approved'}`}>
+                                                  {ticket.is_used ? 'used' : 'valid'}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                            {isTicketExpanded && (
+                                              <tr className="ticket-metadata-row">
+                                                <td colSpan="4">
+                                                  <div className="ticket-metadata-panel">
+                                                    <div className="ticket-metadata-grid">
+                                                      <div className="ticket-metadata-item">
+                                                        <span className="ticket-metadata-label">ISSUED</span>
+                                                        <span>{ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'Unknown'}</span>
+                                                      </div>
+                                                      <div className="ticket-metadata-item">
+                                                        <span className="ticket-metadata-label">USED AT</span>
+                                                        <span>{ticket.used_at ? new Date(ticket.used_at).toLocaleString() : '--'}</span>
+                                                      </div>
+                                                      <div className="ticket-metadata-item">
+                                                        <span className="ticket-metadata-label">TICKET ID</span>
+                                                        <span className="issued-ticket-mono">{ticket.id}</span>
+                                                      </div>
+                                                      <div className="ticket-metadata-item">
+                                                        <span className="ticket-metadata-label">ORDER ID</span>
+                                                        <span className="issued-ticket-mono">{ticket.square_order_id || '--'}</span>
+                                                      </div>
+                                                      <div className="ticket-metadata-item">
+                                                        <span className="ticket-metadata-label">QR PAYLOAD</span>
+                                                        <span className="issued-ticket-mono">{ticket.qr_code_payload || '--'}</span>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            )}
+                                          </Fragment>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
                                 </div>
                               </td>
                             </tr>

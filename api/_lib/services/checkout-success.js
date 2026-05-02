@@ -3,14 +3,31 @@ import { getEventById, getLatestEventByName } from '../repositories/events.js';
 import { findTicketBySquareOrderId, getTicketWithEventById } from '../repositories/tickets.js';
 import { getBaseConfig } from '../env.js';
 
+function isPlaceholderEmail(email) {
+  if (!email) return true;
+  return String(email).trim().toLowerCase().endsWith('@example.com');
+}
+
+function readCustomerEmail(request, ticket) {
+  const requestEmail = request?.customer_email || '';
+  if (!isPlaceholderEmail(requestEmail)) return requestEmail;
+  return ticket?.customer_email || requestEmail || null;
+}
+
+function readCustomerName(request, ticket) {
+  const requestName = request?.customer_name || '';
+  if (requestName && requestName !== 'Guest') return requestName;
+  return ticket?.customer_name || requestName || null;
+}
+
 function mapRequest(request) {
   if (!request) return null;
 
   return {
     id: request.id,
     eventName: request.event_name,
-    customerName: request.customer_name,
-    customerEmail: request.customer_email,
+    customerName: readCustomerName(request),
+    customerEmail: readCustomerEmail(request),
     status: request.status,
     squareOrderId: request.square_order_id || null,
     createdAt: request.created_at || null,
@@ -62,7 +79,13 @@ function mapTicket(ticket) {
 
 function buildSuccessView({ request, ticket, event }) {
   return {
-    request: mapRequest(request) || mapFallbackRequestFromTicket(ticket, event),
+    request: request
+      ? {
+        ...mapRequest(request),
+        customerName: readCustomerName(request, ticket),
+        customerEmail: readCustomerEmail(request, ticket),
+      }
+      : mapFallbackRequestFromTicket(ticket, event),
     ticket: mapTicket(ticket),
     event: mapEvent(event),
   };

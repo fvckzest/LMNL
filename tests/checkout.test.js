@@ -41,13 +41,7 @@ test('createCheckoutForPreorder rejects missing preorder', async () => {
 test('createCheckoutForEvent creates approved request and Square-hosted checkout link', async () => {
   const requestPayloads = [];
   const attached = [];
-  const result = await createCheckoutForEvent('event_1', {
-    buyer: {
-      fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
-      phone: '+14155550123',
-    },
-  }, {
+  const result = await createCheckoutForEvent('event_1', {}, {
     getEventById: async () => ({
       id: 'event_1',
       name: 'Open Night',
@@ -78,7 +72,8 @@ test('createCheckoutForEvent creates approved request and Square-hosted checkout
 
   assert.equal(result.checkoutUrl, 'https://square.test/event');
   assert.equal(result.requestId, 'req_1');
-  assert.equal(requestPayloads[0].customer_email, 'ada@example.com');
+  assert.equal(requestPayloads[0].customer_name, 'Guest');
+  assert.match(requestPayloads[0].customer_email, /^guest-.*@example\.com$/);
   assert.equal(attached[0].orderId, 'order_event_1');
 });
 

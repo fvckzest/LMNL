@@ -79,6 +79,17 @@ export async function findTicketBySquareOrderId(squareOrderId) {
   return data;
 }
 
+export async function listTickets() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function createTicket(payload) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
