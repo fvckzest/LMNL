@@ -368,7 +368,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 20px;
+  border-radius: 0;
 }
 
 .status-pill.pending { background: #eee; color: #666; }

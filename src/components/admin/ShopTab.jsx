@@ -523,6 +523,152 @@ export default function ShopTab({
           )}
         </div>
       </section>
+
+      {/* CREATE / EDIT PRODUCT MODAL */}
+      {(isCreating || isEditing) && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="modal-header">
+              <h3>{isEditing ? 'EDIT PRODUCT' : 'ADD PRODUCT TO SHOP'}</h3>
+              <button 
+                className="close-modal" 
+                onClick={() => {
+                  setIsCreating(false);
+                  setIsEditing(false);
+                  setEditingPreorder(null);
+                  setSelectedItem(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isEditing) handleUpdatePreorder();
+                else handleCreatePreorder();
+              }} 
+              className="modal-form"
+            >
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label>SQUARE PRODUCT</label>
+                  {isEditing ? (
+                    <input type="text" value={formData.item_name} disabled style={{ background: '#f5f5f5' }} />
+                  ) : (
+                    <select 
+                      required
+                      value={selectedItem?.id || ''} 
+                      onChange={e => {
+                        const item = squareItems.find(i => i.id === e.target.value);
+                        setSelectedItem(item);
+                        if (item) {
+                          setFormData({
+                            ...formData,
+                            image_url: item.imageUrl || '',
+                            description: item.description || formData.description
+                          });
+                        }
+                      }}
+                    >
+                      <option value="">-- SELECT FROM SQUARE CATALOG --</option>
+                      {squareItems.map(item => (
+                        <option key={item.id} value={item.id}>{item.name.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="form-help">Choose a product from your Square Catalog to link.</p>
+                </div>
+
+                <div className="form-group">
+                  <label>DROP TYPE</label>
+                  <select 
+                    value={formData.type} 
+                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                  >
+                    <option value="preorder">PREORDER DROP (LIMITED TIME/QTY)</option>
+                    <option value="persistent">PERSISTENT ITEM (ALWAYS OPEN)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>CATEGORY / LABEL</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. LIMITED DROP, APPAREL" 
+                    value={formData.category} 
+                    onChange={e => setFormData({ ...formData, category: e.target.value.toUpperCase() })} 
+                  />
+                </div>
+
+                {formData.type === 'preorder' && (
+                  <>
+                    <div className="form-group">
+                      <label>GOAL QUANTITY</label>
+                      <input 
+                        required
+                        type="number" 
+                        value={formData.goal_quantity} 
+                        onChange={e => setFormData({ ...formData, goal_quantity: e.target.value })} 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>DROP END DATE</label>
+                      <input 
+                        required
+                        type="datetime-local" 
+                        value={formData.end_date} 
+                        onChange={e => setFormData({ ...formData, end_date: e.target.value })} 
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="form-group">
+                  <label>DISPLAY STATUS</label>
+                  <select 
+                    value={formData.status} 
+                    onChange={e => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="draft">DRAFT (HIDDEN)</option>
+                    <option value="open">OPEN (LIVE)</option>
+                    <option value="sold_out">SOLD OUT</option>
+                    <option value="archived">ARCHIVED</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>CUSTOM IMAGE URL (OPTIONAL)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Override Square image" 
+                    value={formData.image_url} 
+                    onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>PRODUCT DESCRIPTION</label>
+                  <textarea 
+                    rows="4" 
+                    value={formData.description} 
+                    onChange={e => setFormData({ ...formData, description: e.target.value })} 
+                  />
+                  <p className="form-help">This is shown on the preorder page. Leave blank to use Square's description.</p>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="submit" className="admin-btn approve wide">
+                  {isEditing ? 'UPDATE PRODUCT' : 'CREATE DROP'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1019,41 +1019,47 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
       {isMailingListModalOpen && (
         <div className="admin-modal-overlay">
           <div className="admin-modal">
-            <h2 className="modal-title">{editingMailingEntry ? 'EDIT CONTACT' : 'ADD MANUAL CONTACT'}</h2>
-            <form onSubmit={handleMailingListSubmit}>
-              <div className="form-group">
-                <label>NAME (OPTIONAL)</label>
-                <input
-                  type="text"
-                  value={mailingForm.name}
-                  onChange={(e) => setMailingForm({ ...mailingForm, name: e.target.value })}
-                  placeholder="Full Name"
-                />
+            <div className="modal-header">
+              <h3>{editingMailingEntry ? 'EDIT CONTACT' : 'ADD MANUAL CONTACT'}</h3>
+              <button className="close-modal" onClick={() => setIsMailingListModalOpen(false)}>×</button>
+            </div>
+            
+            <form onSubmit={handleMailingListSubmit} className="modal-form">
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label>NAME (OPTIONAL)</label>
+                  <input
+                    type="text"
+                    value={mailingForm.name}
+                    onChange={(e) => setMailingForm({ ...mailingForm, name: e.target.value })}
+                    placeholder="Full Name"
+                  />
+                </div>
+                
+                <div className="form-group full">
+                  <label>EMAIL ADDRESS</label>
+                  <input
+                    type="email"
+                    value={mailingForm.email}
+                    onChange={(e) => setMailingForm({ ...mailingForm, email: e.target.value })}
+                    placeholder="email@example.com"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group full">
+                  <label>SOURCE</label>
+                  <input
+                    type="text"
+                    value={mailingForm.source}
+                    onChange={(e) => setMailingForm({ ...mailingForm, source: e.target.value })}
+                    placeholder="e.g. manual, outreach, etc."
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label>EMAIL ADDRESS</label>
-                <input
-                  type="email"
-                  value={mailingForm.email}
-                  onChange={(e) => setMailingForm({ ...mailingForm, email: e.target.value })}
-                  placeholder="email@example.com"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>SOURCE</label>
-                <input
-                  type="text"
-                  value={mailingForm.source}
-                  onChange={(e) => setMailingForm({ ...mailingForm, source: e.target.value })}
-                  placeholder="e.g. manual, outreach, etc."
-                />
-              </div>
+
               <div className="modal-actions">
-                <button type="button" className="admin-btn cancel" onClick={() => setIsMailingListModalOpen(false)}>
-                  CANCEL
-                </button>
-                <button type="submit" className="admin-btn approve">
+                <button type="submit" className="admin-btn approve wide">
                   {editingMailingEntry ? 'UPDATE CONTACT' : 'SAVE CONTACT'}
                 </button>
               </div>
