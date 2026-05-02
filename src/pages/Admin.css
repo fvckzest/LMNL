@@ -447,11 +447,14 @@
 
 .admin-table-shell .event-name-link,
 .admin-table-shell .artist-interest-detail-link {
-  color: var(--table-link-color);
+  color: black;
+  text-decoration: none;
 }
 
-.admin-table-shell .event-name-link:hover {
-  border-bottom-color: var(--table-link-color);
+.admin-table-shell .event-name-link:hover,
+.admin-table-shell .artist-interest-detail-link:hover {
+  text-decoration: underline;
+  opacity: 0.7;
 }
 
 .admin-table-shell .ticket-toggle,

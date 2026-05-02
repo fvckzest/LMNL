@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
 export default function InquiriesTab({
@@ -8,6 +8,14 @@ export default function InquiriesTab({
   deleteServiceInquiry
 }) {
   const [showArchivedServices, setShowArchivedServices] = useState(false);
+  const [expandedInquiries, setExpandedInquiries] = useState({});
+
+  function toggleInquiryExpansion(id) {
+    setExpandedInquiries(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  }
 
   return (
     <section className="admin-section" style={{ '--active-tab-color': '#6222d8' }}>
@@ -40,11 +48,10 @@ export default function InquiriesTab({
           <table className="requests-table">
             <thead>
               <tr>
-                <th>DATE</th>
+                <th style={{ width: '40px' }}></th>
                 <th>NAME / ENTITY</th>
                 <th>EMAIL</th>
                 <th>SERVICES</th>
-                <th>PROJECT BRIEF</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
@@ -52,77 +59,125 @@ export default function InquiriesTab({
             <tbody>
               {serviceInquiries
                 .filter(req => showArchivedServices ? true : req.status !== 'archived')
-                .map((req) => (
-                <tr key={req.id} className={`status-${req.status}`}>
-                  <td>{new Date(req.created_at).toLocaleDateString()}</td>
-                  <td><strong>{req.name}</strong></td>
-                  <td>{req.email}</td>
-                  <td>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {Array.isArray(req.selected_services) && req.selected_services.map(s => (
-                        <span key={s} className="status-pill active" style={{ fontSize: '10px', background: '#6222d8', color: '#ffffff', borderRadius: '0px' }}>
-                          {s.toUpperCase()}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td style={{ maxWidth: '300px', whiteSpace: 'normal', fontSize: '12px' }}>{req.notes}</td>
-                  <td>
-                    <span className={`status-pill ${req.status}`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="actions-cell">
-                    <div className="actions-wrapper">
-                      <div className="main-actions">
-                        {req.status === 'pending' && (
+                .map((req) => {
+                  const isExpanded = Boolean(expandedInquiries[req.id]);
+                  return (
+                    <Fragment key={req.id}>
+                      <tr className={`${isExpanded ? 'inquiry-row-expanded' : ''} status-${req.status}`}>
+                        <td className="ticket-detail-toggle-cell">
                           <button
-                            className="admin-btn approve"
-                            onClick={() => updateServiceStatus(req.id, 'contacted')}
+                            type="button"
+                            className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
+                            onClick={() => toggleInquiryExpansion(req.id)}
+                            aria-expanded={isExpanded}
+                            title={isExpanded ? 'Hide details' : 'Show details'}
+                            style={{ '--004ffa': '#6222d8' }} 
                           >
-                            MARK CONTACTED
+                            <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#6222d8' }}>▶</span>
                           </button>
-                        )}
-                        {req.status === 'contacted' && (
-                          <button
-                            className="admin-btn reset"
-                            onClick={() => updateServiceStatus(req.id, 'pending')}
-                          >
-                            RESET
-                          </button>
-                        )}
-                      </div>
-                      <div className="secondary-actions">
-                        {req.status !== 'archived' ? (
-                          <button
-                            className="icon-btn archive-btn"
-                            title="Archive"
-                            onClick={() => updateServiceStatus(req.id, 'archived')}
-                          >
-                            <ArchiveIcon />
-                          </button>
-                        ) : (
-                          <button
-                            className="icon-btn unarchive-btn"
-                            title="Unarchive"
-                            onClick={() => updateServiceStatus(req.id, 'pending')}
-                          >
-                            <UnarchiveIcon />
-                          </button>
-                        )}
-                        <button
-                          className="icon-btn delete-btn"
-                          title="Delete Inquiry"
-                          onClick={() => deleteServiceInquiry(req.id)}
-                          style={{ color: '#991b1b' }}
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        </td>
+                        <td><strong>{req.name}</strong></td>
+                        <td>
+                          <a href={`mailto:${req.email}`} className="event-name-link">
+                            {req.email}
+                          </a>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {Array.isArray(req.selected_services) && req.selected_services.map(s => (
+                              <span key={s} className="status-pill active" style={{ fontSize: '10px', background: '#6222d8', color: '#ffffff', borderRadius: '0px' }}>
+                                {s.toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${req.status}`}>
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="actions-cell">
+                          <div className="actions-wrapper">
+                            <div className="main-actions">
+                              {req.status === 'pending' && (
+                                <button
+                                  className="admin-btn approve"
+                                  onClick={() => updateServiceStatus(req.id, 'contacted')}
+                                >
+                                  MARK CONTACTED
+                                </button>
+                              )}
+                              {req.status === 'contacted' && (
+                                <button
+                                  className="admin-btn reset"
+                                  onClick={() => updateServiceStatus(req.id, 'pending')}
+                                >
+                                  RESET
+                                </button>
+                              )}
+                            </div>
+                            <div className="secondary-actions">
+                              {req.status !== 'archived' ? (
+                                <button
+                                  className="icon-btn archive-btn"
+                                  title="Archive"
+                                  onClick={() => updateServiceStatus(req.id, 'archived')}
+                                >
+                                  <ArchiveIcon />
+                                </button>
+                              ) : (
+                                <button
+                                  className="icon-btn unarchive-btn"
+                                  title="Unarchive"
+                                  onClick={() => updateServiceStatus(req.id, 'pending')}
+                                >
+                                  <UnarchiveIcon />
+                                </button>
+                              )}
+                              <button
+                                className="icon-btn delete-btn"
+                                title="Delete Inquiry"
+                                onClick={() => deleteServiceInquiry(req.id)}
+                                style={{ color: '#991b1b' }}
+                              >
+                                <TrashIcon />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="inquiry-metadata-row">
+                          <td></td>
+                          <td colSpan="5">
+                            <div className="inquiry-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #6222d8' }}>
+                              <div className="inquiry-metadata-grid" style={{ paddingLeft: '15px' }}>
+                                <div className="inquiry-metadata-item" style={{ marginBottom: '15px' }}>
+                                  <span className="inquiry-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>INQUIRY DATE</span>
+                                  <span className="inquiry-metadata-value" style={{ fontWeight: 600 }}>{new Date(req.created_at).toLocaleString()}</span>
+                                </div>
+                                <div className="inquiry-metadata-item">
+                                  <span className="inquiry-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>PROJECT BRIEF / NOTES</span>
+                                  <div className="inquiry-metadata-value" style={{ 
+                                    whiteSpace: 'pre-wrap', 
+                                    fontSize: '13px', 
+                                    lineHeight: '1.6', 
+                                    color: '#333',
+                                    background: '#f9f9f9',
+                                    padding: '12px',
+                                    border: '1px solid #eee'
+                                  }}>
+                                    {req.notes || 'No project notes provided.'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
             </tbody>
           </table>
         )}
