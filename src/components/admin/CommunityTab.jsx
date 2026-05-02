@@ -18,16 +18,23 @@ export default function CommunityTab({
   artistInterestLoading,
   artistInterestTableMissing,
   fetchArtistInterest,
+  mailingList = [],
+  mailingListLoading = false,
+  mailingListTableMissing = false,
+  fetchMailingList,
   updateArtistInterestStatus,
   deleteArtistInterest,
   showToast,
   triggerConfirm
 }) {
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
+  const [isMailingListModalOpen, setIsMailingListModalOpen] = useState(false);
+  const [editingMailingEntry, setEditingMailingEntry] = useState(null);
   const [editingCredit, setEditingCredit] = useState(null);
   const [expandedCommunityEvents, setExpandedCommunityEvents] = useState({});
   const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
   const [expandedCredits, setExpandedCredits] = useState({});
+  const [expandedContacts, setExpandedContacts] = useState({});
   const [creditForm, setCreditForm] = useState({
     name: '',
     email: '',
@@ -35,6 +42,12 @@ export default function CommunityTab({
     event_id: '',
     details: '',
     link: ''
+  });
+
+  const [mailingForm, setMailingForm] = useState({
+    name: '',
+    email: '',
+    source: 'manual'
   });
 
   async function handleCreditSubmit(e) {
@@ -115,6 +128,65 @@ export default function CommunityTab({
       });
     }
     setIsCommunityModalOpen(true);
+  }
+
+  function openMailingListModal(entry = null) {
+    if (entry) {
+      setEditingMailingEntry(entry);
+      setMailingForm({
+        name: entry.name || '',
+        email: entry.email,
+        source: entry.source || 'manual'
+      });
+    } else {
+      setEditingMailingEntry(null);
+      setMailingForm({
+        name: '',
+        email: '',
+        source: 'manual'
+      });
+    }
+    setIsMailingListModalOpen(true);
+  }
+
+  async function handleMailingListSubmit(e) {
+    e.preventDefault();
+    if (!mailingForm.email) return showToast('Email is required', 'error');
+
+    const data = {
+      name: mailingForm.name,
+      email: normalizeEmail(mailingForm.email),
+      source: mailingForm.source || 'manual'
+    };
+
+    let error;
+    if (editingMailingEntry) {
+      const { error: err } = await supabase.from('mailing_list').update(data).eq('id', editingMailingEntry.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('mailing_list').insert([data]);
+      error = err;
+    }
+
+    if (error) {
+      showToast('Error saving contact: ' + error.message, 'error');
+    } else {
+      setIsMailingListModalOpen(false);
+      fetchMailingList();
+      showToast('Contact saved successfully');
+    }
+  }
+
+  async function deleteMailingEntry(id) {
+    triggerConfirm('Delete this manual entry?', async () => {
+      const { error } = await supabase.from('mailing_list').delete().eq('id', id);
+      if (error) {
+        showToast('Error deleting: ' + error.message, 'error');
+      } else {
+        fetchMailingList();
+        showToast('Contact removed');
+      }
+    });
   }
 
   async function syncFromEvents() {
@@ -202,6 +274,13 @@ export default function CommunityTab({
     }));
   }
 
+  function toggleContactExpansion(email) {
+    setExpandedContacts(prev => ({
+      ...prev,
+      [email]: !prev[email]
+    }));
+  }
+
   const eventOrderLookup = events.reduce((acc, event, index) => {
     acc[event.id] = index;
     return acc;
@@ -222,10 +301,12 @@ export default function CommunityTab({
     tickets: 0,
     services: 0,
     artistInterest: 0,
-    communityCredits: 0
+    communityCredits: 0,
+    mailingList: 0
   };
 
   function addContactEntry({
+    id,
     email,
     name,
     source,
@@ -243,7 +324,8 @@ export default function CommunityTab({
         names: safeName ? [safeName] : [],
         sources: [source],
         recordCount: 1,
-        latestCreatedAt: createdAt || null
+        latestCreatedAt: createdAt || null,
+        manualEntryId: source === 'Manual Entry' ? id : null
       });
       return;
     }
@@ -254,6 +336,10 @@ export default function CommunityTab({
 
     if (!existing.sources.includes(source)) {
       existing.sources.push(source);
+    }
+
+    if (source === 'Manual Entry' && id) {
+      existing.manualEntryId = id;
     }
 
     existing.recordCount += 1;
@@ -318,6 +404,18 @@ export default function CommunityTab({
     });
   });
 
+  mailingList.forEach((entry) => {
+    if (isPlaceholderEmail(entry.email)) return;
+    contactSourceTotals.mailingList += 1;
+    addContactEntry({
+      id: entry.id,
+      email: entry.email,
+      name: entry.name,
+      source: 'Manual Entry',
+      createdAt: entry.created_at
+    });
+  });
+
   const emailContacts = Array.from(emailContactsByEmail.values()).sort((a, b) => {
     if (a.latestCreatedAt && b.latestCreatedAt) {
       return new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt);
@@ -332,7 +430,8 @@ export default function CommunityTab({
     ticketsLoading ||
     servicesLoading ||
     artistInterestLoading ||
-    communityLoading;
+    communityLoading ||
+    mailingListLoading;
   const totalEmailRecords = Object.values(contactSourceTotals).reduce((sum, count) => sum + count, 0);
 
   const groupedCommunityCredits = communityCredits.reduce((groups, credit) => {
@@ -621,6 +720,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th></th>
                     <th>EVENT</th>
                     <th></th>
                     <th>NAME</th>
@@ -644,7 +744,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                       <Fragment key={group.key}>
                         <tr className={isExpanded ? 'event-row-expanded' : ''}>
                           <td 
-                            className="community-event-toggle-cell"
+                            className="community-event-arrow-cell"
                             rowSpan={totalRows} 
                             style={{ verticalAlign: 'middle' }}
                           >
@@ -657,8 +757,14 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                               aria-label={isExpanded ? `Collapse ${group.eventName}` : `Expand ${group.eventName}`}
                             >
                               <span className="admin-toggle-arrow community-event-toggle-arrow">▶</span>
-                              <span>{group.eventName}</span>
                             </button>
+                          </td>
+                          <td 
+                            className="community-event-name-cell"
+                            rowSpan={totalRows} 
+                            style={{ verticalAlign: 'middle', fontWeight: 700 }}
+                          >
+                            {group.eventName}
                           </td>
                           <td className="community-group-summary">
                             {group.credits.length} {group.credits.length === 1 ? 'person' : 'people'}
@@ -744,7 +850,45 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
       </section>
 
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
-        <h2 className="section-title">GENERAL CONTACT LIST</h2>
+        <div className="section-header-flex">
+          <h2 className="section-title">GENERAL CONTACT LIST</h2>
+        </div>
+        
+        {mailingListTableMissing && (
+          <div className="setup-guide" style={{ marginBottom: '20px' }}>
+            <div className="guide-header">
+              <span className="warning-icon">⚠️</span>
+              <h3>MAILING LIST TABLE REQUIRED</h3>
+            </div>
+            <p>Please create the <code>mailing_list</code> table in your Supabase SQL Editor.</p>
+            <pre style={{ 
+              background: '#111', 
+              color: '#fff', 
+              padding: '15px', 
+              borderRadius: '4px', 
+              textAlign: 'left',
+              fontSize: '11px',
+              overflowX: 'auto',
+              marginTop: '10px',
+              marginBottom: '20px',
+              fontFamily: 'monospace'
+            }}>
+{`CREATE TABLE IF NOT EXISTS mailing_list (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT,
+    email TEXT NOT NULL UNIQUE,
+    source TEXT DEFAULT 'manual',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE mailing_list ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read access" ON mailing_list FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (auth.role() = 'authenticated');`}
+            </pre>
+            <button className="admin-btn" onClick={fetchMailingList}>REFRESH</button>
+          </div>
+        )}
         <div className="admin-stats">
           <div className="stat-item">
             <span className="stat-label">UNIQUE EMAILS</span>
@@ -753,6 +897,9 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
           <div className="stat-item">
             <span className="stat-label">TOTAL EMAIL RECORDS</span>
             <span className="stat-value">{totalEmailRecords}</span>
+          </div>
+          <div className="stat-item toggle-archived">
+             <button className="admin-btn approve" onClick={() => openMailingListModal()}>+ ADD MANUAL ENTRY</button>
           </div>
         </div>
 
@@ -765,47 +912,155 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th style={{ width: '40px' }}></th>
                   <th>EMAIL</th>
-                  <th>NAME</th>
-                  <th>SOURCE</th>
-                  <th>RECORDS</th>
                   <th>LATEST ENTRY</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {emailContacts.map((contact) => (
-                  <tr key={contact.email}>
-                    <td>
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="event-name-link"
-                      >
-                        {contact.email}
-                      </a>
-                    </td>
-                    <td>{contact.names.join(', ') || '-'}</td>
-                    <td>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {contact.sources.map((source) => (
-                          <span
-                            key={`${contact.email}-${source}`}
-                            className="status-pill active"
-                            style={{ fontSize: '10px', background: '#ff5bb8', color: '#ffffff', borderRadius: '0px' }}
+                {emailContacts.map((contact) => {
+                  const isExpanded = Boolean(expandedContacts[contact.email]);
+                  return (
+                    <Fragment key={contact.email}>
+                      <tr className={isExpanded ? 'contact-row-expanded' : ''}>
+                        <td className="ticket-detail-toggle-cell">
+                          <button
+                            type="button"
+                            className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
+                            onClick={() => toggleContactExpansion(contact.email)}
+                            aria-expanded={isExpanded}
+                            title={isExpanded ? 'Hide details' : 'Show details'}
+                            style={{ '--004ffa': '#ff5bb8' }} 
                           >
-                            {source.toUpperCase()}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>{contact.recordCount}</td>
-                    <td>{contact.latestCreatedAt ? new Date(contact.latestCreatedAt).toLocaleDateString() : '-'}</td>
-                  </tr>
-                ))}
+                            <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
+                          </button>
+                        </td>
+                        <td>
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="event-name-link"
+                          >
+                            {contact.email}
+                          </a>
+                        </td>
+                        <td>{contact.latestCreatedAt ? new Date(contact.latestCreatedAt).toLocaleDateString() : '-'}</td>
+                        <td className="actions-cell">
+                          <div className="actions-wrapper">
+                            <button 
+                              className="admin-btn small" 
+                              onClick={() => {
+                                const entry = mailingList.find(m => m.email === contact.email);
+                                openMailingListModal(entry || { email: contact.email, name: contact.names[0] });
+                              }}
+                            >
+                              EDIT
+                            </button>
+                            <button 
+                              className="icon-btn delete-btn" 
+                              style={{ color: contact.manualEntryId ? '#991b1b' : '#444' }}
+                              title={contact.manualEntryId ? "Delete Manual Entry" : "Source records cannot be deleted from here"}
+                              onClick={() => {
+                                if (contact.manualEntryId) {
+                                  deleteMailingEntry(contact.manualEntryId);
+                                } else {
+                                  showToast('Only manual entries can be deleted from this view. Source records (tickets/requests) must be managed in their respective tabs.', 'error');
+                                }
+                              }}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="contact-metadata-row">
+                          <td></td>
+                          <td colSpan="3">
+                            <div className="contact-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #ff5bb8' }}>
+                              <div className="contact-metadata-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', paddingLeft: '15px' }}>
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>KNOWN NAMES</span>
+                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{contact.names.join(', ') || '-'}</span>
+                                </div>
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>RECORDS FOUND</span>
+                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{contact.recordCount}</span>
+                                </div>
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>SOURCES</span>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {contact.sources.map((source) => (
+                                      <span
+                                        key={`${contact.email}-${source}`}
+                                        className="status-pill active"
+                                        style={{ fontSize: '9px', background: '#ff5bb8', color: '#ffffff', borderRadius: '0px', padding: '2px 6px' }}
+                                      >
+                                        {source.toUpperCase()}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
       </section>
+
+      {/* Mailing List Modal */}
+      {isMailingListModalOpen && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <h2 className="modal-title">{editingMailingEntry ? 'EDIT CONTACT' : 'ADD MANUAL CONTACT'}</h2>
+            <form onSubmit={handleMailingListSubmit}>
+              <div className="form-group">
+                <label>NAME (OPTIONAL)</label>
+                <input
+                  type="text"
+                  value={mailingForm.name}
+                  onChange={(e) => setMailingForm({ ...mailingForm, name: e.target.value })}
+                  placeholder="Full Name"
+                />
+              </div>
+              <div className="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input
+                  type="email"
+                  value={mailingForm.email}
+                  onChange={(e) => setMailingForm({ ...mailingForm, email: e.target.value })}
+                  placeholder="email@example.com"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>SOURCE</label>
+                <input
+                  type="text"
+                  value={mailingForm.source}
+                  onChange={(e) => setMailingForm({ ...mailingForm, source: e.target.value })}
+                  placeholder="e.g. manual, outreach, etc."
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="admin-btn cancel" onClick={() => setIsMailingListModalOpen(false)}>
+                  CANCEL
+                </button>
+                <button type="submit" className="admin-btn approve">
+                  {editingMailingEntry ? 'UPDATE CONTACT' : 'SAVE CONTACT'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* COMMUNITY MODAL */}
       {isCommunityModalOpen && (

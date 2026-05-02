@@ -25,6 +25,9 @@ export default function Admin() {
   const [artistInterest, setArtistInterest] = useState([]);
   const [artistInterestLoading, setArtistInterestLoading] = useState(true);
   const [artistInterestTableMissing, setArtistInterestTableMissing] = useState(false);
+  const [mailingList, setMailingList] = useState([]);
+  const [mailingListLoading, setMailingListLoading] = useState(true);
+  const [mailingListTableMissing, setMailingListTableMissing] = useState(false);
 
   // Square catalog state
   const [squareItems, setSquareItems] = useState([]);
@@ -55,6 +58,7 @@ export default function Admin() {
     fetchArtistInterest();
     fetchSquareCatalog();
     fetchPreorders();
+    fetchMailingList();
   }, []);
 
   function showToast(message, type = 'success') {
@@ -154,6 +158,24 @@ export default function Admin() {
     setArtistInterestLoading(false);
   }
 
+  async function fetchMailingList() {
+    setMailingListLoading(true);
+    const { data, error } = await supabase
+      .from('mailing_list')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching mailing list:', error);
+      if (error.code === '42P01') setMailingListTableMissing(true);
+      setMailingList([]);
+    } else {
+      setMailingListTableMissing(false);
+      setMailingList(data || []);
+    }
+    setMailingListLoading(false);
+  }
+
   async function fetchSquareCatalog() {
     setFetchingCatalog(true);
     setSquareError(null);
@@ -193,6 +215,7 @@ export default function Admin() {
         fetchServiceInquiries(),
         fetchCommunityCredits(),
         fetchArtistInterest(),
+        fetchMailingList(),
         fetchSquareCatalog(),
         fetchPreorders()
       ]);
@@ -438,6 +461,8 @@ export default function Admin() {
           fetchPreorders={fetchPreorders}
           showToast={showToast}
           triggerConfirm={triggerConfirm}
+          tickets={tickets}
+          events={events}
         />
       )}
 
@@ -458,6 +483,10 @@ export default function Admin() {
           artistInterestLoading={artistInterestLoading}
           artistInterestTableMissing={artistInterestTableMissing}
           fetchArtistInterest={fetchArtistInterest}
+          mailingList={mailingList}
+          mailingListLoading={mailingListLoading}
+          mailingListTableMissing={mailingListTableMissing}
+          fetchMailingList={fetchMailingList}
           updateArtistInterestStatus={updateArtistInterestStatus}
           deleteArtistInterest={deleteArtistInterest}
           showToast={showToast}

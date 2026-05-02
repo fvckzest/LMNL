@@ -1,4 +1,4 @@
-import { getSquareClient } from '../clients.js';
+import { getSquareClient, getAdminSupabase } from '../clients.js';
 
 let catalogCache;
 const CATALOG_TTL_MS = 60_000;
@@ -47,6 +47,33 @@ export async function getAdminCatalogView() {
     }
   }
 
+  // Sold counts from Supabase tickets
+  let soldMap = {};
+  try {
+    const supabase = getAdminSupabase();
+    const [{ data: events }, { data: tickets }] = await Promise.all([
+      supabase.from('events').select('id, square_variation_id'),
+      supabase.from('tickets').select('event_id')
+    ]);
+
+    if (events && tickets) {
+      const ticketCounts = tickets.reduce((acc, t) => {
+        if (t.event_id) {
+          acc[t.event_id] = (acc[t.event_id] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      for (const event of events) {
+        if (event.square_variation_id && ticketCounts[event.id]) {
+          soldMap[event.square_variation_id] = (soldMap[event.square_variation_id] || 0) + ticketCounts[event.id];
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[catalog] sold count overlay failed', error);
+  }
+
   const catalog = items.map((item) => {
     const itemImageIds = item.itemData.imageIds || [];
     const variationImageIds = item.itemData.variations?.flatMap((variation) => variation.itemVariationData.imageIds || []) || [];
@@ -62,7 +89,7 @@ export async function getAdminCatalogView() {
         price: Number(variation.itemVariationData.priceMoney?.amount || 0),
         trackInventory: variation.itemVariationData.trackInventory || false,
         quantity: inventoryMap[variation.id] ?? 0,
-        sold: 0,
+        sold: soldMap[variation.id] || 0,
       })) || [],
     };
   });

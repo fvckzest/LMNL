@@ -12,27 +12,31 @@
 .admin-stats {
   display: flex;
   gap: 40px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .stat-item {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 .stat-label {
   font-size: 12px;
   letter-spacing: 0.2em;
   color: #666;
-}
-
-.stat-value {
-  font-size: 32px;
   font-weight: 600;
 }
 
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--table-accent, #000);
+}
+
 .admin-section {
+  margin-bottom: 40px;
   --table-accent: var(--active-tab-color, #000);
   --table-surface: #fff;
   --table-text: #111;
@@ -45,13 +49,17 @@
   --table-link-color: var(--table-accent);
 }
 
+.admin-section:last-child {
+  margin-bottom: 0;
+}
+
 .admin-table-shell,
 .requests-table-container, .events-table-container {
   border: 2px solid var(--table-accent);
   background: var(--table-surface);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   transition: border-color 0.3s ease;
 }
 
@@ -263,8 +271,18 @@
   text-decoration: underline;
 }
 
-.community-event-toggle-cell {
+.community-event-arrow-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.community-event-name-cell {
   border-right: 1px solid #eee;
+  padding-right: 20px !important;
+}
+
+.shop-product-name-cell {
+  padding-right: 20px !important;
 }
 
 .artist-interest-details-row td {
