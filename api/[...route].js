@@ -17,6 +17,7 @@ import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
 import { upsertPreorder, updatePreorderStatus, deletePreorderById } from './_lib/repositories/preorders.js';
 import { upsertEvent, updateEventMetadata, updateEventStatus, deleteEventById } from './_lib/repositories/events.js';
 import { listTickets } from './_lib/repositories/tickets.js';
+import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
 
 function throwMissingArtistInterestTable(error) {
   if (error?.code === 'PGRST205' && error?.message?.includes('artist_interest')) {
@@ -391,6 +392,12 @@ async function handleServiceInquiries(req, res) {
       .single();
 
     if (error) throw error;
+
+    // Send email notification in the background
+    sendInquiryNotification(data).catch(err => {
+      console.error('[api] Background inquiry notification failed:', err);
+    });
+
     return sendJson(res, 200, { success: true, data });
   }
 
@@ -441,6 +448,12 @@ async function handleArtistInterest(req, res) {
       .single();
 
     if (error) throwMissingArtistInterestTable(error);
+
+    // Send email notification in the background
+    sendArtistInterestNotification(data).catch(err => {
+      console.error('[api] Background artist interest notification failed:', err);
+    });
+
     return sendJson(res, 200, { success: true, data });
   }
 

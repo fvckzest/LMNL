@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiPost } from '../../lib/api';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
+import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
 
 const PERSISTENT_END_DATE = '2099-12-31T23:59:00.000Z';
 
@@ -24,19 +24,34 @@ function isPersistentEndDate(value) {
   return value === PERSISTENT_END_DATE;
 }
 
-export default function ShopTab({
-  squareItems,
-  fetchingCatalog,
-  squareError,
-  fetchSquareCatalog,
-  preorders,
-  preordersLoading,
-  fetchPreorders,
-  showToast,
-  triggerConfirm,
-  tickets = [],
-  events = []
-}) {
+ export default function ShopTab({
+   squareItems,
+   fetchingCatalog,
+   squareError,
+   fetchSquareCatalog,
+   preorders,
+   preordersLoading,
+   fetchPreorders,
+   showToast,
+   triggerConfirm,
+   tickets = [],
+   events = [],
+   pinnedSections = [],
+   onTogglePin = () => {},
+   renderMode = 'all'
+ }) {
+   const sectionIds = {
+     products: 'merch_preorders',
+     catalog: 'square_catalog'
+   };
+
+   const shouldRender = (sectionId) => {
+     if (renderMode === 'all') return true;
+     const isPinned = pinnedSections.includes(sectionId);
+     if (renderMode === 'pinned') return isPinned;
+     if (renderMode === 'unpinned') return !isPinned;
+     return true;
+   };
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingPreorder, setEditingPreorder] = useState(null);
@@ -213,11 +228,21 @@ export default function ShopTab({
   }
 
   return (
-    <>
+     <>
+      {/* 1. SHOP PRODUCTS SECTION */}
+      {shouldRender(sectionIds.products) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff0000' }}>
-        {/* 1. SHOP PRODUCTS SECTION */}
         <div className="section-header-flex">
-          <h2 className="section-title">SHOP PRODUCTS</h2>
+          <div className="section-title-container">
+            <button 
+              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.products) ? 'pinned' : ''}`}
+              onClick={() => onTogglePin(sectionIds.products)}
+              title={pinnedSections.includes(sectionIds.products) ? 'Unpin from top' : 'Pin to top'}
+            >
+              <PinIcon filled={pinnedSections.includes(sectionIds.products)} />
+            </button>
+            <h2 className="section-title">SHOP PRODUCTS</h2>
+          </div>
           <div className="action-buttons">
             <button 
               className={`admin-btn small ${showArchived ? 'active' : ''}`}
@@ -355,12 +380,23 @@ export default function ShopTab({
           )}
         </div>
       </section>
+      )}
 
+      {/* 2. RAW SQUARE CATALOG SECTION */}
+      {shouldRender(sectionIds.catalog) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff0000' }}>
-        {/* 2. RAW SQUARE CATALOG SECTION */}
         <div className="section-header-flex">
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px' }}>
-            <h2 className="section-title">SQUARE PRODUCT CATALOG</h2>
+            <div className="section-title-container">
+              <button 
+                className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.catalog) ? 'pinned' : ''}`}
+                onClick={() => onTogglePin(sectionIds.catalog)}
+                title={pinnedSections.includes(sectionIds.catalog) ? 'Unpin from top' : 'Pin to top'}
+              >
+                <PinIcon filled={pinnedSections.includes(sectionIds.catalog)} />
+              </button>
+              <h2 className="section-title">SQUARE PRODUCT CATALOG</h2>
+            </div>
             <span className="status-pill pending">READ ONLY</span>
           </div>
           <button className="admin-btn" onClick={fetchSquareCatalog} disabled={fetchingCatalog}>
@@ -523,6 +559,7 @@ export default function ShopTab({
           )}
         </div>
       </section>
+      )}
 
       {/* CREATE / EDIT PRODUCT MODAL */}
       {(isCreating || isEditing) && (

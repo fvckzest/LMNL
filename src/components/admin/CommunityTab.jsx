@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ArchiveIcon, TrashIcon, UnarchiveIcon } from './Icons';
+import { ArchiveIcon, TrashIcon, UnarchiveIcon, PinIcon } from './Icons';
 
 export default function CommunityTab({
   events,
@@ -24,9 +24,25 @@ export default function CommunityTab({
   fetchMailingList,
   updateArtistInterestStatus,
   deleteArtistInterest,
-  showToast,
-  triggerConfirm
+   showToast,
+  triggerConfirm,
+  pinnedSections = [],
+  onTogglePin = () => {},
+  renderMode = 'all'
 }) {
+  const sectionIds = {
+    artist: 'artist_interest',
+    credits: 'community_credits',
+    mailing: 'mailing_list'
+  };
+
+  const shouldRender = (sectionId) => {
+    if (renderMode === 'all') return true;
+    const isPinned = pinnedSections.includes(sectionId);
+    if (renderMode === 'pinned') return isPinned;
+    if (renderMode === 'unpinned') return !isPinned;
+    return true;
+  };
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isMailingListModalOpen, setIsMailingListModalOpen] = useState(false);
   const [editingMailingEntry, setEditingMailingEntry] = useState(null);
@@ -460,11 +476,22 @@ export default function CommunityTab({
   });
 
   return (
-    <>
+     <>
+      {shouldRender(sectionIds.artist) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
-          <h2 className="section-title">ARTIST INTEREST</h2>
+          <div className="section-title-container">
+            <button 
+              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.artist) ? 'pinned' : ''}`}
+              onClick={() => onTogglePin(sectionIds.artist)}
+              title={pinnedSections.includes(sectionIds.artist) ? 'Unpin from top' : 'Pin to top'}
+            >
+              <PinIcon filled={pinnedSections.includes(sectionIds.artist)} />
+            </button>
+            <h2 className="section-title">ARTIST INTEREST</h2>
+          </div>
           {!artistInterestTableMissing && (
+
             <div className="action-buttons">
               <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
             </div>
@@ -648,13 +675,25 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
                 </tbody>
               </table>
             )}
-          </div>
+           </div>
         )}
       </section>
+      )}
 
+      {shouldRender(sectionIds.credits) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
-          <h2 className="section-title">COMMUNITY CREDITS (PERFORMERS & ARTISTS)</h2>
+          <div className="section-title-container">
+            <button 
+              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.credits) ? 'pinned' : ''}`}
+              onClick={() => onTogglePin(sectionIds.credits)}
+              title={pinnedSections.includes(sectionIds.credits) ? 'Unpin from top' : 'Pin to top'}
+            >
+              <PinIcon filled={pinnedSections.includes(sectionIds.credits)} />
+            </button>
+            <h2 className="section-title">COMMUNITY CREDITS (PERFORMERS & ARTISTS)</h2>
+          </div>
+
           {!communityTableMissing && (
             <div className="action-buttons">
               <button 
@@ -845,13 +884,24 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                 </tbody>
               </table>
             )}
-          </div>
+           </div>
         )}
       </section>
+      )}
 
+      {shouldRender(sectionIds.mailing) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
-          <h2 className="section-title">GENERAL CONTACT LIST</h2>
+          <div className="section-title-container">
+            <button 
+              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.mailing) ? 'pinned' : ''}`}
+              onClick={() => onTogglePin(sectionIds.mailing)}
+              title={pinnedSections.includes(sectionIds.mailing) ? 'Unpin from top' : 'Pin to top'}
+            >
+              <PinIcon filled={pinnedSections.includes(sectionIds.mailing)} />
+            </button>
+            <h2 className="section-title">GENERAL CONTACT LIST</h2>
+          </div>
         </div>
         
         {mailingListTableMissing && (
@@ -1011,9 +1061,10 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                 })}
               </tbody>
             </table>
-          )}
+           )}
         </div>
       </section>
+      )}
 
       {/* Mailing List Modal */}
       {isMailingListModalOpen && (

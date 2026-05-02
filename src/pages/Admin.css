@@ -661,6 +661,34 @@
   margin-bottom: 0;
 }
 
+.section-title-container {
+  display: flex;
+  align-items: center;
+}
+
+.pin-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+.pin-toggle-btn:hover {
+  color: var(--active-tab-color, black);
+}
+
+.pin-toggle-btn.pinned {
+  color: var(--active-tab-color, black);
+}
+
+
 
 .event-name-link {
   color: black;

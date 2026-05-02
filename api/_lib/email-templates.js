@@ -203,3 +203,66 @@ export function buildTicketEmail({ eventName, ticketUrl, customerName, logoUrl }
 
   return { subject, html: rendered.html, previewHtml: rendered.previewHtml, text };
 }
+
+export function buildInquiryNotificationEmail({ name, email, notes, selectedServices, logoUrl }) {
+  const subject = `NEW INQUIRY: ${name}`;
+  const servicesList = selectedServices && selectedServices.length > 0 
+    ? selectedServices.join(', ') 
+    : 'General';
+
+  const rendered = renderEmailShell({
+    accentColor: '#90e937', // Match contact page theme color
+    logoUrl,
+    title: 'New Inquiry',
+    intro: `A new inquiry has been received through the LMNL contact form.`,
+    details: [
+      { label: 'Name', value: name },
+      { label: 'Email', value: email },
+      { label: 'Services', value: servicesList },
+    ],
+    note: notes ? `<strong>Message:</strong><br /><p style="white-space: pre-wrap;">${escapeHtml(notes)}</p>` : '',
+    footer: 'This inquiry has also been logged in the LMNL Admin dashboard.',
+  });
+
+  const text = [
+    'NEW INQUIRY',
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Services: ${servicesList}`,
+    notes ? `Message:\n${notes}` : '',
+  ].filter(Boolean).join('\n');
+
+  return { subject, html: rendered.html, text };
+}
+
+export function buildArtistInterestNotificationEmail({ name, email, project_name, practice, links, notes, logoUrl }) {
+  const subject = `ARTIST INTEREST: ${name}`;
+  
+  const rendered = renderEmailShell({
+    accentColor: '#90e937',
+    logoUrl,
+    title: 'Artist Interest',
+    intro: `A new artist has submitted an interest form.`,
+    details: [
+      { label: 'Artist', value: name },
+      { label: 'Email', value: email },
+      { label: 'Practice', value: practice },
+      { label: 'Project', value: project_name || 'N/A' },
+      { label: 'Links', value: links || 'N/A' },
+    ],
+    note: notes ? `<strong>Message:</strong><br /><p style="white-space: pre-wrap;">${escapeHtml(notes)}</p>` : '',
+    footer: 'This interest has also been logged in the LMNL Admin dashboard.',
+  });
+
+  const text = [
+    'ARTIST INTEREST',
+    `Artist: ${name}`,
+    `Email: ${email}`,
+    `Practice: ${practice}`,
+    `Project: ${project_name}`,
+    `Links: ${links}`,
+    notes ? `Message:\n${notes}` : '',
+  ].filter(Boolean).join('\n');
+
+  return { subject, html: rendered.html, text };
+}

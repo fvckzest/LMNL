@@ -1,6 +1,6 @@
-import { Fragment, useMemo, useState } from 'react';
-import { apiPost } from '../../lib/api';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon } from './Icons';
+ import { Fragment, useMemo, useState } from 'react';
+ import { apiPost } from '../../lib/api';
+ import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon, PinIcon } from './Icons';
 
 const MANAGED_METADATA_KEYS = new Set([
   'event_link',
@@ -22,26 +22,41 @@ const MANAGED_METADATA_KEYS = new Set([
   'wallet_time_zone',
 ]);
 
-export default function EventsTab({
-  events,
-  tickets,
-  eventLoading,
-  ticketsLoading,
-  tableMissing,
-  squareItems,
-  fetchingCatalog,
-  squareError,
-  fetchEvents,
-  fetchTickets,
-  fetchRequests,
-  showToast,
-  triggerConfirm,
-  fetchSquareCatalog,
-  requests,
-  loading,
-  updateStatus,
-  deleteRequest
-}) {
+ export default function EventsTab({
+   events,
+   tickets,
+   eventLoading,
+   ticketsLoading,
+   tableMissing,
+   squareItems,
+   fetchingCatalog,
+   squareError,
+   fetchEvents,
+   fetchTickets,
+   fetchRequests,
+   showToast,
+   triggerConfirm,
+   fetchSquareCatalog,
+   requests,
+   loading,
+   updateStatus,
+   deleteRequest,
+   pinnedSections = [],
+   onTogglePin = () => {},
+   renderMode = 'all' // 'all', 'pinned', 'unpinned'
+ }) {
+   const sectionIds = {
+     mgmt: 'events_mgmt',
+     reqs: 'invite_reqs'
+   };
+
+   const shouldRender = (sectionId) => {
+     if (renderMode === 'all') return true;
+     const isPinned = pinnedSections.includes(sectionId);
+     if (renderMode === 'pinned') return isPinned;
+     if (renderMode === 'unpinned') return !isPinned;
+     return true;
+   };
   const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [showArchivedRequests, setShowArchivedRequests] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -391,22 +406,32 @@ export default function EventsTab({
 
   return (
     <>
-      <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
-        <div className="section-header-flex">
-          <h2 className="section-title">EVENT MANAGEMENT</h2>
-          {!tableMissing && (
-            <div className="action-buttons">
+       {shouldRender(sectionIds.mgmt) && (
+        <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
+          <div className="section-header-flex">
+            <div className="section-title-container">
               <button 
-                className={`admin-btn small ${showArchivedEvents ? 'active' : ''}`}
-                onClick={() => setShowArchivedEvents(!showArchivedEvents)}
-                style={{ marginRight: '10px' }}
+                className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.mgmt) ? 'pinned' : ''}`}
+                onClick={() => onTogglePin(sectionIds.mgmt)}
+                title={pinnedSections.includes(sectionIds.mgmt) ? 'Unpin from top' : 'Pin to top'}
               >
-                {showArchivedEvents ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({events.filter(e => e.status === 'archived').length})
+                <PinIcon filled={pinnedSections.includes(sectionIds.mgmt)} />
               </button>
-              <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
+              <h2 className="section-title">EVENT MANAGEMENT</h2>
             </div>
-          )}
-        </div>
+            {!tableMissing && (
+              <div className="action-buttons">
+                <button 
+                  className={`admin-btn small ${showArchivedEvents ? 'active' : ''}`}
+                  onClick={() => setShowArchivedEvents(!showArchivedEvents)}
+                  style={{ marginRight: '10px' }}
+                >
+                  {showArchivedEvents ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({events.filter(e => e.status === 'archived').length})
+                </button>
+                <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
+              </div>
+            )}
+          </div>
         
         {tableMissing ? (
           <div className="setup-guide">
@@ -632,12 +657,23 @@ export default function EventsTab({
               </table>
             )}
           </div>
-        )}
+         )}
       </section>
+      )}
 
       {/* INVITE REQUESTS SECTION */}
+      {shouldRender(sectionIds.reqs) && (
       <section className="admin-section" style={{ '--active-tab-color': '#004ffa', marginTop: '40px' }}>
-        <h2 className="section-title">INVITE REQUESTS</h2>
+        <div className="section-title-container">
+          <button 
+            className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.reqs) ? 'pinned' : ''}`}
+            onClick={() => onTogglePin(sectionIds.reqs)}
+            title={pinnedSections.includes(sectionIds.reqs) ? 'Unpin from top' : 'Pin to top'}
+          >
+            <PinIcon filled={pinnedSections.includes(sectionIds.reqs)} />
+          </button>
+          <h2 className="section-title">INVITE REQUESTS</h2>
+        </div>
         <div className="admin-stats">
           <div className="stat-item">
             <span className="stat-label">TOTAL REQUESTS</span>
@@ -789,8 +825,9 @@ export default function EventsTab({
               </tbody>
             </table>
           )}
-        </div>
+         </div>
       </section>
+      )}
 
       {/* EVENT MODAL */}
       {isModalOpen && (

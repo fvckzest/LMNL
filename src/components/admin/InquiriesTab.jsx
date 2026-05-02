@@ -1,25 +1,47 @@
 import { useState, Fragment } from 'react';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
+import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
 
-export default function InquiriesTab({
-  serviceInquiries,
-  servicesLoading,
-  updateServiceStatus,
-  deleteServiceInquiry
-}) {
-  const [showArchivedServices, setShowArchivedServices] = useState(false);
-  const [expandedInquiries, setExpandedInquiries] = useState({});
+ export default function InquiriesTab({
+   serviceInquiries,
+   servicesLoading,
+   updateServiceStatus,
+   deleteServiceInquiry,
+   pinnedSections = [],
+   onTogglePin = () => {},
+   renderMode = 'all'
+ }) {
+   const sectionId = 'service_inquiries';
 
-  function toggleInquiryExpansion(id) {
-    setExpandedInquiries(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  }
+   const shouldRender = () => {
+     if (renderMode === 'all') return true;
+     const isPinned = pinnedSections.includes(sectionId);
+     if (renderMode === 'pinned') return isPinned;
+     if (renderMode === 'unpinned') return !isPinned;
+     return true;
+   };
 
-  return (
+   const [showArchivedServices, setShowArchivedServices] = useState(false);
+   const [expandedInquiries, setExpandedInquiries] = useState({});
+
+   function toggleInquiryExpansion(id) {
+     setExpandedInquiries(prev => ({
+       ...prev,
+       [id]: !prev[id]
+     }));
+   }
+
+   return shouldRender() ? (
     <section className="admin-section" style={{ '--active-tab-color': '#6222d8' }}>
-      <h2 className="section-title">SERVICE INQUIRIES</h2>
+      <div className="section-title-container">
+        <button 
+          className={`pin-toggle-btn ${pinnedSections.includes(sectionId) ? 'pinned' : ''}`}
+          onClick={() => onTogglePin(sectionId)}
+          title={pinnedSections.includes(sectionId) ? 'Unpin from top' : 'Pin to top'}
+        >
+          <PinIcon filled={pinnedSections.includes(sectionId)} />
+        </button>
+        <h2 className="section-title">SERVICE INQUIRIES</h2>
+      </div>
       <div className="admin-stats">
         <div className="stat-item">
           <span className="stat-label">TOTAL INQUIRIES</span>
@@ -182,6 +204,6 @@ export default function InquiriesTab({
           </table>
         )}
       </div>
-    </section>
-  );
+     </section>
+  ) : null;
 }

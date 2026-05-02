@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import Home from './pages/Home';
 import './index.css';
 
+const Contact = lazy(() => import('./pages/Contact'));
 const GenericPage = lazy(() => import('./pages/GenericPage'));
 const Space = lazy(() => import('./pages/Space'));
 const Events = lazy(() => import('./pages/Events'));
@@ -121,7 +122,7 @@ function App() {
           <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
-          <Route path="/contact" element={<GenericPage title="CONTACT" color="#90e937" />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />

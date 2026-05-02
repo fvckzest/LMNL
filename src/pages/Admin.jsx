@@ -4,6 +4,7 @@ import { apiGet, apiPost } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
 import EventsTab from '../components/admin/EventsTab';
 import InquiriesTab from '../components/admin/InquiriesTab';
+import ContactTab from '../components/admin/ContactTab';
 import ShopTab from '../components/admin/ShopTab';
 import CommunityTab from '../components/admin/CommunityTab';
 import './Admin.css';
@@ -41,12 +42,33 @@ export default function Admin() {
   const [confirmModal, setConfirmModal] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Pinning state
+  const [pinnedSections, setPinnedSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lmnl_pinned_sections');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const togglePin = (sectionId) => {
+    setPinnedSections(prev => {
+      const next = prev.includes(sectionId)
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId];
+      localStorage.setItem('lmnl_pinned_sections', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const tabColors = {
     all: '#000000',
     events: '#004ffa',
     inquiries: '#6222d8',
     shop: '#ff0000',
-    community: '#ff5bb8'
+    community: '#ff5bb8',
+    contact: '#90e937'
   };
 
   useEffect(() => {
@@ -416,7 +438,123 @@ export default function Admin() {
           >
             COMMUNITY
           </button>
+          <button 
+            className={`admin-tab ${activeTab === 'contact' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('contact')} 
+            style={{ borderBottomColor: activeTab === 'contact' ? tabColors.contact : 'transparent' }}
+          >
+            CONTACT
+          </button>
         </div>
+
+      {/* Pinned Sections (Only visible in 'all' tab) */}
+      {activeTab === 'all' && pinnedSections.length > 0 && (
+        <div className="pinned-sections-container">
+          <EventsTab 
+            events={events}
+            tickets={tickets}
+            eventLoading={eventLoading}
+            ticketsLoading={ticketsLoading}
+            tableMissing={tableMissing}
+            squareItems={squareItems}
+            fetchingCatalog={fetchingCatalog}
+            squareError={squareError}
+            fetchEvents={fetchEvents}
+            fetchTickets={fetchTickets}
+            fetchRequests={fetchRequests}
+            showToast={showToast}
+            triggerConfirm={triggerConfirm}
+            fetchSquareCatalog={fetchSquareCatalog}
+            requests={requests}
+            loading={loading}
+            updateStatus={updateStatus}
+            deleteRequest={deleteRequest}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <InquiriesTab 
+            serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
+            servicesLoading={servicesLoading}
+            updateServiceStatus={updateServiceStatus}
+            deleteServiceInquiry={deleteServiceInquiry}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <ContactTab 
+            contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
+            loading={servicesLoading}
+            updateStatus={updateServiceStatus}
+            deleteInquiry={deleteServiceInquiry}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <ShopTab 
+            squareItems={squareItems}
+            fetchingCatalog={fetchingCatalog}
+            squareError={squareError}
+            fetchSquareCatalog={fetchSquareCatalog}
+            preorders={preorders}
+            preordersLoading={preordersLoading}
+            fetchPreorders={fetchPreorders}
+            showToast={showToast}
+            triggerConfirm={triggerConfirm}
+            tickets={tickets}
+            events={events}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <CommunityTab 
+            events={events}
+            communityCredits={communityCredits}
+            communityLoading={communityLoading}
+            communityTableMissing={communityTableMissing}
+            fetchCommunityCredits={fetchCommunityCredits}
+            requests={requests}
+            requestsLoading={loading}
+            tickets={tickets}
+            ticketsLoading={ticketsLoading}
+            serviceInquiries={serviceInquiries}
+            servicesLoading={servicesLoading}
+            artistInterest={artistInterest}
+            artistInterestLoading={artistInterestLoading}
+            artistInterestTableMissing={artistInterestTableMissing}
+            fetchArtistInterest={fetchArtistInterest}
+            mailingList={mailingList}
+            mailingListLoading={mailingListLoading}
+            mailingListTableMissing={mailingListTableMissing}
+            fetchMailingList={fetchMailingList}
+            updateArtistInterestStatus={updateArtistInterestStatus}
+            deleteArtistInterest={deleteArtistInterest}
+            showToast={showToast}
+            triggerConfirm={triggerConfirm}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <div className="pinned-divider" style={{ 
+            height: '1px', 
+            background: '#eee', 
+            margin: '40px 0',
+            position: 'relative'
+          }}>
+            <span style={{ 
+              position: 'absolute', 
+              top: '50%', 
+              left: '50%', 
+              transform: 'translate(-50%, -50%)',
+              background: '#fff',
+              padding: '0 20px',
+              fontSize: '10px',
+              color: '#999',
+              letterSpacing: '0.2em'
+            }}>END OF PINNED SECTIONS</span>
+          </div>
+        </div>
+      )}
 
       {(activeTab === 'events' || activeTab === 'all') && (
         <EventsTab 
@@ -438,15 +576,33 @@ export default function Admin() {
           loading={loading}
           updateStatus={updateStatus}
           deleteRequest={deleteRequest}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
         />
       )}
 
       {(activeTab === 'inquiries' || activeTab === 'all') && (
         <InquiriesTab 
-          serviceInquiries={serviceInquiries}
+          serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
           servicesLoading={servicesLoading}
           updateServiceStatus={updateServiceStatus}
           deleteServiceInquiry={deleteServiceInquiry}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
+        />
+      )}
+
+      {(activeTab === 'contact' || activeTab === 'all') && (
+        <ContactTab 
+          contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
+          loading={servicesLoading}
+          updateStatus={updateServiceStatus}
+          deleteInquiry={deleteServiceInquiry}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
         />
       )}
 
@@ -463,6 +619,9 @@ export default function Admin() {
           triggerConfirm={triggerConfirm}
           tickets={tickets}
           events={events}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
         />
       )}
 
@@ -491,6 +650,9 @@ export default function Admin() {
           deleteArtistInterest={deleteArtistInterest}
           showToast={showToast}
           triggerConfirm={triggerConfirm}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
         />
       )}
       </div>
