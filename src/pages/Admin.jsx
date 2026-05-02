@@ -36,6 +36,7 @@ export default function Admin() {
   // Toast & Confirm Modals
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const tabColors = {
     all: '#000000',
@@ -182,6 +183,28 @@ export default function Admin() {
     setPreordersLoading(false);
   }
 
+  async function refreshAllData() {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchRequests(),
+        fetchEvents(),
+        fetchTickets(),
+        fetchServiceInquiries(),
+        fetchCommunityCredits(),
+        fetchArtistInterest(),
+        fetchSquareCatalog(),
+        fetchPreorders()
+      ]);
+      showToast('Dashboard Refreshed');
+    } catch (error) {
+      console.error('Refresh error:', error);
+      showToast('Refresh failed', 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
+
   async function updateStatus(id, newStatus, requestRecord) {
     try {
       if (newStatus === 'approved') {
@@ -240,6 +263,18 @@ export default function Admin() {
     }
   }
 
+  async function deleteServiceInquiry(id) {
+    triggerConfirm('Delete this service inquiry permanently?', async () => {
+      try {
+        await apiPost('/api/service-inquiries', { action: 'delete', id });
+        fetchServiceInquiries();
+        showToast('Inquiry removed.');
+      } catch (error) {
+        showToast('Delete failed: ' + error.message, 'error');
+      }
+    });
+  }
+
   async function updateArtistInterestStatus(id, newStatus) {
     try {
       await apiPost('/api/artist-interest', { action: 'update', id, status: newStatus });
@@ -262,13 +297,62 @@ export default function Admin() {
     });
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  }
+
   return (
     <div className="page-container">
       <HeaderBar />
       <div className="page-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: tabColors[activeTab] || '#000' }} />
-          <h1 className="page-title">ADMIN</h1>
+        <div className="page-header" style={{ left: 0, right: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="page-header-rect" style={{ backgroundColor: tabColors[activeTab] || '#000' }} />
+            <h1 className="page-title">ADMIN</h1>
+          </div>
+          <div style={{ 
+            position: 'absolute', 
+            right: 'var(--lmnl-page-padding-inline)',
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px' 
+          }}>
+            <button 
+              className="admin-btn logout-btn"
+              onClick={handleSignOut}
+            >
+              LOG OUT
+            </button>
+            <button 
+              className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+              onClick={refreshAllData}
+              disabled={isRefreshing}
+              title="Refresh all data"
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px' 
+              }}
+            >
+              <svg 
+                width="14" 
+                height="14" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className={isRefreshing ? 'refresh-spin' : ''}
+              >
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
+            </button>
+          </div>
         </div>
         
         <div className="admin-body">
@@ -339,6 +423,7 @@ export default function Admin() {
           serviceInquiries={serviceInquiries}
           servicesLoading={servicesLoading}
           updateServiceStatus={updateServiceStatus}
+          deleteServiceInquiry={deleteServiceInquiry}
         />
       )}
 
@@ -363,6 +448,12 @@ export default function Admin() {
           communityLoading={communityLoading}
           communityTableMissing={communityTableMissing}
           fetchCommunityCredits={fetchCommunityCredits}
+          requests={requests}
+          requestsLoading={loading}
+          tickets={tickets}
+          ticketsLoading={ticketsLoading}
+          serviceInquiries={serviceInquiries}
+          servicesLoading={servicesLoading}
           artistInterest={artistInterest}
           artistInterestLoading={artistInterestLoading}
           artistInterestTableMissing={artistInterestTableMissing}

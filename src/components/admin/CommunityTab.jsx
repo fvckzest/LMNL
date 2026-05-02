@@ -8,6 +8,12 @@ export default function CommunityTab({
   communityLoading,
   communityTableMissing,
   fetchCommunityCredits,
+  requests,
+  requestsLoading,
+  tickets,
+  ticketsLoading,
+  serviceInquiries,
+  servicesLoading,
   artistInterest,
   artistInterestLoading,
   artistInterestTableMissing,
@@ -21,8 +27,10 @@ export default function CommunityTab({
   const [editingCredit, setEditingCredit] = useState(null);
   const [expandedCommunityEvents, setExpandedCommunityEvents] = useState({});
   const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
+  const [expandedCredits, setExpandedCredits] = useState({});
   const [creditForm, setCreditForm] = useState({
     name: '',
+    email: '',
     role: 'performer',
     event_id: '',
     details: '',
@@ -41,6 +49,7 @@ export default function CommunityTab({
 
     const data = {
       name: creditForm.name,
+      email: creditForm.email || '',
       role: creditForm.role,
       event_id: creditForm.event_id || null,
       event_name: event_name || null,
@@ -88,6 +97,7 @@ export default function CommunityTab({
       setEditingCredit(credit);
       setCreditForm({
         name: credit.name,
+        email: credit.email || '',
         role: credit.role,
         event_id: credit.event_id || '',
         details: credit.details || '',
@@ -97,6 +107,7 @@ export default function CommunityTab({
       setEditingCredit(null);
       setCreditForm({
         name: '',
+        email: '',
         role: 'performer',
         event_id: '',
         details: '',
@@ -184,10 +195,145 @@ export default function CommunityTab({
     }));
   }
 
+  function toggleCreditExpansion(creditId) {
+    setExpandedCredits(prev => ({
+      ...prev,
+      [creditId]: !prev[creditId]
+    }));
+  }
+
   const eventOrderLookup = events.reduce((acc, event, index) => {
     acc[event.id] = index;
     return acc;
   }, {});
+
+  function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+  }
+
+  function isPlaceholderEmail(email) {
+    const normalized = normalizeEmail(email);
+    return !normalized || normalized.endsWith('@example.com');
+  }
+
+  const emailContactsByEmail = new Map();
+  const contactSourceTotals = {
+    requests: 0,
+    tickets: 0,
+    services: 0,
+    artistInterest: 0,
+    communityCredits: 0
+  };
+
+  function addContactEntry({
+    email,
+    name,
+    source,
+    createdAt
+  }) {
+    const normalizedEmail = normalizeEmail(email);
+    if (isPlaceholderEmail(normalizedEmail)) return;
+
+    const existing = emailContactsByEmail.get(normalizedEmail);
+    const safeName = String(name || '').trim();
+
+    if (!existing) {
+      emailContactsByEmail.set(normalizedEmail, {
+        email: normalizedEmail,
+        names: safeName ? [safeName] : [],
+        sources: [source],
+        recordCount: 1,
+        latestCreatedAt: createdAt || null
+      });
+      return;
+    }
+
+    if (safeName && !existing.names.includes(safeName)) {
+      existing.names.push(safeName);
+    }
+
+    if (!existing.sources.includes(source)) {
+      existing.sources.push(source);
+    }
+
+    existing.recordCount += 1;
+
+    if (createdAt && (!existing.latestCreatedAt || new Date(createdAt) > new Date(existing.latestCreatedAt))) {
+      existing.latestCreatedAt = createdAt;
+    }
+  }
+
+  requests.forEach((entry) => {
+    if (isPlaceholderEmail(entry.customer_email)) return;
+    contactSourceTotals.requests += 1;
+    addContactEntry({
+      email: entry.customer_email,
+      name: entry.customer_name,
+      source: 'Access Requests',
+      createdAt: entry.created_at
+    });
+  });
+
+  tickets.forEach((entry) => {
+    if (isPlaceholderEmail(entry.customer_email)) return;
+    contactSourceTotals.tickets += 1;
+    addContactEntry({
+      email: entry.customer_email,
+      name: entry.customer_name,
+      source: 'Tickets',
+      createdAt: entry.created_at
+    });
+  });
+
+  serviceInquiries.forEach((entry) => {
+    if (isPlaceholderEmail(entry.email)) return;
+    contactSourceTotals.services += 1;
+    addContactEntry({
+      email: entry.email,
+      name: entry.name,
+      source: 'Service Inquiries',
+      createdAt: entry.created_at
+    });
+  });
+
+  artistInterest.forEach((entry) => {
+    if (isPlaceholderEmail(entry.email)) return;
+    contactSourceTotals.artistInterest += 1;
+    addContactEntry({
+      email: entry.email,
+      name: entry.name,
+      source: 'Artist Interest',
+      createdAt: entry.created_at
+    });
+  });
+
+  communityCredits.forEach((entry) => {
+    if (isPlaceholderEmail(entry.email)) return;
+    contactSourceTotals.communityCredits += 1;
+    addContactEntry({
+      email: entry.email,
+      name: entry.name,
+      source: 'Community Credits',
+      createdAt: entry.created_at
+    });
+  });
+
+  const emailContacts = Array.from(emailContactsByEmail.values()).sort((a, b) => {
+    if (a.latestCreatedAt && b.latestCreatedAt) {
+      return new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt);
+    }
+    if (a.latestCreatedAt) return -1;
+    if (b.latestCreatedAt) return 1;
+    return a.email.localeCompare(b.email);
+  });
+
+  const contactListLoading =
+    requestsLoading ||
+    ticketsLoading ||
+    servicesLoading ||
+    artistInterestLoading ||
+    communityLoading;
+  const totalEmailRecords = Object.values(contactSourceTotals).reduce((sum, count) => sum + count, 0);
 
   const groupedCommunityCredits = communityCredits.reduce((groups, credit) => {
     const eventKey = credit.event_id || `independent:${credit.event_name || 'none'}`;
@@ -255,6 +401,7 @@ export default function CommunityTab({
 {`CREATE TABLE IF NOT EXISTS community_credits (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL,
+    email TEXT DEFAULT '',
     role TEXT NOT NULL, -- 'performer' or 'artist'
     event_id UUID REFERENCES events(id) ON DELETE CASCADE,
     event_name TEXT,
@@ -262,6 +409,9 @@ export default function CommunityTab({
     link TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+ALTER TABLE community_credits
+ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
 
 ALTER TABLE community_credits ENABLE ROW LEVEL SECURITY;
 
@@ -281,10 +431,10 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                 <thead>
                   <tr>
                     <th>EVENT</th>
+                    <th></th>
                     <th>NAME</th>
+                    <th>EMAIL</th>
                     <th>ROLE</th>
-                    <th>LINK</th>
-                    <th>DETAILS</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
@@ -316,42 +466,72 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                           <td>-</td>
                           <td className="community-group-summary">Click to view attendees</td>
                         </tr>
-                        {isExpanded && group.credits.map((credit) => (
-                          <tr key={credit.id} className="community-credit-row">
-                            <td></td>
-                            <td><strong>{credit.name}</strong></td>
-                            <td>{credit.role.toUpperCase()}</td>
-                            <td>
-                              {credit.link ? (
-                                <a href={credit.link} target="_blank" rel="noopener noreferrer" style={{ color: '#004ffa', textDecoration: 'underline' }}>
-                                  VISIT
-                                </a>
-                              ) : (
-                                '-'
-                              )}
-                            </td>
-                            <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {credit.details || '-'}
-                            </td>
-                            <td className="actions-cell">
-                              <div className="actions-wrapper">
-                                <div className="main-actions">
-                                  <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
-                                </div>
-                                <div className="secondary-actions">
+                        {isExpanded && group.credits.map((credit) => {
+                          const isCreditExpanded = Boolean(expandedCredits[credit.id]);
+                          return (
+                            <Fragment key={credit.id}>
+                              <tr className={`community-credit-row ${isCreditExpanded ? 'credit-row-expanded' : ''}`}>
+                                <td></td>
+                                <td className="ticket-detail-toggle-cell">
                                   <button
-                                    className="icon-btn delete-btn"
-                                    style={{ color: '#991b1b' }}
-                                    title="Delete Credit"
-                                    onClick={() => deleteCredit(credit.id)}
+                                    type="button"
+                                    className={`ticket-detail-toggle ${isCreditExpanded ? 'expanded' : ''}`}
+                                    onClick={() => toggleCreditExpansion(credit.id)}
+                                    aria-expanded={isCreditExpanded}
+                                    title={isCreditExpanded ? 'Hide details' : 'Show details'}
+                                    style={{ '--004ffa': '#ff5bb8' }} 
                                   >
-                                    <TrashIcon />
+                                    <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
                                   </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                </td>
+                                <td><strong>{credit.name}</strong></td>
+                                <td>{credit.email || '-'}</td>
+                                <td>{credit.role.toUpperCase()}</td>
+                                <td className="actions-cell">
+                                  <div className="actions-wrapper">
+                                    <div className="main-actions">
+                                      <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
+                                    </div>
+                                    <div className="secondary-actions">
+                                      <button
+                                        className="icon-btn delete-btn"
+                                        style={{ color: '#991b1b' }}
+                                        title="Delete Credit"
+                                        onClick={() => deleteCredit(credit.id)}
+                                      >
+                                        <TrashIcon />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                              {isCreditExpanded && (
+                                <tr className="credit-metadata-row">
+                                  <td colSpan="6">
+                                    <div className="credit-metadata-panel">
+                                      <div className="credit-metadata-grid">
+                                        <div className="credit-metadata-item">
+                                          <span className="credit-metadata-label">LINK</span>
+                                          {credit.link ? (
+                                            <a href={credit.link} target="_blank" rel="noopener noreferrer" className="credit-metadata-link">
+                                              {credit.link}
+                                            </a>
+                                          ) : (
+                                            <span className="credit-metadata-value" style={{ color: '#999' }}>No link provided</span>
+                                          )}
+                                        </div>
+                                        <div className="credit-metadata-item">
+                                          <span className="credit-metadata-label">DETAILS</span>
+                                          <p className="credit-metadata-value">{credit.details || 'No additional details'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })}
                       </Fragment>
                     );
                   })}
@@ -360,6 +540,70 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
             )}
           </div>
         )}
+      </section>
+
+      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+        <h2 className="section-title">GENERAL CONTACT LIST</h2>
+        <div className="admin-stats">
+          <div className="stat-item">
+            <span className="stat-label">UNIQUE EMAILS</span>
+            <span className="stat-value">{emailContacts.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">TOTAL EMAIL RECORDS</span>
+            <span className="stat-value">{totalEmailRecords}</span>
+          </div>
+        </div>
+
+        <div className="events-table-container admin-table-shell">
+          {contactListLoading ? (
+            <p className="loading-text">BUILDING CONTACT LIST...</p>
+          ) : emailContacts.length === 0 ? (
+            <p className="loading-text">NO EMAIL CONTACTS FOUND YET.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>EMAIL</th>
+                  <th>NAME</th>
+                  <th>SOURCE</th>
+                  <th>RECORDS</th>
+                  <th>LATEST ENTRY</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emailContacts.map((contact) => (
+                  <tr key={contact.email}>
+                    <td>
+                      <a
+                        href={`mailto:${contact.email}`}
+                        className="event-name-link"
+                      >
+                        {contact.email}
+                      </a>
+                    </td>
+                    <td>{contact.names.join(', ') || '-'}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {contact.sources.map((source) => (
+                          <span
+                            key={`${contact.email}-${source}`}
+                            className="status-pill active"
+                            style={{ fontSize: '10px', background: '#ff5bb8', color: '#ffffff', borderRadius: '0px' }}
+                          >
+                            {source.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>{contact.recordCount}</td>
+                    <td>{contact.latestCreatedAt ? new Date(contact.latestCreatedAt).toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </section>
 
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
@@ -566,6 +810,11 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
                 <div className="form-group full">
                   <label>NAME</label>
                   <input required type="text" value={creditForm.name} onChange={e => setCreditForm({...creditForm, name: e.target.value})} />
+                </div>
+
+                <div className="form-group full">
+                  <label>CONTACT EMAIL</label>
+                  <input type="email" placeholder="artist@example.com" value={creditForm.email} onChange={e => setCreditForm({...creditForm, email: e.target.value})} />
                 </div>
                 
                 <div className="form-group">

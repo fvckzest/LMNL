@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ArchiveIcon, UnarchiveIcon } from './Icons';
+import { ArchiveIcon, UnarchiveIcon, TrashIcon } from './Icons';
 
 export default function InquiriesTab({
   serviceInquiries,
   servicesLoading,
-  updateServiceStatus
+  updateServiceStatus,
+  deleteServiceInquiry
 }) {
   const [showArchivedServices, setShowArchivedServices] = useState(false);
 
@@ -109,6 +110,14 @@ export default function InquiriesTab({
                             <UnarchiveIcon />
                           </button>
                         )}
+                        <button
+                          className="icon-btn delete-btn"
+                          title="Delete Inquiry"
+                          onClick={() => deleteServiceInquiry(req.id)}
+                          style={{ color: '#991b1b' }}
+                        >
+                          <TrashIcon />
+                        </button>
                       </div>
                     </div>
                   </td>

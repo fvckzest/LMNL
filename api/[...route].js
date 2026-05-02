@@ -406,6 +406,16 @@ async function handleServiceInquiries(req, res) {
     return sendJson(res, 200, { success: true, data });
   }
 
+  if (body.action === 'delete') {
+    const { error } = await supabase
+      .from('service_inquiries')
+      .delete()
+      .eq('id', requireValue(body.id, 'id is required.'));
+
+    if (error) throw error;
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
   throw new Error('Unsupported service inquiries action.');
 }
 

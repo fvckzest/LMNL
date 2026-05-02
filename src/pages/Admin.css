@@ -215,6 +215,49 @@
   font-weight: 600;
 }
 
+.credit-metadata-row td {
+  background: transparent;
+  border-top: none;
+}
+
+.credit-metadata-panel {
+  padding: 14px 16px;
+}
+
+.credit-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+}
+
+.credit-metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.credit-metadata-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ff5bb8;
+}
+
+.credit-metadata-value {
+  font-size: 13px;
+  color: #334155;
+  margin: 0;
+}
+
+.credit-metadata-link {
+  color: #004ffa;
+  text-decoration: underline;
+  font-size: 13px;
+  word-break: break-all;
+}
+
 .community-credit-row td:first-child {
   border-right: 1px solid #f6d4e8;
 }
@@ -1063,5 +1106,21 @@
     left: 20px;
     width: auto;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+}
+
+/* Refresh Spin Animation */
+.refresh-spin {
+  animation: admin-spin 0.8s linear infinite;
+}
+
+@keyframes admin-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .admin-refresh-btn span {
+    display: none;
   }
 }
