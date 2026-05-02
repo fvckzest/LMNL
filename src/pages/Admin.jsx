@@ -7,6 +7,7 @@ import InquiriesTab from '../components/admin/InquiriesTab';
 import ContactTab from '../components/admin/ContactTab';
 import ShopTab from '../components/admin/ShopTab';
 import CommunityTab from '../components/admin/CommunityTab';
+import BlogTab from '../components/admin/BlogTab';
 import './Admin.css';
 
 export default function Admin() {
@@ -29,6 +30,9 @@ export default function Admin() {
   const [mailingList, setMailingList] = useState([]);
   const [mailingListLoading, setMailingListLoading] = useState(true);
   const [mailingListTableMissing, setMailingListTableMissing] = useState(false);
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [blogLoading, setBlogLoading] = useState(true);
+  const [blogTableMissing, setBlogTableMissing] = useState(false);
 
   // Square catalog state
   const [squareItems, setSquareItems] = useState([]);
@@ -68,7 +72,8 @@ export default function Admin() {
     inquiries: '#6222d8',
     shop: '#ff0000',
     community: '#ff5bb8',
-    contact: '#90e937'
+    contact: '#90e937',
+    blog: '#ffde00'
   };
 
   useEffect(() => {
@@ -81,6 +86,7 @@ export default function Admin() {
     fetchSquareCatalog();
     fetchPreorders();
     fetchMailingList();
+    fetchBlogPosts();
   }, []);
 
   function showToast(message, type = 'success') {
@@ -198,6 +204,24 @@ export default function Admin() {
     setMailingListLoading(false);
   }
 
+  async function fetchBlogPosts() {
+    setBlogLoading(true);
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching blog posts:', error);
+      if (error.code === '42P01') setBlogTableMissing(true);
+      setBlogPosts([]);
+    } else {
+      setBlogTableMissing(false);
+      setBlogPosts(data || []);
+    }
+    setBlogLoading(false);
+  }
+
   async function fetchSquareCatalog() {
     setFetchingCatalog(true);
     setSquareError(null);
@@ -239,7 +263,8 @@ export default function Admin() {
         fetchArtistInterest(),
         fetchMailingList(),
         fetchSquareCatalog(),
-        fetchPreorders()
+        fetchPreorders(),
+        fetchBlogPosts()
       ]);
       showToast('Dashboard Refreshed');
     } catch (error) {
@@ -445,6 +470,13 @@ export default function Admin() {
           >
             CONTACT
           </button>
+          <button 
+            className={`admin-tab ${activeTab === 'blog' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('blog')} 
+            style={{ borderBottomColor: activeTab === 'blog' ? tabColors.blog : 'transparent' }}
+          >
+            BLOG
+          </button>
         </div>
 
       {/* Pinned Sections (Only visible in 'all' tab) */}
@@ -529,6 +561,17 @@ export default function Admin() {
             fetchMailingList={fetchMailingList}
             updateArtistInterestStatus={updateArtistInterestStatus}
             deleteArtistInterest={deleteArtistInterest}
+            showToast={showToast}
+            triggerConfirm={triggerConfirm}
+            pinnedSections={pinnedSections}
+            onTogglePin={togglePin}
+            renderMode="pinned"
+          />
+          <BlogTab 
+            blogPosts={blogPosts}
+            blogLoading={blogLoading}
+            blogTableMissing={blogTableMissing}
+            fetchBlogPosts={fetchBlogPosts}
             showToast={showToast}
             triggerConfirm={triggerConfirm}
             pinnedSections={pinnedSections}
@@ -648,6 +691,20 @@ export default function Admin() {
           fetchMailingList={fetchMailingList}
           updateArtistInterestStatus={updateArtistInterestStatus}
           deleteArtistInterest={deleteArtistInterest}
+          showToast={showToast}
+          triggerConfirm={triggerConfirm}
+          pinnedSections={pinnedSections}
+          onTogglePin={togglePin}
+          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
+        />
+      )}
+
+      {(activeTab === 'blog' || activeTab === 'all') && (
+        <BlogTab 
+          blogPosts={blogPosts}
+          blogLoading={blogLoading}
+          blogTableMissing={blogTableMissing}
+          fetchBlogPosts={fetchBlogPosts}
           showToast={showToast}
           triggerConfirm={triggerConfirm}
           pinnedSections={pinnedSections}

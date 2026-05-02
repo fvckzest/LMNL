@@ -482,6 +482,69 @@ async function handleArtistInterest(req, res) {
   throw new Error('Unsupported artist interest action.');
 }
 
+async function handleBlogPosts(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const supabase = getAdminSupabase();
+
+  if (body.action === 'create') {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .insert([{
+        title: requireValue(body.title, 'title is required.'),
+        slug: requireValue(body.slug, 'slug is required.'),
+        content: body.content || '',
+        author: body.author || '',
+        status: body.status || 'draft',
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      if (error?.code === 'PGRST205' && error?.message?.includes('blog_posts')) {
+        throw new AppError('Blog posts table is not set up yet. Create the `blog_posts` table in Supabase and try again.', {
+          code: 'BLOG_POSTS_TABLE_MISSING',
+          status: 503,
+          details: error,
+          expose: true,
+        });
+      }
+      throw error;
+    }
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'update') {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .update({
+        title: body.title,
+        slug: body.slug,
+        content: body.content,
+        author: body.author,
+        status: body.status,
+      })
+      .eq('id', requireValue(body.id, 'id is required.'))
+      .select()
+      .single();
+
+    if (error) throw error;
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'delete') {
+    const { error } = await supabase
+      .from('blog_posts')
+      .delete()
+      .eq('id', requireValue(body.id, 'id is required.'));
+
+    if (error) throw error;
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  throw new Error('Unsupported blog posts action.');
+}
+
 async function handleSquareCatalog(req, res) {
   allowMethods(req, ['GET']);
   const catalog = await getAdminCatalogView();
@@ -522,6 +585,7 @@ const handlers = {
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,
+  'blog-posts': handleBlogPosts,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
   'square-webhook': handleSquareWebhook,

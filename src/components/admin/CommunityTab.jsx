@@ -316,6 +316,7 @@ export default function CommunityTab({
     requests: 0,
     tickets: 0,
     services: 0,
+    contactInquiries: 0,
     artistInterest: 0,
     communityCredits: 0,
     mailingList: 0
@@ -389,13 +390,24 @@ export default function CommunityTab({
 
   serviceInquiries.forEach((entry) => {
     if (isPlaceholderEmail(entry.email)) return;
-    contactSourceTotals.services += 1;
-    addContactEntry({
-      email: entry.email,
-      name: entry.name,
-      source: 'Service Inquiries',
-      createdAt: entry.created_at
-    });
+    
+    if (entry.selected_services?.includes('general')) {
+      contactSourceTotals.contactInquiries += 1;
+      addContactEntry({
+        email: entry.email,
+        name: entry.name,
+        source: 'Contact Inquiries',
+        createdAt: entry.created_at
+      });
+    } else {
+      contactSourceTotals.services += 1;
+      addContactEntry({
+        email: entry.email,
+        name: entry.name,
+        source: 'Service Inquiries',
+        createdAt: entry.created_at
+      });
+    }
   });
 
   artistInterest.forEach((entry) => {
@@ -440,6 +452,20 @@ export default function CommunityTab({
     if (b.latestCreatedAt) return 1;
     return a.email.localeCompare(b.email);
   });
+
+  const getSourceColor = (source) => {
+    switch(source) {
+      case 'Access Requests': return '#004ffa';
+      case 'Tickets': return '#004ffa';
+      case 'Service Inquiries': return '#6222d8';
+      case 'Contact Inquiries': return '#90e937';
+      case 'Artist Interest': return '#ff5bb8';
+      case 'Community Credits': return '#ff5bb8';
+      case 'Manual Entry': return '#ff5bb8';
+      default: return '#555';
+    }
+  };
+
 
   const contactListLoading =
     requestsLoading ||
@@ -1044,7 +1070,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                                       <span
                                         key={`${contact.email}-${source}`}
                                         className="status-pill active"
-                                        style={{ fontSize: '9px', background: '#ff5bb8', color: '#ffffff', borderRadius: '0px', padding: '2px 6px' }}
+                                        style={{ fontSize: '9px', background: getSourceColor(source), color: '#ffffff', borderRadius: '0px', padding: '2px 6px' }}
                                       >
                                         {source.toUpperCase()}
                                       </span>

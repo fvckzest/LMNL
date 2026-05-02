@@ -16,6 +16,8 @@ const Services = lazy(() => import('./pages/Services'));
 const Community = lazy(() => import('./pages/Community'));
 const ArtistInterest = lazy(() => import('./pages/ArtistInterest'));
 const Shop = lazy(() => import('./pages/Shop'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPostView = lazy(() => import('./pages/BlogPostView'));
 const EmailLab = lazy(() => import('./pages/EmailLab'));
 
 // Protected Route Component
@@ -121,7 +123,8 @@ function App() {
           <Route path="/community/share" element={<ArtistInterest />} />
           <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
           <Route path="/shop" element={<Shop />} />
-          <Route path="/blog" element={<GenericPage title="BLOG" color="#ffde00" />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPostView />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
 

@@ -1,51 +1,51 @@
 import { useState, Fragment } from 'react';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
 
- export default function ContactTab({
-   contactInquiries,
-   loading,
-   updateStatus,
-   deleteInquiry,
-   pinnedSections = [],
-   onTogglePin = () => {},
-   renderMode = 'all'
- }) {
-   const sectionId = 'contact_inquiries';
+export default function ContactTab({
+  contactInquiries,
+  loading,
+  updateStatus,
+  deleteInquiry,
+  pinnedSections = [],
+  onTogglePin = () => { },
+  renderMode = 'all'
+}) {
+  const sectionId = 'contact_inquiries';
 
-   const shouldRender = () => {
-     if (renderMode === 'all') return true;
-     const isPinned = pinnedSections.includes(sectionId);
-     if (renderMode === 'pinned') return isPinned;
-     if (renderMode === 'unpinned') return !isPinned;
-     return true;
-   };
+  const shouldRender = () => {
+    if (renderMode === 'all') return true;
+    const isPinned = pinnedSections.includes(sectionId);
+    if (renderMode === 'pinned') return isPinned;
+    if (renderMode === 'unpinned') return !isPinned;
+    return true;
+  };
 
-   const [showArchived, setShowArchived] = useState(false);
-   const [expandedInquiries, setExpandedInquiries] = useState({});
+  const [showArchived, setShowArchived] = useState(false);
+  const [expandedInquiries, setExpandedInquiries] = useState({});
 
-   function toggleExpansion(id) {
-     setExpandedInquiries(prev => ({
-       ...prev,
-       [id]: !prev[id]
-     }));
-   }
+  function toggleExpansion(id) {
+    setExpandedInquiries(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  }
 
   // Filter inquiries
-  const filteredInquiries = contactInquiries.filter(iq => 
+  const filteredInquiries = contactInquiries.filter(iq =>
     showArchived ? true : iq.status !== 'archived'
   );
 
-   return shouldRender() ? (
+  return shouldRender() ? (
     <section className="admin-section" style={{ '--active-tab-color': '#90e937' }}>
       <div className="section-title-container">
-        <button 
+        <button
           className={`pin-toggle-btn ${pinnedSections.includes(sectionId) ? 'pinned' : ''}`}
           onClick={() => onTogglePin(sectionId)}
           title={pinnedSections.includes(sectionId) ? 'Unpin from top' : 'Pin to top'}
         >
           <PinIcon filled={pinnedSections.includes(sectionId)} />
         </button>
-        <h2 className="section-title">GENERAL CONTACT INQUIRIES</h2>
+        <h2 className="section-title">CONTACT INQUIRIES</h2>
       </div>
       <div className="admin-stats">
         <div className="stat-item">
@@ -57,7 +57,7 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
           <span className="stat-value">{contactInquiries.filter(r => r.status === 'pending').length}</span>
         </div>
         <div className="stat-item toggle-archived">
-          <button 
+          <button
             className={`admin-btn small ${showArchived ? 'active' : ''}`}
             onClick={() => setShowArchived(!showArchived)}
           >
@@ -85,11 +85,11 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
             <tbody>
               {filteredInquiries.map((req) => {
                 const isExpanded = Boolean(expandedInquiries[req.id]);
-                
+
                 // Parse subject and message from notes if they follow our format
                 let subject = 'General Inquiry';
                 let message = req.notes;
-                
+
                 if (req.notes?.startsWith('SUBJECT:')) {
                   const parts = req.notes.split('\n\n');
                   subject = parts[0].replace('SUBJECT: ', '');
@@ -106,7 +106,7 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
                           onClick={() => toggleExpansion(req.id)}
                           aria-expanded={isExpanded}
                           title={isExpanded ? 'Hide details' : 'Show details'}
-                          style={{ '--004ffa': '#90e937' }} 
+                          style={{ '--004ffa': '#90e937' }}
                         >
                           <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#90e937' }}>▶</span>
                         </button>
@@ -187,10 +187,10 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
                               </div>
                               <div className="inquiry-metadata-item">
                                 <span className="inquiry-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>MESSAGE</span>
-                                <div className="inquiry-metadata-value" style={{ 
-                                  whiteSpace: 'pre-wrap', 
-                                  fontSize: '13px', 
-                                  lineHeight: '1.6', 
+                                <div className="inquiry-metadata-value" style={{
+                                  whiteSpace: 'pre-wrap',
+                                  fontSize: '13px',
+                                  lineHeight: '1.6',
                                   color: '#333',
                                   background: '#f9f9f9',
                                   padding: '12px',
@@ -211,6 +211,6 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
           </table>
         )}
       </div>
-     </section>
+    </section>
   ) : null;
 }
