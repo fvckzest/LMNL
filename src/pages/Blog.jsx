@@ -42,7 +42,7 @@ export default function Blog() {
                 <h2 className="post-title" style={{ transition: 'color 0.2s' }}>{post.title}</h2>
                 <div className="post-meta">
                   <span className="post-author">{post.author || 'LMNL'}</span>
-                  <span className="post-date">{new Date(post.created_at).toLocaleDateString()}</span>
+                  <span className="post-date">{post.date ? new Date(post.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : new Date(post.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="post-content" style={{ maxHeight: '100px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                   {post.content}

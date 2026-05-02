@@ -495,6 +495,7 @@ async function handleBlogPosts(req, res) {
         slug: requireValue(body.slug, 'slug is required.'),
         content: body.content || '',
         author: body.author || '',
+        date: body.date || null,
         status: body.status || 'draft',
       }])
       .select()
@@ -522,6 +523,7 @@ async function handleBlogPosts(req, res) {
         slug: body.slug,
         content: body.content,
         author: body.author,
+        date: body.date || null,
         status: body.status,
       })
       .eq('id', requireValue(body.id, 'id is required.'))

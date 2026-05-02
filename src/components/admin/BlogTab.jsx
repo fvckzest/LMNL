@@ -30,6 +30,7 @@ export default function BlogTab({
     slug: '',
     content: '',
     author: '',
+    date: '',
     status: 'draft'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +51,7 @@ export default function BlogTab({
         slug: post.slug || '',
         content: post.content || '',
         author: post.author || '',
+        date: post.date || '',
         status: post.status || 'draft'
       });
     } else {
@@ -59,6 +61,7 @@ export default function BlogTab({
         slug: '',
         content: '',
         author: '',
+        date: '',
         status: 'draft'
       });
     }
@@ -150,6 +153,7 @@ export default function BlogTab({
               <li><strong>slug</strong>: text, unique</li>
               <li><strong>content</strong>: text</li>
               <li><strong>author</strong>: text</li>
+              <li><strong>date</strong>: date</li>
               <li><strong>status</strong>: text, default `'draft'`</li>
               <li><strong>created_at</strong>: timestamp, default `now()`</li>
             </ul>
@@ -188,7 +192,7 @@ export default function BlogTab({
                       </td>
                       <td>
                         <strong>{post.title}</strong>
-                        <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{new Date(post.created_at).toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{post.date ? new Date(post.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : new Date(post.created_at).toLocaleString()}</div>
                       </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', color: '#666' }}>
                         /{post.slug || '—'}
@@ -293,6 +297,14 @@ export default function BlogTab({
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="LMNL"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>DATE</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     />
                   </div>
                   <div className="form-group">
