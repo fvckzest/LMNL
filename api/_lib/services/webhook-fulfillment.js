@@ -15,6 +15,46 @@ import {
 import { createTicket, findTicketBySquareOrderId } from '../repositories/tickets.js';
 import { generateTicketPass } from './passkit.js';
 
+async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
+  try {
+    const response = await resend.emails.send(payload);
+    if (response.error && primaryFrom !== 'onboarding@resend.dev') {
+      const retry = await resend.emails.send({
+        ...payload,
+        from: 'onboarding@resend.dev',
+      });
+
+      if (!retry.error) {
+        return retry.data;
+      }
+    }
+
+    if (!response.error) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error('[ticket-email] formatted send failed, retrying minimal payload', error);
+  }
+
+  const minimalPayload = {
+    ...payload,
+    html: fallbackHtml,
+    text: undefined,
+    from: primaryFrom === 'onboarding@resend.dev' ? primaryFrom : 'onboarding@resend.dev',
+  };
+
+  const fallback = await resend.emails.send(minimalPayload);
+  if (fallback.error) {
+    throw new AppError(fallback.error.message || 'Email failed.', {
+      code: 'EMAIL_SEND_FAILED',
+      status: 502,
+      expose: true,
+    });
+  }
+
+  return fallback.data;
+}
+
 function isPlaceholderEmail(email) {
   if (!email) return true;
   const normalized = String(email).trim().toLowerCase();
@@ -139,33 +179,12 @@ export async function sendTicketEmail(ticket, event, customerEmail, customerName
     });
   }
 
-  const response = await resend.emails.send(emailOptions);
-  if (response.error && primaryFrom !== 'onboarding@resend.dev') {
-    const fallback = await resend.emails.send({
-      ...emailOptions,
-      from: 'onboarding@resend.dev',
-    });
-
-    if (fallback.error) {
-      throw new AppError(`Email failed: ${fallback.error.message}`, {
-        code: 'EMAIL_SEND_FAILED',
-        status: 502,
-        expose: true,
-      });
-    }
-
-    return fallback.data;
-  }
-
-  if (response.error) {
-    throw new AppError(`Email failed: ${response.error.message}`, {
-      code: 'EMAIL_SEND_FAILED',
-      status: 502,
-      expose: true,
-    });
-  }
-
-  return response.data;
+  return sendWithFallback(
+    resend,
+    emailOptions,
+    `<p>Your ticket for ${eventName} is ready. View it here: <a href="${ticketUrl}">${ticketUrl}</a></p><p>Guest: ${customerName}</p>`,
+    primaryFrom
+  );
 }
 
 function getPayloadType(payload) {

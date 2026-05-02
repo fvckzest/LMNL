@@ -5,6 +5,53 @@ import { AppError } from '../errors.js';
 import { approveRequest, getRequestById } from '../repositories/requests.js';
 import { buildApprovalEmail } from '../email-templates.js';
 
+async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
+  try {
+    const response = await resend.emails.send(payload);
+    if (response.error && primaryFrom !== 'onboarding@resend.dev') {
+      const retry = await resend.emails.send({
+        ...payload,
+        from: 'onboarding@resend.dev',
+      });
+
+      if (!retry.error) {
+        return retry.data;
+      }
+    }
+
+    if (!response.error) {
+      return response.data;
+    }
+  } catch (error) {
+    console.error('[approval-email] formatted send failed, retrying minimal payload', error);
+  }
+
+  const minimalPayload = {
+    ...payload,
+    html: fallbackHtml,
+    text: undefined,
+    from: primaryFrom === 'onboarding@resend.dev' ? primaryFrom : 'onboarding@resend.dev',
+  };
+
+  try {
+    const fallback = await resend.emails.send(minimalPayload);
+    if (fallback.error) {
+      throw new AppError(`Email failed: ${fallback.error.message}`, {
+        code: 'EMAIL_SEND_FAILED',
+        status: 502,
+        expose: true,
+      });
+    }
+    return fallback.data;
+  } catch (error) {
+    throw new AppError(error?.message || 'Email failed.', {
+      code: 'EMAIL_SEND_FAILED',
+      status: 502,
+      expose: true,
+    });
+  }
+}
+
 async function sendApprovalEmail(to, eventName, checkoutUrl) {
   const resend = getResendClient();
   const { siteUrl } = getBaseConfig();
@@ -25,31 +72,12 @@ async function sendApprovalEmail(to, eventName, checkoutUrl) {
     text: email.text,
   };
 
-  const response = await resend.emails.send(payload);
-  if (response.error && primaryFrom !== 'onboarding@resend.dev') {
-    const fallback = await resend.emails.send({
-      ...payload,
-      from: 'onboarding@resend.dev',
-    });
-    if (fallback.error) {
-      throw new AppError(`Email failed: ${fallback.error.message}`, {
-        code: 'EMAIL_SEND_FAILED',
-        status: 502,
-        expose: true,
-      });
-    }
-    return fallback.data;
-  }
-
-  if (response.error) {
-    throw new AppError(`Email failed: ${response.error.message}`, {
-      code: 'EMAIL_SEND_FAILED',
-      status: 502,
-      expose: true,
-    });
-  }
-
-  return response.data;
+  return sendWithFallback(
+    resend,
+    payload,
+    `<p>Your invite to ${eventName} is approved. Pay here: <a href="${checkoutUrl}">${checkoutUrl}</a></p>`,
+    primaryFrom
+  );
 }
 
 export async function approveRequestAndSendCheckout(requestId) {
