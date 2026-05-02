@@ -118,3 +118,69 @@ test('createCheckoutForRequest creates Square-hosted checkout link for approved 
   assert.equal(result.requestId, 'req_2');
   assert.equal(attached[0].requestId, 'req_2');
 });
+
+test('createCheckoutForRequest reports invalid fallback ticket price clearly', async () => {
+  await assert.rejects(
+    createCheckoutForRequest('req_3', {}, {
+      getRequestById: async () => ({
+        id: 'req_3',
+        status: 'approved',
+        customer_name: 'Ada Lovelace',
+        customer_email: 'ada@example.com',
+        event_name: 'SPACE',
+      }),
+      getLatestEventByName: async () => ({
+        id: 'event_3',
+        name: 'SPACE',
+        price: 'not-a-price',
+        square_variation_id: '',
+      }),
+      getSquareLocationId: async () => 'loc_3',
+      getBaseConfig: () => ({ siteUrl: 'https://lmnl.art' }),
+      squareClient: {
+        checkout: {
+          paymentLinks: {
+            create: async () => {
+              throw new Error('should not reach square create');
+            },
+          },
+        },
+      },
+    }),
+    /Invalid ticket price/
+  );
+});
+
+test('createCheckoutForRequest exposes Square checkout errors', async () => {
+  await assert.rejects(
+    createCheckoutForRequest('req_4', {}, {
+      getRequestById: async () => ({
+        id: 'req_4',
+        status: 'approved',
+        customer_name: 'Grace Hopper',
+        customer_email: 'grace@example.com',
+        event_name: 'SPACE',
+      }),
+      getLatestEventByName: async () => ({
+        id: 'event_4',
+        name: 'SPACE',
+        price: 2500,
+        square_variation_id: 'var_req_4',
+      }),
+      getSquareLocationId: async () => 'loc_4',
+      getBaseConfig: () => ({ siteUrl: 'https://lmnl.art' }),
+      squareClient: {
+        checkout: {
+          paymentLinks: {
+            create: async () => {
+              const error = new Error('INVALID_REQUEST_ERROR');
+              error.errors = [{ detail: 'Catalog object is not available at this location.' }];
+              throw error;
+            },
+          },
+        },
+      },
+    }),
+    /Catalog object is not available at this location/
+  );
+});

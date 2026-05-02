@@ -47,6 +47,25 @@ function readString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function toBigIntAmount(amount) {
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    throw new AppError('Invalid ticket price.', {
+      code: 'INVALID_EVENT_PRICE',
+      status: 500,
+      expose: true,
+    });
+  }
+
+  return BigInt(Math.round(numeric));
+}
+
+function extractSquareErrorMessage(error, fallbackMessage) {
+  const detail = error?.errors?.[0]?.detail || error?.body?.errors?.[0]?.detail;
+  const message = detail || error?.message;
+  return typeof message === 'string' && message.trim() ? message.trim() : fallbackMessage;
+}
+
 function normalizeBuyer(payload = {}) {
   return {
     fullName: readString(payload.fullName),
@@ -174,44 +193,55 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
   }
 
   const { siteUrl } = (deps.getBaseConfig || getBaseConfig)();
-  const response = await squareClient.checkout.paymentLinks.create({
-    idempotencyKey: crypto.randomUUID(),
-    order: {
-      locationId,
-      referenceId: String(request.id),
-      metadata: {
-        requestId: String(request.id),
-        eventId: String(event.id),
-      },
-      lineItems: event.square_variation_id
-        ? [{
-          quantity: '1',
-          catalogObjectId: event.square_variation_id,
-        }]
-        : [{
-          quantity: '1',
-          name: `${event.name} - Access Ticket`,
-          basePriceMoney: {
-            amount: BigInt(Math.round(Number(event.price || 0))),
-            currency: 'USD',
-          },
-        }],
-      pricingOptions: {
-        autoApplyDiscounts: true,
-      },
-      fulfillments: [
-        {
-          type: 'DIGITAL',
+  let response;
+
+  try {
+    response = await squareClient.checkout.paymentLinks.create({
+      idempotencyKey: crypto.randomUUID(),
+      order: {
+        locationId,
+        referenceId: String(request.id),
+        metadata: {
+          requestId: String(request.id),
+          eventId: String(event.id),
         },
-      ],
-    },
-    checkoutOptions: {
-      redirectUrl: `${siteUrl}/success?requestId=${request.id}`,
-      enableCoupon: true,
-    },
-    prePopulatedData: buildPrePopulatedData(buyer),
-    paymentNote: `LMNL ticket checkout for ${event.name}`,
-  });
+        lineItems: event.square_variation_id
+          ? [{
+            quantity: '1',
+            catalogObjectId: event.square_variation_id,
+          }]
+          : [{
+            quantity: '1',
+            name: `${event.name} - Access Ticket`,
+            basePriceMoney: {
+              amount: toBigIntAmount(event.price || 0),
+              currency: 'USD',
+            },
+          }],
+        pricingOptions: {
+          autoApplyDiscounts: true,
+        },
+        fulfillments: [
+          {
+            type: 'DIGITAL',
+          },
+        ],
+      },
+      checkoutOptions: {
+        redirectUrl: `${siteUrl}/success?requestId=${request.id}`,
+        enableCoupon: true,
+      },
+      prePopulatedData: buildPrePopulatedData(buyer),
+      paymentNote: `LMNL ticket checkout for ${event.name}`,
+    });
+  } catch (error) {
+    throw new AppError(extractSquareErrorMessage(error, 'Square could not create a checkout link.'), {
+      code: 'SQUARE_CHECKOUT_FAILED',
+      status: 502,
+      details: error,
+      expose: true,
+    });
+  }
 
   const paymentLink = response.paymentLink || response.result?.paymentLink;
   if (!paymentLink?.url) {
