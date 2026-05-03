@@ -74,7 +74,7 @@ export default function Community() {
     credits.forEach(c => {
       const name = c.name?.trim();
       if (!name) return;
-      
+
       if (c.role === 'performer') {
         if (!pMap[name]) {
           pMap[name] = { name, events: new Set(), links: new Set() };
@@ -140,65 +140,65 @@ export default function Community() {
   return (
     <ContentPageShell title="COMMUNITY" color="#ff5bb8">
       <div className="community-layout">
-          <div className="community-split-layout">
-            <div className="community-stats-stack">
-              <CommunityStatCard
-                label="past events"
-                value={loading ? '---' : String(pastEvents.length).padStart(3, '0')}
-                color="#ff5bb8"
-              />
-              <CommunityStatCard
-                label="creators count"
-                value={loading ? '---' : String(totalUnique).padStart(3, '0')}
-                color="#ff5bb8"
-              />
-              <CommunityStatCard
-                label="community reach"
-                value={loading ? '---' : `${String(totalCapacity).padStart(3, '0')}+`}
-                color="#ff5bb8"
-              />
-            </div>
-
-            <div className="community-content-column">
-              <div className="community-test-copy">
-                <p className="community-copy-primary">
-                  LMNL brings together artists, performers, and curators to challenge the boundaries of modern artistic installations. Each event marks another integration point within our decentralized creative network.
-                </p>
-                <p className="community-copy-secondary">
-                  Scroll through the expanding index below to explore the network nodes mapping the LMNL collective ecosystem.
-                </p>
-              </div>
-
-              {!loading && marqueeList1.length > 0 && (
-                <div className="marquees-wrapper">
-                  <CommunityMarqueeRow items={marqueeList1} rowClassName="marquee-row-1" rowKey="m1" />
-                  <CommunityMarqueeRow items={marqueeList2} rowClassName="marquee-row-2" rowKey="m2" />
-                  <CommunityMarqueeRow items={marqueeList3} rowClassName="marquee-row-3" rowKey="m3" />
-                </div>
-              )}
-
-              <div className="community-cta-row theme-action-row">
-                <a
-                  href="https://discord.gg/hYYfTtyJzK"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="community-cta-button community-cta-button-primary theme-button"
-                >
-                  Join the Discord
-                </a>
-                <Link
-                  to="share"
-                  className="community-cta-button community-cta-button-secondary theme-button"
-                >
-                  Share your work
-                </Link>
-              </div>
-            </div>
-
+        <div className="community-split-layout">
+          <div className="community-stats-stack">
+            <CommunityStatCard
+              label="past events"
+              value={loading ? '---' : String(pastEvents.length).padStart(3, '0')}
+              color="#ff5bb8"
+            />
+            <CommunityStatCard
+              label="creators count"
+              value={loading ? '---' : String(totalUnique).padStart(3, '0')}
+              color="#ff5bb8"
+            />
+            <CommunityStatCard
+              label="community reach"
+              value={loading ? '---' : `${String(totalCapacity).padStart(3, '0')}+`}
+              color="#ff5bb8"
+            />
           </div>
 
-          {loading && <p className="loading-text" style={{ color: '#ff5bb8' }}>RETRIEVING DIRECTORY...</p>}
-          {!loading && marqueeList1.length === 0 && <p className="empty-msg">No community directory loaded yet.</p>}
+          <div className="community-content-column">
+            <div className="community-test-copy">
+              <p className="community-copy-primary">
+                LMNL brings together artists, performers, and curators to challenge the boundaries of modern artistic installations. Each event marks another integration point within our decentralized creative network.
+              </p>
+              <p className="community-copy-secondary">
+                Scroll through the expanding index below to explore the network nodes mapping the LMNL collective ecosystem.
+              </p>
+            </div>
+
+            {!loading && marqueeList1.length > 0 && (
+              <div className="marquees-wrapper">
+                <CommunityMarqueeRow items={marqueeList1} rowClassName="marquee-row-1" rowKey="m1" />
+                <CommunityMarqueeRow items={marqueeList2} rowClassName="marquee-row-2" rowKey="m2" />
+                <CommunityMarqueeRow items={marqueeList3} rowClassName="marquee-row-3" rowKey="m3" />
+              </div>
+            )}
+
+            <div className="community-cta-row theme-action-row">
+              <a
+                href="https://discord.gg/hYYfTtyJzK"
+                target="_blank"
+                rel="noreferrer"
+                className="community-cta-button community-cta-button-primary theme-button"
+              >
+                Join the Discord
+              </a>
+              <Link
+                to="share"
+                className="community-cta-button community-cta-button-secondary theme-button"
+              >
+                Enter the Network
+              </Link>
+            </div>
+          </div>
+
+        </div>
+
+        {loading && <p className="loading-text" style={{ color: '#ff5bb8' }}>RETRIEVING DIRECTORY...</p>}
+        {!loading && marqueeList1.length === 0 && <p className="empty-msg">No community directory loaded yet.</p>}
       </div>
     </ContentPageShell>
   );
