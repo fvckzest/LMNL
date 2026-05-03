@@ -19,6 +19,7 @@ const Shop = lazy(() => import('./pages/Shop'));
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPostView = lazy(() => import('./pages/BlogPostView'));
 const EmailLab = lazy(() => import('./pages/EmailLab'));
+const About = lazy(() => import('./pages/About'));
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -81,11 +82,7 @@ function App() {
           <Route path="/success" element={<Success />} />
           <Route path="/events" element={<Events />} />
           <Route path="/space" element={<Space />} />
-          <Route path="/about" element={
-            <GenericPage title="ABOUT" color="#ff9300">
-              <img src="/rules.png" alt="Rules" className="about-rules-img" decoding="async" />
-            </GenericPage>
-          } />
+          <Route path="/about" element={<About />} />
 
           {/* SUBDOMAIN SPECIFIC LOGIC */}
           {showAdmin ? (
