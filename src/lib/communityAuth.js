@@ -42,3 +42,9 @@ export function buildCommunityAuthRedirectTo(origin, nextPath) {
 
   return `${safeOrigin}/auth/callback?next=${encodeURIComponent(safeNextPath)}`;
 }
+
+export function buildCommunityAuthPreflightUrl(authUrl) {
+  const parsedUrl = new URL(String(authUrl || '').trim());
+  parsedUrl.searchParams.set('skip_http_redirect', 'true');
+  return parsedUrl.toString();
+}

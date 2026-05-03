@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
-import { sanitizeCommunityNextPath, buildCommunityAuthRedirectTo } from '../lib/communityAuth';
+import {
+  sanitizeCommunityNextPath,
+  buildCommunityAuthPreflightUrl,
+  buildCommunityAuthRedirectTo,
+} from '../lib/communityAuth';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 import './AppLogin.css';
 
@@ -10,6 +14,32 @@ const PROVIDERS = [
   { id: 'discord', label: 'Continue with Discord' },
   { id: 'apple', label: 'Continue with Apple' },
 ];
+
+function readProviderLoginError(provider, error) {
+  const message = String(error?.message || '').trim();
+
+  if (message.toLowerCase().includes('provider is not enabled')) {
+    return `${provider.label} is not configured in Supabase yet.`;
+  }
+
+  return message || `Unable to start ${provider.label.toLowerCase()}.`;
+}
+
+async function resolveProviderRedirectUrl(authUrl) {
+  const response = await fetch(buildCommunityAuthPreflightUrl(authUrl), {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const failureMessage = payload?.msg || payload?.error_description || payload?.error || '';
+    throw new Error(failureMessage || 'Unable to start sign-in.');
+  }
+
+  return payload?.url || authUrl;
+}
 
 export default function AppLogin({ session }) {
   const location = useLocation();
@@ -25,6 +55,9 @@ export default function AppLogin({ session }) {
   }
 
   async function handleProviderLogin(provider) {
+    const providerDetails = PROVIDERS.find((entry) => entry.id === provider)
+      || { id: provider, label: 'This provider' };
+
     if (!hasSupabaseCredentials) {
       setError('Community auth is not configured in this environment yet.');
       return;
@@ -34,17 +67,33 @@ export default function AppLogin({ session }) {
     setError('');
 
     const redirectTo = buildCommunityAuthRedirectTo(window.location.origin, nextPath);
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
+    const { data, error: signInError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo,
+        skipBrowserRedirect: true,
       },
     });
 
     if (signInError) {
-      setError(signInError.message || 'Unable to start sign-in.');
+      setError(readProviderLoginError(providerDetails, signInError));
       setActiveProvider('');
+      return;
     }
+
+    if (data?.url) {
+      try {
+        const redirectUrl = await resolveProviderRedirectUrl(data.url);
+        window.location.assign(redirectUrl);
+      } catch (redirectError) {
+        setError(readProviderLoginError(providerDetails, redirectError));
+        setActiveProvider('');
+      }
+      return;
+    }
+
+    setError('Unable to start sign-in.');
+    setActiveProvider('');
   }
 
   return (

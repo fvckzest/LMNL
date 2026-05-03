@@ -135,7 +135,8 @@ The database-side admin authorization hardening has now been applied in Supabase
 
 The current transitional pieces are now:
 
-- provider configuration for Google / Discord / Apple still needs final Supabase dashboard verification, but the frontend bootstrap now handles provider metadata more defensively across those providers
+- provider configuration for Google / Discord / Apple still needs final Supabase dashboard verification, and the current project ref returns `Unsupported provider: provider is not enabled` for all three provider authorize endpoints
+- the community login surface now preflights provider authorize URLs so disabled providers fail in-app with a readable message instead of bouncing users to a raw Supabase JSON error page
 - the Phase 1 `profiles` / `user_identities` SQL has been applied in Supabase
 - community auth now bootstraps a LMNL-owned `profiles` row plus `user_identities` record after sign-in
 - onboarding routing now exists at `/app/onboarding` for incomplete profiles, and preserved `/app` destinations now survive callback -> onboarding -> app redirects
@@ -144,22 +145,21 @@ The current transitional pieces are now:
 - the env-based admin allowlist fallback should still be treated as temporary until the project fully relies on `admin_users`
 - provider metadata coverage now has direct tests for Google / Discord / Apple-shaped identity payloads in:
   - [tests/community-auth.test.js](../tests/community-auth.test.js)
+- `createUserIdentityPayload()` now prefers provider-owned identity fields like `provider_id` / `sub` over Supabase's internal identity row id when persisting `user_identities.provider_user_id`
 
 ### Current GitHub checkpoint
 
 The current Phase 1 security-first implementation work has been saved off `main` on:
 
 - branch: `codex-phase1-admin-hardening`
-- latest committed checkpoint: `aefc5f6`
+- latest committed checkpoint: `c6abfbe`
 - PR entry point:
   - https://github.com/fvckzest/LMNL/pull/new/codex-phase1-admin-hardening
 
-There is also newer uncommitted working-tree hardening on top of `aefc5f6` covering:
+There is also newer uncommitted working-tree hardening on top of `c6abfbe` covering:
 
-- callback/bootstrap routing safety
-- preserved post-auth destination routing through onboarding
-- provider metadata normalization for Google / Discord / Apple edge cases
-- clearer onboarding error messaging for slug collisions
+- provider-start error handling for disabled OAuth providers on `/app/login`
+- `provider_user_id` normalization so `user_identities` does not accidentally persist Supabase identity row ids as provider account ids
 
 Future Codex instances working on this rollout should prefer continuing from that branch instead of rebuilding this work from the `main` branch state.
 

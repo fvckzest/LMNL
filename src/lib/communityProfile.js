@@ -121,19 +121,19 @@ export function createUserIdentityPayload(session) {
   const user = session?.user;
   const identity = readCommunityIdentity(session) || {};
   const identityData = readIdentityData(identity);
+  const providerUserId = normalizeString(
+    identity.provider_id
+    || identityData.sub
+    || identityData.id
+    || identityData.user_id
+    || identity.identity_id
+    || identity.id,
+  ) || null;
 
   return {
     user_id: user?.id,
     provider: readCommunityProvider(session),
-    provider_user_id: normalizeString(
-      identity.provider_id
-      || identity.id
-      || identity.user_id
-      || identity.identity_id
-      || identityData.sub
-      || identityData.id
-      || identityData.user_id,
-    ) || null,
+    provider_user_id: providerUserId,
     provider_email: normalizeString(identityData.email || user?.email) || null,
   };
 }

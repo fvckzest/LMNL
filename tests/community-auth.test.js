@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildCommunityAuthPreflightUrl,
   buildCommunityAuthRedirectTo,
   buildCommunityOnboardingPath,
   readCommunityNextPath,
@@ -35,6 +36,13 @@ test('buildCommunityAuthRedirectTo builds a callback URL with a safe next path',
   assert.equal(
     buildCommunityAuthRedirectTo('https://lmnl.art', '/login'),
     'https://lmnl.art/auth/callback?next=%2Fapp',
+  );
+});
+
+test('buildCommunityAuthPreflightUrl forces JSON auth responses for provider checks', () => {
+  assert.equal(
+    buildCommunityAuthPreflightUrl('https://example.supabase.co/auth/v1/authorize?provider=google'),
+    'https://example.supabase.co/auth/v1/authorize?provider=google&skip_http_redirect=true',
   );
 });
 
@@ -132,7 +140,8 @@ test('createUserIdentityPayload extracts normalized provider identity details', 
       },
       identities: [
         {
-          id: 'provider-abc',
+          provider_id: 'provider-abc',
+          id: 'identity-row-1',
           identity_data: {
             email: 'hello@lmnl.art',
           },
@@ -147,6 +156,28 @@ test('createUserIdentityPayload extracts normalized provider identity details', 
     provider_user_id: 'provider-abc',
     provider_email: 'hello@lmnl.art',
   });
+});
+
+test('createUserIdentityPayload prefers provider metadata over the Supabase identity row id', () => {
+  const payload = createUserIdentityPayload({
+    user: {
+      id: 'user-456',
+      app_metadata: {
+        provider: 'google',
+      },
+      identities: [
+        {
+          provider: 'google',
+          id: 'identity-row-2',
+          identity_data: {
+            sub: 'google-subject-42',
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(payload.provider_user_id, 'google-subject-42');
 });
 
 test('provider selection prefers the identity matching the active provider hint', () => {
