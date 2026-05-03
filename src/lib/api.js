@@ -49,3 +49,7 @@ export async function apiPost(path, body, options = {}) {
 
   return payload.data;
 }
+
+export function getTurnstileSiteKey() {
+  return import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+}

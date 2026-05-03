@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError } from './_lib/http.js';
+import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError, verifyTurnstileToken } from './_lib/http.js';
 import { requireAdminUser } from './_lib/auth.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
 import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
@@ -380,6 +380,11 @@ async function handleServiceInquiries(req, res) {
   const supabase = getAdminSupabase();
 
   if (body.action === 'create') {
+    await verifyTurnstileToken(
+      requireValue(body.turnstileToken, 'turnstileToken is required.'),
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
+    );
+
     const { data, error } = await supabase
       .from('service_inquiries')
       .insert([{
@@ -432,6 +437,11 @@ async function handleArtistInterest(req, res) {
   const supabase = getAdminSupabase();
 
   if (body.action === 'create') {
+    await verifyTurnstileToken(
+      requireValue(body.turnstileToken, 'turnstileToken is required.'),
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
+    );
+
     const { data, error } = await supabase
       .from('artist_interest')
       .insert([{

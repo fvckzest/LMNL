@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
-import { apiPost } from '../lib/api';
+import Turnstile from '../components/Turnstile';
+import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import './Services.css';
 
 
@@ -62,6 +63,8 @@ export default function Services() {
   const [inquirySent, setInquirySent] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, error
   const [formData, setFormData] = useState({ name: '', email: '', notes: '' });
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
 
   const toggleService = (serviceId) => {
@@ -108,13 +111,18 @@ export default function Services() {
         email: formData.email,
         notes: formData.notes,
         selectedServices: selectedServices,
+        turnstileToken,
       });
       setInquirySent(true);
       setRequestStatus('idle');
       setFormData({ name: '', email: '', notes: '' });
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     } catch (error) {
       console.error('Error submitting inquiry:', error);
       setRequestStatus('error');
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     }
   };
 
@@ -287,6 +295,12 @@ export default function Services() {
                   className="inquiry-textarea"
                   id="inquiry-notes"
                 />
+
+                <Turnstile
+                  siteKey={getTurnstileSiteKey()}
+                  onTokenChange={setTurnstileToken}
+                  resetSignal={turnstileResetSignal}
+                />
                 
                 {requestStatus === 'error' && (
                   <p className="error-message" style={{ color: '#ff0055', margin: '10px 0', fontFamily: 'monospace' }}>
@@ -296,7 +310,7 @@ export default function Services() {
                 <button 
                   type="submit" 
                   className="inquiry-submit-btn"
-                  disabled={requestStatus === 'loading'}
+                  disabled={requestStatus === 'loading' || !turnstileToken}
                 >
                   {requestStatus === 'loading' ? 'TRANSMITTING...' : (selectedServices.length > 0 ? 'SUBMIT BUNDLE INQUIRY' : 'SUBMIT INQUIRY')}
                 </button>

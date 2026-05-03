@@ -431,49 +431,49 @@ export default function Admin() {
           <button 
             className={`admin-tab ${activeTab === 'all' ? 'active' : ''}`} 
             onClick={() => setActiveTab('all')} 
-            style={{ borderBottomColor: activeTab === 'all' ? tabColors.all : 'transparent' }}
+            style={{ borderBottomColor: tabColors.all, '--tab-accent': tabColors.all }}
           >
             ALL
           </button>
           <button 
             className={`admin-tab ${activeTab === 'events' ? 'active' : ''}`} 
             onClick={() => setActiveTab('events')} 
-            style={{ borderBottomColor: activeTab === 'events' ? tabColors.events : 'transparent' }}
+            style={{ borderBottomColor: tabColors.events, '--tab-accent': tabColors.events }}
           >
             EVENTS
           </button>
           <button 
             className={`admin-tab ${activeTab === 'inquiries' ? 'active' : ''}`} 
             onClick={() => setActiveTab('inquiries')} 
-            style={{ borderBottomColor: activeTab === 'inquiries' ? tabColors.inquiries : 'transparent' }}
+            style={{ borderBottomColor: tabColors.inquiries, '--tab-accent': tabColors.inquiries }}
           >
             INQUIRIES
           </button>
           <button 
             className={`admin-tab ${activeTab === 'shop' ? 'active' : ''}`} 
             onClick={() => setActiveTab('shop')} 
-            style={{ borderBottomColor: activeTab === 'shop' ? tabColors.shop : 'transparent' }}
+            style={{ borderBottomColor: tabColors.shop, '--tab-accent': tabColors.shop }}
           >
             SHOP
           </button>
           <button 
             className={`admin-tab ${activeTab === 'community' ? 'active' : ''}`} 
             onClick={() => setActiveTab('community')} 
-            style={{ borderBottomColor: activeTab === 'community' ? tabColors.community : 'transparent' }}
+            style={{ borderBottomColor: tabColors.community, '--tab-accent': tabColors.community }}
           >
             COMMUNITY
           </button>
           <button 
             className={`admin-tab ${activeTab === 'contact' ? 'active' : ''}`} 
             onClick={() => setActiveTab('contact')} 
-            style={{ borderBottomColor: activeTab === 'contact' ? tabColors.contact : 'transparent' }}
+            style={{ borderBottomColor: tabColors.contact, '--tab-accent': tabColors.contact }}
           >
             CONTACT
           </button>
           <button 
             className={`admin-tab ${activeTab === 'blog' ? 'active' : ''}`} 
             onClick={() => setActiveTab('blog')} 
-            style={{ borderBottomColor: activeTab === 'blog' ? tabColors.blog : 'transparent' }}
+            style={{ borderBottomColor: tabColors.blog, '--tab-accent': tabColors.blog }}
           >
             BLOG
           </button>

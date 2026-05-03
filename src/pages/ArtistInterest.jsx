@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import Turnstile from '../components/Turnstile';
 import { usePageColor } from '../hooks/usePageColor';
-import { apiPost } from '../lib/api';
+import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import './ArtistInterest.css';
 
 const initialForm = {
@@ -21,6 +22,8 @@ export default function ArtistInterest() {
   const [requestStatus, setRequestStatus] = useState('idle');
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
   usePageColor('#ff5bb8');
 
@@ -40,11 +43,14 @@ export default function ArtistInterest() {
         format: formData.format,
         links: formData.links,
         notes: formData.notes,
+        turnstileToken,
       });
 
       setSubmitted(true);
       setRequestStatus('idle');
       setFormData(initialForm);
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     } catch (error) {
       console.error('Error submitting artist interest:', error);
       if (error.message.includes('not set up yet')) {
@@ -53,6 +59,8 @@ export default function ArtistInterest() {
         setErrorMessage('Something went wrong while sending this through. Please try again.');
       }
       setRequestStatus('error');
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     }
   }
 
@@ -192,11 +200,17 @@ export default function ArtistInterest() {
                 <p className="artist-interest-error">{errorMessage}</p>
               )}
 
+              <Turnstile
+                siteKey={getTurnstileSiteKey()}
+                onTokenChange={setTurnstileToken}
+                resetSignal={turnstileResetSignal}
+              />
+
               <div className="artist-interest-actions theme-action-row">
                 <button
                   type="submit"
                   className="artist-interest-button artist-interest-button-primary theme-button"
-                  disabled={requestStatus === 'loading'}
+                  disabled={requestStatus === 'loading' || !turnstileToken}
                 >
                   {requestStatus === 'loading' ? 'Sending...' : 'Share your work'}
                 </button>

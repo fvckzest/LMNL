@@ -74,6 +74,35 @@ export function requireValue(value, message, details) {
   return value;
 }
 
+export async function verifyTurnstileToken(token, remoteip) {
+  const { getTurnstileConfig } = await import('./env.js');
+  const { secretKey } = getTurnstileConfig();
+
+  const formData = new URLSearchParams();
+  formData.set('secret', secretKey);
+  formData.set('response', token);
+  if (remoteip) {
+    formData.set('remoteip', remoteip);
+  }
+
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const payload = await response.json();
+  if (!payload?.success) {
+    throw new AppError('Security check failed. Please try again.', {
+      code: 'TURNSTILE_FAILED',
+      status: 400,
+      details: payload,
+      expose: true,
+    });
+  }
+
+  return payload;
+}
+
 export function extractPublicMessage(result, fallback = 'Request failed') {
   if (!result) return fallback;
   if (typeof result === 'string') return result;

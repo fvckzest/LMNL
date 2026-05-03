@@ -96,6 +96,13 @@ export function getResendConfig() {
   };
 }
 
+export function getTurnstileConfig() {
+  requireEnv(['TURNSTILE_SECRET_KEY'], 'turnstile');
+  return {
+    secretKey: readEnv('TURNSTILE_SECRET_KEY'),
+  };
+}
+
 export function getApplePassConfig() {
   const certificatePath = readEnv('APPLE_PASS_CERTIFICATE_PATH');
   const resolvedCertificatePath = certificatePath

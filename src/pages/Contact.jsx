@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
 import SocialLinks from '../components/SocialLinks';
-import { apiPost } from '../lib/api';
+import Turnstile from '../components/Turnstile';
+import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import './Contact.css';
 
 export default function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,13 +24,18 @@ export default function Contact() {
         email: formData.email,
         notes: `SUBJECT: ${formData.subject}\n\n${formData.message}`,
         selectedServices: ['general'],
+        turnstileToken,
       });
       setStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     } catch (error) {
       console.error('Error submitting contact form:', error);
       setStatus('error');
       setErrorMessage(error.message || 'Transmission failed. Please try again.');
+      setTurnstileToken('');
+      setTurnstileResetSignal((value) => value + 1);
     }
   };
 
@@ -127,6 +135,12 @@ export default function Contact() {
                 />
               </div>
 
+              <Turnstile
+                siteKey={getTurnstileSiteKey()}
+                onTokenChange={setTurnstileToken}
+                resetSignal={turnstileResetSignal}
+              />
+
               {status === 'error' && (
                 <p style={{ color: '#ff0055', fontSize: '12px', margin: '0', fontFamily: 'var(--lmnl-font-mono)' }}>
                   {errorMessage.toUpperCase()}
@@ -136,7 +150,7 @@ export default function Contact() {
               <button
                 type="submit"
                 className="theme-button"
-                disabled={status === 'loading'}
+                disabled={status === 'loading' || !turnstileToken}
                 style={{ '--theme-button-bg': 'var(--page-color)', '--theme-button-color': '#000', border: 'none', fontWeight: '700' }}
               >
                 {status === 'loading' ? 'TRANSMITTING...' : 'SEND MESSAGE'}

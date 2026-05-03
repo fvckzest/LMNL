@@ -29,7 +29,7 @@ const ecosystemCards = [
 const operatingLayers = [
   {
     title: 'Public platform',
-    items: ['Home', 'About', 'Events', 'Community', 'Contact'],
+    items: ['Events', 'Community', 'Website', 'Social Channels'],
   },
   {
     title: 'Experiences',
@@ -94,7 +94,7 @@ export default function About() {
       <section className="about-section about-story">
         <div className="theme-section-heading">
           <p className="theme-section-kicker">What We Are</p>
-          <h2 className="theme-section-title about-section-title">A studio, a network, and a connective layer.</h2>
+          <h2 className="theme-section-title">A studio, a network, and a connective layer.</h2>
         </div>
 
         <div className="about-story-grid">
@@ -135,7 +135,7 @@ export default function About() {
       <section className="about-section">
         <div className="theme-section-heading">
           <p className="theme-section-kicker">How It Works</p>
-          <h2 className="theme-section-title about-section-title">LMNL operates as an ecosystem.</h2>
+          <h2 className="theme-section-title">LMNL operates as an ecosystem.</h2>
           <p className="theme-section-copy">
             The website itself reflects that structure: public-facing storytelling, event and
             ticket flows, community participation, services, and storefront moments all living
@@ -156,7 +156,7 @@ export default function About() {
       <section className="about-section">
         <div className="theme-section-heading">
           <p className="theme-section-kicker">Operating Layers</p>
-          <h2 className="theme-section-title about-section-title">Each layer has a job.</h2>
+          <h2 className="theme-section-title">Each layer has a job.</h2>
         </div>
 
         <div className="about-layers-grid">
@@ -176,7 +176,7 @@ export default function About() {
       <section className="about-section about-cta-section">
         <div className="theme-section-heading">
           <p className="theme-section-kicker">Plug In</p>
-          <h2 className="theme-section-title about-section-title">Choose your entry point.</h2>
+          <h2 className="theme-section-title">Choose your entry point.</h2>
         </div>
 
         <div className="about-pathways">

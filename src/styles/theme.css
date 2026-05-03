@@ -270,6 +270,22 @@
   color: var(--theme-data-value-color, var(--lmnl-color-text));
 }
 
+.turnstile-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lmnl-space-2);
+  align-items: flex-start;
+}
+
+.turnstile-error {
+  margin: 0;
+  color: #ff0055;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--lmnl-font-mono);
+}
+
 @media (max-width: 640px) {
   .theme-data-row {
     align-items: flex-start;
