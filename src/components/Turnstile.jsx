@@ -34,7 +34,15 @@ function loadTurnstileScript() {
   return turnstileScriptPromise;
 }
 
-export default function Turnstile({ siteKey, onTokenChange, resetSignal = 0, theme = 'light' }) {
+export default function Turnstile({
+  siteKey,
+  onTokenChange,
+  resetSignal = 0,
+  theme = 'light',
+  size = 'invisible',
+  appearance = 'interaction-only',
+  execution = 'render',
+}) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const onTokenChangeRef = useRef(onTokenChange);
@@ -66,6 +74,9 @@ export default function Turnstile({ siteKey, onTokenChange, resetSignal = 0, the
         widgetIdRef.current = turnstile.render(containerRef.current, {
           sitekey: siteKey,
           theme,
+          size,
+          appearance,
+          execution,
           callback(token) {
             onTokenChangeRef.current(token);
             setError('');
