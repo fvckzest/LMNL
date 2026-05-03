@@ -105,7 +105,7 @@ export default function Turnstile({
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, theme, resetSignal]);
+  }, [appearance, execution, resetSignal, siteKey, size, theme]);
 
   if (!siteKey) {
     return null;

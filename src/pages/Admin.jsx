@@ -51,7 +51,7 @@ export default function Admin() {
     try {
       const saved = localStorage.getItem('lmnl_pinned_sections');
       return saved ? JSON.parse(saved) : [];
-    } catch (e) {
+    } catch {
       return [];
     }
   });

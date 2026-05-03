@@ -10,7 +10,6 @@ function escapeHtml(value) {
 function renderEmailShell({
   accentColor = '#004ffa',
   logoUrl = 'https://lmnl.art/lmnl-logo-black.png',
-  eyebrow,
   title,
   intro,
   details = [],
