@@ -8,7 +8,7 @@ export function sanitizeCommunityNextPath(nextPath) {
   }
 
   const value = nextPath.trim();
-  if (!value.startsWith('/app')) {
+  if (!value.startsWith('/')) {
     return DEFAULT_COMMUNITY_PATH;
   }
 
@@ -16,7 +16,26 @@ export function sanitizeCommunityNextPath(nextPath) {
     return DEFAULT_COMMUNITY_PATH;
   }
 
-  return value || DEFAULT_COMMUNITY_PATH;
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(value, 'https://lmnl.local');
+  } catch {
+    return DEFAULT_COMMUNITY_PATH;
+  }
+
+  const pathname = parsedUrl.pathname || DEFAULT_COMMUNITY_PATH;
+  const isCommunityPath = pathname === DEFAULT_COMMUNITY_PATH || pathname.startsWith(`${DEFAULT_COMMUNITY_PATH}/`);
+
+  if (!isCommunityPath) {
+    return DEFAULT_COMMUNITY_PATH;
+  }
+
+  if (pathname === COMMUNITY_LOGIN_PATH || pathname.startsWith(`${COMMUNITY_LOGIN_PATH}/`)) {
+    return DEFAULT_COMMUNITY_PATH;
+  }
+
+  return `${pathname}${parsedUrl.search}${parsedUrl.hash}` || DEFAULT_COMMUNITY_PATH;
 }
 
 export function readCommunityNextPath(search) {

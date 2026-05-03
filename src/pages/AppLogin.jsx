@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import {
   sanitizeCommunityNextPath,
   buildCommunityAuthPreflightUrl,
   buildCommunityAuthRedirectTo,
 } from '../lib/communityAuth';
+import { isEligibleCommunitySession } from '../lib/communityProfile';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 import './AppLogin.css';
 
@@ -23,6 +24,11 @@ function readProviderLoginError(provider, error) {
   }
 
   return message || `Unable to start ${provider.label.toLowerCase()}.`;
+}
+
+function isBrowserPreflightFailure(error) {
+  const message = String(error?.message || '').trim().toLowerCase();
+  return message === 'failed to fetch' || message.includes('networkerror');
 }
 
 async function resolveProviderRedirectUrl(authUrl) {
@@ -43,15 +49,22 @@ async function resolveProviderRedirectUrl(authUrl) {
 
 export default function AppLogin({ session }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeProvider, setActiveProvider] = useState('');
   const [error, setError] = useState('');
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return sanitizeCommunityNextPath(params.get('next'));
   }, [location.search]);
+  const hasEligibleSession = isEligibleCommunitySession(session);
 
-  if (session) {
+  if (hasEligibleSession) {
     return <Navigate to={nextPath} replace />;
+  }
+
+  async function handleResetSession() {
+    await supabase.auth.signOut();
+    setError('');
   }
 
   async function handleProviderLogin(provider) {
@@ -86,6 +99,11 @@ export default function AppLogin({ session }) {
         const redirectUrl = await resolveProviderRedirectUrl(data.url);
         window.location.assign(redirectUrl);
       } catch (redirectError) {
+        if (isBrowserPreflightFailure(redirectError)) {
+          window.location.assign(data.url);
+          return;
+        }
+
         setError(readProviderLoginError(providerDetails, redirectError));
         setActiveProvider('');
       }
@@ -108,20 +126,45 @@ export default function AppLogin({ session }) {
           </p>
 
           <div className="app-login-actions">
-            {PROVIDERS.map((provider) => (
-              <button
-                key={provider.id}
-                type="button"
-                className="app-login-button theme-button"
-                disabled={Boolean(activeProvider)}
-                onClick={() => handleProviderLogin(provider.id)}
-              >
-                {activeProvider === provider.id ? 'CONNECTING...' : provider.label.toUpperCase()}
-              </button>
-            ))}
+            {session ? (
+              <>
+                <button
+                  type="button"
+                  className="app-login-button theme-button"
+                  onClick={handleResetSession}
+                >
+                  SIGN OUT AND USE COMMUNITY SIGN-IN
+                </button>
+                <button
+                  type="button"
+                  className="app-login-button theme-button"
+                  onClick={() => navigate('/', { replace: true })}
+                >
+                  BACK TO LMNL HOME
+                </button>
+              </>
+            ) : (
+              PROVIDERS.map((provider) => (
+                <button
+                  key={provider.id}
+                  type="button"
+                  className="app-login-button theme-button"
+                  disabled={Boolean(activeProvider)}
+                  onClick={() => handleProviderLogin(provider.id)}
+                >
+                  {activeProvider === provider.id ? 'CONNECTING...' : provider.label.toUpperCase()}
+                </button>
+              ))
+            )}
           </div>
 
-          {error ? <p className="app-login-error">{error.toUpperCase()}</p> : null}
+          {session ? (
+            <p className="app-login-error">
+              CURRENT SESSION IS NOT A COMMUNITY OAUTH SESSION. SIGN OUT AND RE-ENTER THROUGH A
+              COMMUNITY PROVIDER.
+            </p>
+          ) : null}
+          {!session && error ? <p className="app-login-error">{error.toUpperCase()}</p> : null}
 
           <div className="app-login-note">
             <p>Current scope: separate auth shell only.</p>

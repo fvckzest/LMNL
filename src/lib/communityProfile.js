@@ -2,6 +2,7 @@ import { buildCommunityOnboardingPath } from './communityAuth.js';
 
 export const COMMUNITY_APP_PATH = '/app';
 export const COMMUNITY_ONBOARDING_PATH = '/app/onboarding';
+export const COMMUNITY_AUTH_PROVIDERS = ['google', 'discord', 'apple'];
 
 function readUserMetadata(user) {
   return user?.user_metadata && typeof user.user_metadata === 'object'
@@ -50,6 +51,37 @@ export function readCommunityProvider(session) {
   return normalizeProvider(
     session?.user?.app_metadata?.provider || readCommunityIdentity(session)?.provider || 'unknown',
   ) || 'unknown';
+}
+
+export function isSupportedCommunityProvider(provider) {
+  return COMMUNITY_AUTH_PROVIDERS.includes(normalizeProvider(provider));
+}
+
+function hasCommunityProviderSessionSignal(session, provider) {
+  const providers = Array.isArray(session?.user?.app_metadata?.providers)
+    ? session.user.app_metadata.providers.map(normalizeProvider)
+    : [];
+
+  return providers.includes(provider) || normalizeProvider(session?.user?.app_metadata?.provider) === provider;
+}
+
+export function isEligibleCommunitySession(session) {
+  const provider = readCommunityProvider(session);
+  const identity = readCommunityIdentity(session);
+
+  if (!session?.user?.id) {
+    return false;
+  }
+
+  if (!isSupportedCommunityProvider(provider)) {
+    return false;
+  }
+
+  if (identity) {
+    return true;
+  }
+
+  return hasCommunityProviderSessionSignal(session, provider);
 }
 
 export function deriveCommunityDisplayName(user, identity = null) {
@@ -138,6 +170,13 @@ export function createUserIdentityPayload(session) {
   };
 }
 
+function isDuplicateConstraintError(error, constraintName) {
+  const message = normalizeString(error?.message).toLowerCase();
+  const code = normalizeString(error?.code);
+
+  return code === '23505' && message.includes(String(constraintName).toLowerCase());
+}
+
 export async function ensureCommunityProfile({ supabaseClient, session }) {
   const user = session?.user;
 
@@ -147,6 +186,10 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
 
   if (!user?.id) {
     throw new Error('A signed-in community user is required.');
+  }
+
+  if (!isEligibleCommunitySession(session)) {
+    throw new Error('This session is not eligible for community app access. Sign out and use community sign-in.');
   }
 
   const identity = readCommunityIdentity(session);
@@ -171,7 +214,7 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
       display_name: bootstrapDisplayName || null,
       avatar_url: bootstrapAvatarUrl || null,
       visibility: 'private',
-      onboarding_completed: Boolean(bootstrapDisplayName),
+      onboarding_completed: false,
     };
 
     const { data: insertedProfile, error: insertError } = await supabaseClient
@@ -181,10 +224,24 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
       .single();
 
     if (insertError) {
-      throw new Error(insertError.message || 'Unable to create community profile.');
-    }
+      if (isDuplicateConstraintError(insertError, 'profiles_pkey')) {
+        const { data: recoveredProfile, error: recoveredProfileError } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-    profile = insertedProfile;
+        if (recoveredProfileError) {
+          throw new Error(recoveredProfileError.message || 'Unable to recover community profile.');
+        }
+
+        profile = recoveredProfile;
+      } else {
+        throw new Error(insertError.message || 'Unable to create community profile.');
+      }
+    } else {
+      profile = insertedProfile;
+    }
   } else {
     const updates = {};
 
@@ -232,7 +289,9 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
         .insert(identityPayload);
 
       if (identityInsertError) {
-        throw new Error(identityInsertError.message || 'Unable to record user identity.');
+        if (!isDuplicateConstraintError(identityInsertError, 'user_identities_user_provider_key')) {
+          throw new Error(identityInsertError.message || 'Unable to record user identity.');
+        }
       }
     } else {
       const identityUpdates = {};

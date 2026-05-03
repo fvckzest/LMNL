@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import { buildCommunityLoginPath, readCommunityNextPath } from '../lib/communityAuth';
-import { ensureCommunityProfile, resolveCommunityDestination } from '../lib/communityProfile';
+import {
+  ensureCommunityProfile,
+  isEligibleCommunitySession,
+  resolveCommunityDestination,
+} from '../lib/communityProfile';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 import './AppLogin.css';
 
@@ -29,19 +33,21 @@ export default function AuthCallback({ session }) {
 
       const url = window.location.href;
       const hasCode = new URL(url).searchParams.has('code');
-      let currentSession = session || null;
+      let currentSession = isEligibleCommunitySession(session) ? session : null;
+      let exchangeFailureMessage = '';
 
       if (hasCode) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(url);
-        if (exchangeError) {
-          const { data: recoveredSessionData } = await supabase.auth.getSession();
-          currentSession = recoveredSessionData?.session || currentSession;
+        const { data: postExchangeSessionData } = await supabase.auth.getSession();
+        currentSession = postExchangeSessionData?.session || null;
+        exchangeFailureMessage = exchangeError?.message || '';
 
-          if (!currentSession) {
+        if (exchangeError) {
+          if (!isEligibleCommunitySession(currentSession)) {
             if (!cancelled) {
               setHasRecoveredSession(false);
               setStatus('error');
-              setError(exchangeError.message || 'Unable to complete sign-in.');
+              setError(exchangeFailureMessage || 'Unable to complete sign-in.');
             }
             return;
           }
@@ -50,11 +56,11 @@ export default function AuthCallback({ session }) {
 
       if (!currentSession) {
         const { data } = await supabase.auth.getSession();
-        currentSession = data?.session || null;
+        currentSession = isEligibleCommunitySession(data?.session) ? data.session : null;
       }
 
       if (!cancelled) {
-        setHasRecoveredSession(Boolean(currentSession));
+        setHasRecoveredSession(isEligibleCommunitySession(currentSession));
         if (currentSession) {
           try {
             const { profile } = await ensureCommunityProfile({
@@ -72,7 +78,7 @@ export default function AuthCallback({ session }) {
           }
         } else {
           setStatus('error');
-          setError('No community session was created. Try signing in again.');
+          setError(exchangeFailureMessage || 'No community session was created. Try signing in again.');
         }
       }
     }

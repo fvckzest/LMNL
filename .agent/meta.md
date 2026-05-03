@@ -73,7 +73,7 @@ There is now an initial community auth shell in the app layer, but it is still i
 
 What still does not exist yet:
 
-- production-ready provider configuration
+- production-ready provider configuration for all intended providers
 - any live social data model on top of the auth shell
 
 ### What has already started in code
@@ -135,13 +135,34 @@ The database-side admin authorization hardening has now been applied in Supabase
 
 The current transitional pieces are now:
 
-- provider configuration for Google / Discord / Apple still needs final Supabase dashboard verification, and the current project ref returns `Unsupported provider: provider is not enabled` for all three provider authorize endpoints
+- Google OAuth is now enabled in Supabase
+- Supabase signups are now enabled, which was required to allow first-time Google OAuth community users instead of failing with `signup_disabled`
+- Google authorize preflight now reaches Google successfully for the local callback target `http://127.0.0.1:4174/auth/callback?next=%2Fapp`
+- a real local browser pass has now reached `/app/onboarding` for a first-time Google community user, confirming:
+  - `/app/login` -> Google -> `/auth/callback` -> profile bootstrap -> `/app/onboarding`
+  - provider-backed LMNL profile bootstrap is functioning for at least one real community account
+- Discord and Apple still need live provider enablement verification and currently still return `Unsupported provider: provider is not enabled` from authorize preflight
 - the community login surface now preflights provider authorize URLs so disabled providers fail in-app with a readable message instead of bouncing users to a raw Supabase JSON error page
+- if the local browser cannot fetch the provider preflight URL cleanly, enabled providers can now still continue through the real OAuth redirect instead of failing on `Failed to fetch`
 - the Phase 1 `profiles` / `user_identities` SQL has been applied in Supabase
 - community auth now bootstraps a LMNL-owned `profiles` row plus `user_identities` record after sign-in
 - onboarding routing now exists at `/app/onboarding` for incomplete profiles, and preserved `/app` destinations now survive callback -> onboarding -> app redirects
 - `/auth/callback` now always completes profile bootstrap before routing, even if a session is already present locally
+- `/auth/callback` now prefers the fresh post-exchange community session instead of clinging to an older local app session during local testing
 - onboarding save errors now provide a clearer message when a requested `profile_slug` is already taken
+- first-time community profiles now stay onboarding-blocked until the user explicitly confirms LMNL profile details, even if the OAuth provider already supplied a usable display name/avatar:
+  - bootstrap still prefills provider-derived profile data to reduce friction
+  - but new `profiles` rows no longer mark `onboarding_completed` true automatically on insert
+- community app bootstrap now rejects non-community Supabase sessions before profile creation:
+  - `/app` no longer treats any arbitrary authenticated session as valid community access
+  - supported community access is currently limited to provider-backed Google / Discord / Apple sessions, including cases where the client session has provider metadata but no visible `user.identities` array
+  - `/app/login` now surfaces a recovery state for existing non-community sessions instead of auto-forwarding them into a failing bootstrap path
+- community auth redirect preservation is now tighter around the current Phase 1 surface:
+  - preserved `next` destinations still survive login -> callback -> onboarding for real `/app...` routes
+  - but auth now drops invalid or loop-prone destinations like `/app-login` or `/app/login` back to `/app` instead of preserving them
+- bootstrap is now more resilient under local React/Vite dev races:
+  - duplicate `profiles_pkey` inserts are recovered by re-reading the row
+  - duplicate `user_identities_user_provider_key` inserts are tolerated when a parallel bootstrap pass already recorded the provider identity
 - the env-based admin allowlist fallback should still be treated as temporary until the project fully relies on `admin_users`
 - provider metadata coverage now has direct tests for Google / Discord / Apple-shaped identity payloads in:
   - [tests/community-auth.test.js](../tests/community-auth.test.js)
@@ -160,16 +181,30 @@ The current transitional pieces are now:
 The current Phase 1 security-first implementation work has been saved off `main` on:
 
 - branch: `codex-phase1-admin-hardening`
-- latest committed checkpoint: `1c36035`
+- latest committed checkpoint: `ee903ad`
 - PR entry point:
   - https://github.com/fvckzest/LMNL/pull/new/codex-phase1-admin-hardening
 
-There is also newer uncommitted working-tree hardening on top of `1c36035` covering:
+There is also newer uncommitted working-tree hardening on top of `ee903ad` covering:
 
-- callback recovery when `/auth/callback` is revisited or otherwise lands in an exchange-error state even though a usable community session already exists locally
-- callback error-state recovery CTAs so users can return to community sign-in or sign out and retry instead of being stranded on a static error panel
-- route-gate recovery CTAs so `/app` bootstrap failures do not trap signed-in community users on an inert "community access is unavailable" message
-- local-only service-worker cleanup in `src/main.jsx` to reduce stale-cache false negatives during community-auth browser verification
+- onboarding hardening so provider-prefilled community profiles still require explicit LMNL confirmation before `/app` access is granted:
+  - new profile bootstrap still stores provider-derived `display_name` / `avatar_url` when available
+  - but `onboarding_completed` now remains false until `/app/onboarding` is submitted successfully
+- community-session eligibility hardening so admin/password or other non-community sessions cannot silently enter the community profile bootstrap path:
+  - `ensureCommunityProfile()` now rejects unsupported/non-provider-backed sessions before any `profiles` / `user_identities` writes
+  - `/app/login` now gives already-signed-in non-community users a sign-out-and-retry recovery path instead of auto-navigating them into `/app`
+- live provider verification and Google auth hardening:
+  - `scripts/check-community-oauth.mjs` now verifies live provider readiness against the configured Supabase project
+  - `package.json` now exposes `npm run check:community-oauth`
+  - Google now passes that live provider readiness check; Discord and Apple still fail as disabled
+- callback / bootstrap fixes discovered during a real local Google sign-in pass:
+  - enabled providers now fall back to the real OAuth redirect when browser-side preflight fetch fails
+  - `/auth/callback` now prefers the fresh post-Google session returned by Supabase after code exchange
+  - provider-backed sessions can now be accepted even when the client payload lacks a visible `identities` array
+  - profile and identity bootstrap now recover from duplicate-row races instead of failing on unique constraints
+- real browser verification progress:
+  - first-time Google sign-in now reaches `/app/onboarding` locally for a clean community account
+  - onboarding submission into `/app` still needs to be completed and verified before calling the Google path fully closed
 
 Future Codex instances working on this rollout should prefer continuing from that branch instead of rebuilding this work from the `main` branch state.
 
@@ -197,6 +232,15 @@ Because future community users will also use Supabase Auth, admin authorization 
 That separation is now enforced at the database-policy level for current admin-managed surfaces, and the next step is completing community-facing identity bootstrap on top of that boundary.
 
 That identity bootstrap now exists, so the remaining near-term Phase 1 work is making the community auth surface feel operationally safe and launch-ready without weakening the admin/community boundary.
+
+At this point, the most important remaining work is no longer proving that Google OAuth can reach onboarding, because that has now been demonstrated in-browser.
+
+The most important remaining work is:
+
+- completing onboarding submission into `/app`
+- verifying the returning-user path after onboarding is complete
+- deciding how much special handling is needed when an admin identity and a community OAuth identity map to the same Supabase user
+- enabling and verifying Discord and Apple later without regressing the Google path
 
 ---
 
@@ -285,6 +329,9 @@ These files are the main planning corpus for the social system.
 
 - [community_social_oauth_implementation.md](./community_social_oauth_implementation.md)
   Google, Discord, and Apple auth architecture and admin safety requirements.
+
+- [phase1_closeout_checklist.md](./phase1_closeout_checklist.md)
+  Operational finish-line checklist for completing Phase 1 rollout safely.
 
 ### Flow and surface context
 
@@ -410,9 +457,9 @@ The most urgent technical safety task is:
 This now means finishing the remaining pieces around the code hardening that has already started:
 
 - completing the shift from transitional env fallback to table-backed authorization as the only long-term source of truth
-- adding provider configuration for Google / Discord / Apple
-- applying `profiles` and `user_identities` in Supabase from `sql/phase1_community_profiles.sql`
-- extending profile bootstrap after real provider rollout if additional metadata mapping is needed
+- enabling and verifying the remaining provider configuration for Discord / Apple
+- completing the real Google browser verification pass through onboarding submission and returning-user re-entry
+- extending profile bootstrap after additional real provider rollout if more metadata mapping is needed
 
 Application-side admin dashboard reads and community-management writes now route through protected server APIs rather than browser-side Supabase table access in the main admin flow.
 Public event attendance counts now also route through a server API bridge so the `requests` table can be tightened without exposing customer request data to browser-side reads.
