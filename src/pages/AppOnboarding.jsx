@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import { COMMUNITY_APP_PATH, deriveProfileSlug, profileNeedsOnboarding } from '../lib/communityProfile';
+import { readCommunityNextPath } from '../lib/communityAuth';
 import { supabase } from '../lib/supabase';
 import './AppOnboarding.css';
 
@@ -10,17 +11,33 @@ function formatProvider(provider) {
 }
 
 export default function AppOnboarding({ session, profile, provider }) {
+  const location = useLocation();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(() => profile?.display_name || '');
   const [profileSlug, setProfileSlug] = useState(() => profile?.profile_slug || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const nextPath = useMemo(() => readCommunityNextPath(location.search), [location.search]);
 
   useEffect(() => {
     if (!profileNeedsOnboarding(profile)) {
-      navigate(COMMUNITY_APP_PATH, { replace: true });
+      navigate(nextPath || COMMUNITY_APP_PATH, { replace: true });
     }
-  }, [navigate, profile]);
+  }, [navigate, nextPath, profile]);
+
+  function readOnboardingErrorMessage(updateError) {
+    const message = updateError?.message || '';
+    const code = updateError?.code || '';
+
+    if (
+      code === '23505'
+      && (message.includes('profiles_profile_slug_key') || message.toLowerCase().includes('profile_slug'))
+    ) {
+      return 'That public slug is already claimed. Try another one or leave it blank for now.';
+    }
+
+    return message || 'Unable to save onboarding details.';
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -46,12 +63,12 @@ export default function AppOnboarding({ session, profile, provider }) {
       .eq('id', session.user.id);
 
     if (updateError) {
-      setError(updateError.message || 'Unable to save onboarding details.');
+      setError(readOnboardingErrorMessage(updateError));
       setLoading(false);
       return;
     }
 
-    navigate(COMMUNITY_APP_PATH, { replace: true });
+    navigate(nextPath || COMMUNITY_APP_PATH, { replace: true });
   }
 
   return (

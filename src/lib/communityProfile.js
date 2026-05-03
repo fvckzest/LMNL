@@ -1,3 +1,5 @@
+import { buildCommunityOnboardingPath } from './communityAuth.js';
+
 export const COMMUNITY_APP_PATH = '/app';
 export const COMMUNITY_ONBOARDING_PATH = '/app/onboarding';
 
@@ -7,35 +9,82 @@ function readUserMetadata(user) {
     : {};
 }
 
+function readIdentityData(identity) {
+  return identity?.identity_data && typeof identity.identity_data === 'object'
+    ? identity.identity_data
+    : {};
+}
+
+function readUserIdentities(user) {
+  return Array.isArray(user?.identities) ? user.identities : [];
+}
+
 function normalizeString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeProvider(value) {
+  return normalizeString(value).toLowerCase();
+}
+
+export function readCommunityIdentity(session) {
+  const user = session?.user;
+  const identities = readUserIdentities(user);
+  const providerHint = normalizeProvider(user?.app_metadata?.provider);
+
+  if (!identities.length) {
+    return null;
+  }
+
+  if (!providerHint) {
+    return identities[0];
+  }
+
+  return (
+    identities.find((identity) => normalizeProvider(identity?.provider) === providerHint)
+    || identities[0]
+  );
+}
+
 export function readCommunityProvider(session) {
-  return normalizeString(
-    session?.user?.app_metadata?.provider || session?.user?.identities?.[0]?.provider || 'unknown',
+  return normalizeProvider(
+    session?.user?.app_metadata?.provider || readCommunityIdentity(session)?.provider || 'unknown',
   ) || 'unknown';
 }
 
-export function deriveCommunityDisplayName(user) {
+export function deriveCommunityDisplayName(user, identity = null) {
   const metadata = readUserMetadata(user);
+  const identityData = readIdentityData(identity);
   const candidates = [
     metadata.display_name,
     metadata.full_name,
     metadata.name,
     metadata.user_name,
     metadata.preferred_username,
+    metadata.username,
+    metadata.global_name,
+    identityData.display_name,
+    identityData.full_name,
+    identityData.name,
+    identityData.global_name,
+    identityData.user_name,
+    identityData.preferred_username,
+    identityData.username,
     `${normalizeString(metadata.given_name)} ${normalizeString(metadata.family_name)}`.trim(),
+    `${normalizeString(identityData.given_name)} ${normalizeString(identityData.family_name)}`.trim(),
   ];
 
   return candidates.find((candidate) => normalizeString(candidate))?.trim() || '';
 }
 
-export function deriveCommunityAvatarUrl(user) {
+export function deriveCommunityAvatarUrl(user, identity = null) {
   const metadata = readUserMetadata(user);
+  const identityData = readIdentityData(identity);
   const candidates = [
     metadata.avatar_url,
     metadata.picture,
+    identityData.avatar_url,
+    identityData.picture,
   ];
 
   return candidates.find((candidate) => normalizeString(candidate))?.trim() || '';
@@ -65,18 +114,27 @@ export function profileNeedsOnboarding(profile) {
 }
 
 export function resolveCommunityDestination(profile, nextPath = COMMUNITY_APP_PATH) {
-  return profileNeedsOnboarding(profile) ? COMMUNITY_ONBOARDING_PATH : nextPath;
+  return profileNeedsOnboarding(profile) ? buildCommunityOnboardingPath(nextPath) : nextPath;
 }
 
 export function createUserIdentityPayload(session) {
   const user = session?.user;
-  const identity = user?.identities?.[0] || {};
+  const identity = readCommunityIdentity(session) || {};
+  const identityData = readIdentityData(identity);
 
   return {
     user_id: user?.id,
     provider: readCommunityProvider(session),
-    provider_user_id: normalizeString(identity.id || identity.user_id || identity.identity_id) || null,
-    provider_email: normalizeString(identity.identity_data?.email || user?.email) || null,
+    provider_user_id: normalizeString(
+      identity.provider_id
+      || identity.id
+      || identity.user_id
+      || identity.identity_id
+      || identityData.sub
+      || identityData.id
+      || identityData.user_id,
+    ) || null,
+    provider_email: normalizeString(identityData.email || user?.email) || null,
   };
 }
 
@@ -91,8 +149,9 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
     throw new Error('A signed-in community user is required.');
   }
 
-  const bootstrapDisplayName = deriveCommunityDisplayName(user);
-  const bootstrapAvatarUrl = deriveCommunityAvatarUrl(user);
+  const identity = readCommunityIdentity(session);
+  const bootstrapDisplayName = deriveCommunityDisplayName(user, identity);
+  const bootstrapAvatarUrl = deriveCommunityAvatarUrl(user, identity);
 
   const { data: existingProfile, error: profileReadError } = await supabaseClient
     .from('profiles')
@@ -205,4 +264,3 @@ export async function ensureCommunityProfile({ supabaseClient, session }) {
     provider: readCommunityProvider(session),
   };
 }
-

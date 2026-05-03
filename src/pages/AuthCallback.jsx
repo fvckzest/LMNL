@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
-import { sanitizeCommunityNextPath } from '../lib/communityAuth';
+import { readCommunityNextPath } from '../lib/communityAuth';
 import { ensureCommunityProfile, resolveCommunityDestination } from '../lib/communityProfile';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 import './AppLogin.css';
@@ -11,10 +11,7 @@ export default function AuthCallback({ session }) {
   const navigate = useNavigate();
   const [status, setStatus] = useState('working');
   const [error, setError] = useState('');
-  const nextPath = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return sanitizeCommunityNextPath(params.get('next'));
-  }, [location.search]);
+  const nextPath = useMemo(() => readCommunityNextPath(location.search), [location.search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +27,7 @@ export default function AuthCallback({ session }) {
 
       const url = window.location.href;
       const hasCode = new URL(url).searchParams.has('code');
+      let currentSession = session || null;
 
       if (hasCode) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(url);
@@ -40,15 +38,22 @@ export default function AuthCallback({ session }) {
           }
           return;
         }
+
+        const { data: exchangedSessionData } = await supabase.auth.getSession();
+        currentSession = exchangedSessionData?.session || null;
       }
 
-      const { data } = await supabase.auth.getSession();
+      if (!currentSession) {
+        const { data } = await supabase.auth.getSession();
+        currentSession = data?.session || null;
+      }
+
       if (!cancelled) {
-        if (data?.session) {
+        if (currentSession) {
           try {
             const { profile } = await ensureCommunityProfile({
               supabaseClient: supabase,
-              session: data.session,
+              session: currentSession,
             });
 
             if (!cancelled) {
@@ -71,11 +76,7 @@ export default function AuthCallback({ session }) {
     return () => {
       cancelled = true;
     };
-  }, [navigate, nextPath]);
-
-  if (session) {
-    return <Navigate to={nextPath} replace />;
-  }
+  }, [navigate, nextPath, session]);
 
   return (
     <ContentPageShell title="AUTH" color="#00c2ff" contentClassName="app-login-content">

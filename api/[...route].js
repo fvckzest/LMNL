@@ -12,7 +12,13 @@ import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/eve
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
-import { createAccessRequest, deleteRequestById, listRequests, updateRequestStatus } from './_lib/repositories/requests.js';
+import {
+  countApprovedRequestsByEventName,
+  createAccessRequest,
+  deleteRequestById,
+  listRequests,
+  updateRequestStatus,
+} from './_lib/repositories/requests.js';
 import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
 import { deletePreorderById, listPreorders, updatePreorderStatus, upsertPreorder } from './_lib/repositories/preorders.js';
 import { deleteEventById, listEvents, updateEventMetadata, updateEventStatus, upsertEvent } from './_lib/repositories/events.js';
@@ -158,6 +164,20 @@ async function handleGetEventCheckout(req, res) {
   const eventId = requireValue(req.query?.eventId, 'eventId is required.');
   const data = await getEventCheckoutView(eventId);
   return sendJson(res, 200, { success: true, data });
+}
+
+async function handleEventStats(req, res) {
+  allowMethods(req, ['GET']);
+  const eventName = requireValue(req.query?.eventName, 'eventName is required.');
+  const approvedCount = await countApprovedRequestsByEventName(eventName);
+
+  return sendJson(res, 200, {
+    success: true,
+    data: {
+      eventName,
+      approvedCount,
+    },
+  });
 }
 
 async function handlePayRequest(req, res) {
@@ -722,6 +742,7 @@ const handlers = {
   'create-checkout': handleCreateCheckout,
   'create-event-checkout': handleCreateEventCheckout,
   'create-request-checkout': handleCreateRequestCheckout,
+  'event-stats': handleEventStats,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,

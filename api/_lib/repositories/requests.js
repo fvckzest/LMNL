@@ -21,6 +21,18 @@ export async function listRequests() {
   return data || [];
 }
 
+export async function countApprovedRequestsByEventName(eventName, deps = {}) {
+  const supabase = deps.supabase || getAdminSupabase();
+  const { count, error } = await supabase
+    .from('requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_name', eventName)
+    .eq('status', 'approved');
+
+  if (error) throw error;
+  return count || 0;
+}
+
 export async function getRequestById(id) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase.from('requests').select('*').eq('id', id).maybeSingle();

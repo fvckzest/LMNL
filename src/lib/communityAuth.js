@@ -1,4 +1,5 @@
 const DEFAULT_COMMUNITY_PATH = '/app';
+const COMMUNITY_ONBOARDING_PATH = '/app/onboarding';
 
 export function sanitizeCommunityNextPath(nextPath) {
   if (typeof nextPath !== 'string') {
@@ -15,6 +16,20 @@ export function sanitizeCommunityNextPath(nextPath) {
   }
 
   return value || DEFAULT_COMMUNITY_PATH;
+}
+
+export function readCommunityNextPath(search) {
+  return sanitizeCommunityNextPath(new URLSearchParams(search || '').get('next'));
+}
+
+export function buildCommunityOnboardingPath(nextPath) {
+  const safeNextPath = sanitizeCommunityNextPath(nextPath);
+
+  if (safeNextPath === DEFAULT_COMMUNITY_PATH || safeNextPath === COMMUNITY_ONBOARDING_PATH) {
+    return COMMUNITY_ONBOARDING_PATH;
+  }
+
+  return `${COMMUNITY_ONBOARDING_PATH}?next=${encodeURIComponent(safeNextPath)}`;
 }
 
 export function buildCommunityAuthRedirectTo(origin, nextPath) {

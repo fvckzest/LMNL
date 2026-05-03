@@ -136,15 +136,8 @@ export async function fetchSpaceEventSnapshot() {
   }
 
   const approvedCountPromise = hasSupabaseCredentials
-    ? supabase
-      .from('requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_name', event.name)
-      .eq('status', 'approved')
-      .then(({ count, error }) => {
-        if (error) throw error;
-        return count || 0;
-      })
+    ? apiGet(`/api/event-stats?eventName=${encodeURIComponent(event.name)}`)
+      .then((data) => data?.approvedCount || 0)
       .catch(() => 0)
     : Promise.resolve(0);
 

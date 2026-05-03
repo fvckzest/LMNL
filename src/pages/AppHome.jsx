@@ -1,16 +1,13 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import { readCommunityProvider } from '../lib/communityProfile';
 import { supabase } from '../lib/supabase';
 import './AppLogin.css';
 
-function readProvider(session) {
-  return session?.user?.app_metadata?.provider || session?.user?.identities?.[0]?.provider || 'unknown';
-}
-
 export default function AppHome({ session, profile }) {
   const navigate = useNavigate();
-  const provider = useMemo(() => readProvider(session), [session]);
+  const provider = useMemo(() => readCommunityProvider(session), [session]);
   const email = session?.user?.email || 'No email returned';
   const displayName = profile?.display_name || 'Profile name pending';
   const profileSlug = profile?.profile_slug || 'Not set yet';

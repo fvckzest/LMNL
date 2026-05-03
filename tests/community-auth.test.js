@@ -1,12 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCommunityAuthRedirectTo, sanitizeCommunityNextPath } from '../src/lib/communityAuth.js';
+import {
+  buildCommunityAuthRedirectTo,
+  buildCommunityOnboardingPath,
+  readCommunityNextPath,
+  sanitizeCommunityNextPath,
+} from '../src/lib/communityAuth.js';
 import {
   COMMUNITY_ONBOARDING_PATH,
   createUserIdentityPayload,
   deriveCommunityDisplayName,
+  deriveCommunityAvatarUrl,
   deriveProfileSlug,
   profileNeedsOnboarding,
+  readCommunityIdentity,
+  readCommunityProvider,
   resolveCommunityDestination,
 } from '../src/lib/communityProfile.js';
 
@@ -30,6 +38,15 @@ test('buildCommunityAuthRedirectTo builds a callback URL with a safe next path',
   );
 });
 
+test('community next-path helpers preserve safe destinations through onboarding', () => {
+  assert.equal(readCommunityNextPath('?next=%2Fapp%2Fcollection'), '/app/collection');
+  assert.equal(buildCommunityOnboardingPath('/app'), COMMUNITY_ONBOARDING_PATH);
+  assert.equal(
+    buildCommunityOnboardingPath('/app/collection'),
+    '/app/onboarding?next=%2Fapp%2Fcollection',
+  );
+});
+
 test('deriveCommunityDisplayName uses the strongest available provider metadata', () => {
   assert.equal(
     deriveCommunityDisplayName({
@@ -48,6 +65,36 @@ test('deriveCommunityDisplayName uses the strongest available provider metadata'
       },
     }),
     'LMNL Builder',
+  );
+
+  assert.equal(
+    deriveCommunityDisplayName(
+      {
+        user_metadata: {},
+      },
+      {
+        identity_data: {
+          global_name: 'Discord Alias',
+        },
+      },
+    ),
+    'Discord Alias',
+  );
+});
+
+test('deriveCommunityAvatarUrl falls back to identity metadata when needed', () => {
+  assert.equal(
+    deriveCommunityAvatarUrl(
+      {
+        user_metadata: {},
+      },
+      {
+        identity_data: {
+          picture: 'https://cdn.lmnl.art/avatar.png',
+        },
+      },
+    ),
+    'https://cdn.lmnl.art/avatar.png',
   );
 });
 
@@ -99,5 +146,72 @@ test('createUserIdentityPayload extracts normalized provider identity details', 
     provider: 'google',
     provider_user_id: 'provider-abc',
     provider_email: 'hello@lmnl.art',
+  });
+});
+
+test('provider selection prefers the identity matching the active provider hint', () => {
+  const session = {
+    user: {
+      app_metadata: {
+        provider: 'discord',
+      },
+      identities: [
+        {
+          provider: 'google',
+          id: 'google-id',
+          identity_data: {
+            email: 'google@lmnl.art',
+            full_name: 'Google User',
+          },
+        },
+        {
+          provider: 'discord',
+          identity_data: {
+            sub: 'discord-sub',
+            email: 'discord@lmnl.art',
+            global_name: 'Discord User',
+            picture: 'https://cdn.lmnl.art/discord.png',
+          },
+        },
+      ],
+    },
+  };
+
+  assert.equal(readCommunityProvider(session), 'discord');
+  assert.equal(readCommunityIdentity(session)?.provider, 'discord');
+  assert.equal(deriveCommunityDisplayName(session.user, readCommunityIdentity(session)), 'Discord User');
+  assert.equal(deriveCommunityAvatarUrl(session.user, readCommunityIdentity(session)), 'https://cdn.lmnl.art/discord.png');
+  assert.deepEqual(createUserIdentityPayload(session), {
+    user_id: undefined,
+    provider: 'discord',
+    provider_user_id: 'discord-sub',
+    provider_email: 'discord@lmnl.art',
+  });
+});
+
+test('apple identity payload falls back to subject and persisted email', () => {
+  const payload = createUserIdentityPayload({
+    user: {
+      id: 'apple-user',
+      email: 'relay@privaterelay.appleid.com',
+      app_metadata: {
+        provider: 'apple',
+      },
+      identities: [
+        {
+          provider: 'apple',
+          identity_data: {
+            sub: 'apple-subject-id',
+          },
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(payload, {
+    user_id: 'apple-user',
+    provider: 'apple',
+    provider_user_id: 'apple-subject-id',
+    provider_email: 'relay@privaterelay.appleid.com',
   });
 });

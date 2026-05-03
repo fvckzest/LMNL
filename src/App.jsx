@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Suspense, cloneElement, useEffect, useState } from 'react';
 import Home from './pages/Home';
 import { lazyWithRetry } from './lib/lazyWithRetry';
-import { sanitizeCommunityNextPath } from './lib/communityAuth';
+import { buildCommunityOnboardingPath, readCommunityNextPath, sanitizeCommunityNextPath } from './lib/communityAuth';
 import {
   COMMUNITY_APP_PATH,
   COMMUNITY_ONBOARDING_PATH,
@@ -265,11 +265,12 @@ function CommunityAppRoute({ children, session, allowIncomplete = false }) {
   const needsOnboarding = profileNeedsOnboarding(state.profile);
 
   if (!allowIncomplete && needsOnboarding) {
-    return <Navigate to={COMMUNITY_ONBOARDING_PATH} replace />;
+    const next = sanitizeCommunityNextPath(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to={buildCommunityOnboardingPath(next)} replace />;
   }
 
   if (allowIncomplete && !needsOnboarding) {
-    return <Navigate to={COMMUNITY_APP_PATH} replace />;
+    return <Navigate to={readCommunityNextPath(location.search)} replace />;
   }
 
   return cloneElement(children, {
