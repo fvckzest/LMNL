@@ -1,0 +1,72 @@
+.app-login-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-login-layout {
+  width: min(100%, 720px);
+}
+
+.app-login-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+}
+
+.app-login-kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #00c2ff;
+}
+
+.app-login-title {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 48px);
+  line-height: 0.95;
+}
+
+.app-login-copy,
+.app-login-note p,
+.app-login-error {
+  margin: 0;
+}
+
+.app-login-copy,
+.app-login-note {
+  max-width: 52ch;
+}
+
+.app-login-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.app-login-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.app-login-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.app-login-note {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .app-login-panel {
+    padding: 22px;
+  }
+}
