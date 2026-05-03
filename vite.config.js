@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//],
+        skipWaiting: true,
       },
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
@@ -40,7 +43,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ],

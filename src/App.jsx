@@ -1,25 +1,44 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Home from './pages/Home';
+import { lazyWithRetry } from './lib/lazyWithRetry';
 import './index.css';
 
-const Contact = lazy(() => import('./pages/Contact'));
-const GenericPage = lazy(() => import('./pages/GenericPage'));
-const Space = lazy(() => import('./pages/Space'));
-const Events = lazy(() => import('./pages/Events'));
-const Admin = lazy(() => import('./pages/Admin'));
-const CheckIn = lazy(() => import('./pages/CheckIn'));
-const Login = lazy(() => import('./pages/Login'));
-const Ticket = lazy(() => import('./pages/Ticket'));
-const Success = lazy(() => import('./pages/Success'));
-const Services = lazy(() => import('./pages/Services'));
-const Community = lazy(() => import('./pages/Community'));
-const ArtistInterest = lazy(() => import('./pages/ArtistInterest'));
-const Shop = lazy(() => import('./pages/Shop'));
-const Blog = lazy(() => import('./pages/Blog'));
-const BlogPostView = lazy(() => import('./pages/BlogPostView'));
-const EmailLab = lazy(() => import('./pages/EmailLab'));
-const About = lazy(() => import('./pages/About'));
+const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
+const Space = lazyWithRetry(() => import('./pages/Space'));
+const Events = lazyWithRetry(() => import('./pages/Events'));
+const Admin = lazyWithRetry(() => import('./pages/Admin'));
+const CheckIn = lazyWithRetry(() => import('./pages/CheckIn'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Ticket = lazyWithRetry(() => import('./pages/Ticket'));
+const Success = lazyWithRetry(() => import('./pages/Success'));
+const Services = lazyWithRetry(() => import('./pages/Services'));
+const Community = lazyWithRetry(() => import('./pages/Community'));
+const ArtistInterest = lazyWithRetry(() => import('./pages/ArtistInterest'));
+const Shop = lazyWithRetry(() => import('./pages/Shop'));
+const Blog = lazyWithRetry(() => import('./pages/Blog'));
+const BlogPostView = lazyWithRetry(() => import('./pages/BlogPostView'));
+const EmailLab = lazyWithRetry(() => import('./pages/EmailLab'));
+const About = lazyWithRetry(() => import('./pages/About'));
+
+function RouteLoadingFallback() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Gantari, sans-serif',
+        fontSize: '12px',
+        letterSpacing: '0.18em',
+      }}
+    >
+      LOADING PAGE...
+    </div>
+  );
+}
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -75,7 +94,7 @@ function App() {
 
   return (
     <Router>
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           {/* SHARED / PUBLIC CONTENT */}
           <Route path="/ticket/:ticketId" element={<Ticket />} />
