@@ -7,6 +7,13 @@ function readEnv(name) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function readCsvEnv(name) {
+  return readEnv(name)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function requireEnv(names, scope) {
   const missing = names.filter((name) => !readEnv(name));
   if (missing.length > 0) {
@@ -86,6 +93,17 @@ export function getSupabaseConfig() {
   return {
     url: readEnv('SUPABASE_URL'),
     serviceRoleKey,
+  };
+}
+
+export function getAdminAuthorizationConfig() {
+  const source = readEnv('ADMIN_AUTH_SOURCE') || 'auto';
+  const allowedSources = new Set(['auto', 'table', 'env']);
+
+  return {
+    source: allowedSources.has(source) ? source : 'auto',
+    adminUserIds: readCsvEnv('ADMIN_USER_IDS'),
+    adminUserEmails: readCsvEnv('ADMIN_USER_EMAILS').map((email) => email.toLowerCase()),
   };
 }
 

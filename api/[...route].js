@@ -12,12 +12,24 @@ import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/eve
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
-import { createAccessRequest, updateRequestStatus, deleteRequestById } from './_lib/repositories/requests.js';
+import { createAccessRequest, deleteRequestById, listRequests, updateRequestStatus } from './_lib/repositories/requests.js';
 import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
-import { upsertPreorder, updatePreorderStatus, deletePreorderById } from './_lib/repositories/preorders.js';
-import { upsertEvent, updateEventMetadata, updateEventStatus, deleteEventById } from './_lib/repositories/events.js';
+import { deletePreorderById, listPreorders, updatePreorderStatus, upsertPreorder } from './_lib/repositories/preorders.js';
+import { deleteEventById, listEvents, updateEventMetadata, updateEventStatus, upsertEvent } from './_lib/repositories/events.js';
 import { listTickets } from './_lib/repositories/tickets.js';
 import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
+import {
+  deleteCommunityCreditById,
+  deleteMailingListEntryById,
+  listArtistInterest,
+  listBlogPostsAdmin,
+  listCommunityCredits,
+  listMailingListEntries,
+  listServiceInquiries,
+  saveCommunityCredit,
+  saveMailingListEntry,
+  syncCommunityCreditsFromEvents,
+} from './_lib/repositories/admin-content.js';
 
 function throwMissingArtistInterestTable(error) {
   if (error?.code === 'PGRST205' && error?.message?.includes('artist_interest')) {
@@ -182,6 +194,7 @@ async function handlePayEvent(req, res) {
 
 async function handleCreateTestItem(req, res) {
   allowMethods(req, ['POST']);
+  await requireAdminUser(req);
 
   const response = await getSquareClient().catalog.upsertCatalogObject({
     idempotencyKey: crypto.randomUUID(),
@@ -214,6 +227,7 @@ async function handleCreateTestItem(req, res) {
 
 async function handleEnableSquareTracking(req, res) {
   allowMethods(req, ['POST']);
+  await requireAdminUser(req);
 
   const body = await parseJsonBody(req);
   const variationId = requireValue(body.variationId, 'Variation ID is required');
@@ -239,7 +253,14 @@ async function handleEnableSquareTracking(req, res) {
 }
 
 async function handleEvents(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  if (req.method === 'GET') {
+    const data = await listEvents();
+    return sendJson(res, 200, { success: true, data });
+  }
+
   const body = await parseJsonBody(req);
 
   if (body.action === 'delete') {
@@ -314,8 +335,28 @@ async function handleAdminTickets(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
+async function handleAdminSession(req, res) {
+  allowMethods(req, ['GET']);
+  const user = await requireAdminUser(req);
+  return sendJson(res, 200, {
+    success: true,
+    data: {
+      id: user.id,
+      email: user.email || null,
+    },
+  });
+}
+
 async function handlePreorders(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    await requireAdminUser(req);
+    const data = await listPreorders();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  await requireAdminUser(req);
   const body = await parseJsonBody(req);
 
   if (body.action === 'delete') {
@@ -336,7 +377,14 @@ async function handlePreorders(req, res) {
 }
 
 async function handleRequests(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    await requireAdminUser(req);
+    const data = await listRequests();
+    return sendJson(res, 200, { success: true, data });
+  }
+
   const body = await parseJsonBody(req);
 
   if (body.action === 'create') {
@@ -353,17 +401,20 @@ async function handleRequests(req, res) {
   }
 
   if (body.action === 'approve') {
+    await requireAdminUser(req);
     const requestId = requireValue(body.requestId, 'requestId is required.');
     const data = await approveRequestAndSendCheckout(requestId);
     return sendJson(res, 200, { success: true, data });
   }
 
   if (body.action === 'delete') {
+    await requireAdminUser(req);
     await deleteRequestById(requireValue(body.id, 'id is required.'));
     return sendJson(res, 200, { success: true, data: { deleted: true } });
   }
 
   if (body.action === 'update') {
+    await requireAdminUser(req);
     const request = await updateRequestStatus(
       requireValue(body.id, 'id is required.'),
       requireValue(body.status, 'status is required.'),
@@ -375,7 +426,14 @@ async function handleRequests(req, res) {
 }
 
 async function handleServiceInquiries(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    await requireAdminUser(req);
+    const data = await listServiceInquiries();
+    return sendJson(res, 200, { success: true, data });
+  }
+
   const body = await parseJsonBody(req);
   const supabase = getAdminSupabase();
 
@@ -407,6 +465,7 @@ async function handleServiceInquiries(req, res) {
   }
 
   if (body.action === 'update') {
+    await requireAdminUser(req);
     const { data, error } = await supabase
       .from('service_inquiries')
       .update({ status: requireValue(body.status, 'status is required.') })
@@ -419,6 +478,7 @@ async function handleServiceInquiries(req, res) {
   }
 
   if (body.action === 'delete') {
+    await requireAdminUser(req);
     const { error } = await supabase
       .from('service_inquiries')
       .delete()
@@ -432,7 +492,14 @@ async function handleServiceInquiries(req, res) {
 }
 
 async function handleArtistInterest(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    await requireAdminUser(req);
+    const data = await listArtistInterest();
+    return sendJson(res, 200, { success: true, data });
+  }
+
   const body = await parseJsonBody(req);
   const supabase = getAdminSupabase();
 
@@ -468,6 +535,7 @@ async function handleArtistInterest(req, res) {
   }
 
   if (body.action === 'update') {
+    await requireAdminUser(req);
     const { data, error } = await supabase
       .from('artist_interest')
       .update({ status: requireValue(body.status, 'status is required.') })
@@ -480,6 +548,7 @@ async function handleArtistInterest(req, res) {
   }
 
   if (body.action === 'delete') {
+    await requireAdminUser(req);
     const { error } = await supabase
       .from('artist_interest')
       .delete()
@@ -493,11 +562,19 @@ async function handleArtistInterest(req, res) {
 }
 
 async function handleBlogPosts(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    await requireAdminUser(req);
+    const data = await listBlogPostsAdmin();
+    return sendJson(res, 200, { success: true, data });
+  }
+
   const body = await parseJsonBody(req);
   const supabase = getAdminSupabase();
 
   if (body.action === 'create') {
+    await requireAdminUser(req);
     const { data, error } = await supabase
       .from('blog_posts')
       .insert([{
@@ -526,6 +603,7 @@ async function handleBlogPosts(req, res) {
   }
 
   if (body.action === 'update') {
+    await requireAdminUser(req);
     const { data, error } = await supabase
       .from('blog_posts')
       .update({
@@ -545,6 +623,7 @@ async function handleBlogPosts(req, res) {
   }
 
   if (body.action === 'delete') {
+    await requireAdminUser(req);
     const { error } = await supabase
       .from('blog_posts')
       .delete()
@@ -557,8 +636,70 @@ async function handleBlogPosts(req, res) {
   throw new Error('Unsupported blog posts action.');
 }
 
+async function handleCommunityCredits(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  if (req.method === 'GET') {
+    const data = await listCommunityCredits();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const body = await parseJsonBody(req);
+
+  if (body.action === 'delete') {
+    await deleteCommunityCreditById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  if (body.action === 'sync-from-events') {
+    const data = await syncCommunityCreditsFromEvents();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const data = await saveCommunityCredit({
+    id: body.id || null,
+    name: requireValue(body.name, 'name is required.'),
+    email: body.email || '',
+    role: requireValue(body.role, 'role is required.'),
+    event_id: body.event_id || null,
+    event_name: body.event_name || null,
+    details: body.details || '',
+    link: body.link || '',
+  });
+
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleMailingList(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  if (req.method === 'GET') {
+    const data = await listMailingListEntries();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const body = await parseJsonBody(req);
+
+  if (body.action === 'delete') {
+    await deleteMailingListEntryById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  const data = await saveMailingListEntry({
+    id: body.id || null,
+    name: body.name || '',
+    email: requireValue(body.email, 'email is required.'),
+    source: body.source || 'manual',
+  });
+
+  return sendJson(res, 200, { success: true, data });
+}
+
 async function handleSquareCatalog(req, res) {
   allowMethods(req, ['GET']);
+  await requireAdminUser(req);
   const catalog = await getAdminCatalogView();
   return sendJson(res, 200, {
     success: true,
@@ -593,11 +734,14 @@ const handlers = {
   'preorder-checkout': handleGetPreorderCheckout,
   'get-ticket': handleGetTicket,
   'check-in-ticket': handleCheckInTicket,
+  'admin-session': handleAdminSession,
   'admin-tickets': handleAdminTickets,
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,
   'blog-posts': handleBlogPosts,
+  'community-credits': handleCommunityCredits,
+  'mailing-list': handleMailingList,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
   'square-webhook': handleSquareWebhook,

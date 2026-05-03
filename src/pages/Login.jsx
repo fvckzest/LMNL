@@ -15,6 +15,10 @@ export default function Login() {
     const params = new URLSearchParams(location.search);
     return params.get('next') || '/';
   }, [location.search]);
+  const unauthorized = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('unauthorized') === '1';
+  }, [location.search]);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -43,6 +47,10 @@ export default function Login() {
             <div className="login-rect" />
             <h1>ADMIN ACCESS</h1>
           </div>
+
+          {unauthorized ? (
+            <p className="login-error">ADMIN AUTHORIZATION REQUIRED FOR THIS SURFACE.</p>
+          ) : null}
 
           <form onSubmit={handleLogin} className="login-form theme-form">
             <div className="login-input-group theme-field">

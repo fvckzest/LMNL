@@ -1,0 +1,118 @@
+-- LMNL Phase 1 admin authorization hardening
+-- Apply this in Supabase SQL Editor before enabling community OAuth.
+-- This script creates a table-backed admin allowlist and policy helpers so
+-- admin-only tables stop relying on `auth.role() = 'authenticated'`.
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  created_by uuid references auth.users(id),
+  notes text
+);
+
+alter table public.admin_users enable row level security;
+
+create or replace function public.is_admin_user(check_user_id uuid default auth.uid())
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.admin_users
+    where user_id = check_user_id
+  );
+$$;
+
+revoke all on function public.is_admin_user(uuid) from public;
+grant execute on function public.is_admin_user(uuid) to authenticated;
+
+drop policy if exists "admin_users_select_self" on public.admin_users;
+create policy "admin_users_select_self"
+on public.admin_users
+for select
+to authenticated
+using (
+  public.is_admin_user()
+  and user_id = auth.uid()
+);
+
+do $$
+begin
+  if to_regclass('public.community_credits') is not null then
+    execute 'alter table public.community_credits enable row level security';
+    execute 'drop policy if exists "community_credits_public_read" on public.community_credits';
+    execute '' ||
+      'create policy "community_credits_public_read" on public.community_credits ' ||
+      'for select to anon, authenticated using (true)';
+    execute 'drop policy if exists "community_credits_admin_write" on public.community_credits';
+    execute '' ||
+      'create policy "community_credits_admin_write" on public.community_credits ' ||
+      'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if to_regclass('public.mailing_list') is not null then
+    execute 'alter table public.mailing_list enable row level security';
+    execute 'drop policy if exists "mailing_list_admin_only" on public.mailing_list';
+    execute '' ||
+      'create policy "mailing_list_admin_only" on public.mailing_list ' ||
+      'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if to_regclass('public.artist_interest') is not null then
+    execute 'alter table public.artist_interest enable row level security';
+    execute 'drop policy if exists "artist_interest_public_insert" on public.artist_interest';
+    execute '' ||
+      'create policy "artist_interest_public_insert" on public.artist_interest ' ||
+      'for insert to anon, authenticated with check (true)';
+    execute 'drop policy if exists "artist_interest_admin_read_write" on public.artist_interest';
+    execute '' ||
+      'create policy "artist_interest_admin_read_write" on public.artist_interest ' ||
+      'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if to_regclass('public.service_inquiries') is not null then
+    execute 'alter table public.service_inquiries enable row level security';
+    execute 'drop policy if exists "service_inquiries_public_insert" on public.service_inquiries';
+    execute '' ||
+      'create policy "service_inquiries_public_insert" on public.service_inquiries ' ||
+      'for insert to anon, authenticated with check (true)';
+    execute 'drop policy if exists "service_inquiries_admin_read_write" on public.service_inquiries';
+    execute '' ||
+      'create policy "service_inquiries_admin_read_write" on public.service_inquiries ' ||
+      'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if to_regclass('public.blog_posts') is not null then
+    execute 'alter table public.blog_posts enable row level security';
+    execute 'drop policy if exists "blog_posts_admin_only" on public.blog_posts';
+    execute '' ||
+      'create policy "blog_posts_admin_only" on public.blog_posts ' ||
+      'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
+  end if;
+end
+$$;
+
+-- Optional seed example:
+-- insert into public.admin_users (user_id, notes)
+-- values ('00000000-0000-0000-0000-000000000000', 'Initial LMNL admin');

@@ -85,7 +85,7 @@ const MANAGED_METADATA_KEYS = new Set([
 
   async function updateEventStatus(id, newStatus) {
     try {
-      await apiPost('/api/events', { action: 'update-status', id, status: newStatus });
+      await apiPost('/api/events', { action: 'update-status', id, status: newStatus }, { auth: true });
       fetchEvents();
     } catch (error) {
       console.error('Error updating event status:', error);
@@ -96,7 +96,7 @@ const MANAGED_METADATA_KEYS = new Set([
   async function deleteEvent(id) {
     triggerConfirm('Are you sure you want to delete this event permanently?', async () => {
       try {
-        await apiPost('/api/events', { action: 'delete', id });
+        await apiPost('/api/events', { action: 'delete', id }, { auth: true });
         fetchEvents();
       } catch (error) {
         console.error('Error deleting event:', error);
@@ -116,7 +116,7 @@ const MANAGED_METADATA_KEYS = new Set([
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: updatedMetadata,
-      });
+      }, { auth: true });
 
       const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_featured);
       for (const other of others) {
@@ -126,7 +126,7 @@ const MANAGED_METADATA_KEYS = new Set([
           action: 'update-metadata',
           id: other.id,
           metadata: otherMeta,
-        });
+        }, { auth: true });
       }
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
@@ -135,7 +135,7 @@ const MANAGED_METADATA_KEYS = new Set([
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: clearedMeta,
-      });
+      }, { auth: true });
     }
 
     fetchEvents();
@@ -153,7 +153,7 @@ const MANAGED_METADATA_KEYS = new Set([
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: updatedMetadata,
-      });
+      }, { auth: true });
 
       // Unset others
       const others = events.filter(e => e.id !== targetEvent.id && e.metadata?.is_home_notif);
@@ -164,7 +164,7 @@ const MANAGED_METADATA_KEYS = new Set([
           action: 'update-metadata',
           id: other.id,
           metadata: otherMeta,
-        });
+        }, { auth: true });
       }
     } else {
       const clearedMeta = { ...(targetEvent.metadata || {}) };
@@ -173,7 +173,7 @@ const MANAGED_METADATA_KEYS = new Set([
         action: 'update-metadata',
         id: targetEvent.id,
         metadata: clearedMeta,
-      });
+      }, { auth: true });
     }
 
     fetchEvents();
@@ -250,18 +250,9 @@ const MANAGED_METADATA_KEYS = new Set([
   async function enableSquareTracking(variationId) {
     triggerConfirm('Turn on inventory tracking for this item in Square?', async () => {
       try {
-        const response = await fetch('/api/enable-square-tracking', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ variationId })
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('Tracking enabled! Now set your stock count in Square.');
-          fetchSquareCatalog();
-        } else {
-          throw new Error(result.error);
-        }
+        await apiPost('/api/enable-square-tracking', { variationId }, { auth: true });
+        showToast('Tracking enabled! Now set your stock count in Square.');
+        fetchSquareCatalog();
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       }
@@ -271,16 +262,9 @@ const MANAGED_METADATA_KEYS = new Set([
   async function createTestItem() {
     triggerConfirm('This will create a real item called "API TEST TICKET" in your Square account. Proceed?', async () => {
       try {
-        const response = await fetch('/api/create-test-item', {
-          method: 'POST'
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
-          fetchSquareCatalog();
-        } else {
-          throw new Error(result.error);
-        }
+        await apiPost('/api/create-test-item', {}, { auth: true });
+        showToast('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
+        fetchSquareCatalog();
       } catch (err) {
         showToast('Error creating test item: ' + err.message, 'error');
       }
@@ -324,7 +308,7 @@ const MANAGED_METADATA_KEYS = new Set([
         ...data,
         id: editingEvent?.id,
         previousName: editingEvent?.name,
-      });
+      }, { auth: true });
       setIsModalOpen(false);
       fetchEvents();
       if (editingEvent && eventForm.name !== editingEvent.name) {

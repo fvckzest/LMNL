@@ -100,30 +100,32 @@ export default function Admin() {
 
   async function fetchRequests() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) console.error('Error fetching requests:', error);
-    else setRequests(data || []);
-    setLoading(false);
+    try {
+      const data = await apiGet('/api/requests', { auth: true });
+      setRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function fetchEvents() {
     setEventLoading(true);
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('event_date', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching events:', error);
-      if (error.code === '42P01') setTableMissing(true);
-    } else {
+    try {
+      const data = await apiGet('/api/events', { auth: true });
+      setTableMissing(false);
       setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        setTableMissing(true);
+      }
+      setEvents([]);
+    } finally {
+      setEventLoading(false);
     }
-    setEventLoading(false);
   }
 
   async function fetchTickets() {
@@ -141,92 +143,82 @@ export default function Admin() {
 
   async function fetchServiceInquiries() {
     setServicesLoading(true);
-    const { data, error } = await supabase
-      .from('service_inquiries')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) console.error('Error fetching inquiries:', error);
-    else setServiceInquiries(data || []);
-    setServicesLoading(false);
+    try {
+      const data = await apiGet('/api/service-inquiries', { auth: true });
+      setServiceInquiries(data || []);
+    } catch (error) {
+      console.error('Error fetching inquiries:', error);
+      setServiceInquiries([]);
+    } finally {
+      setServicesLoading(false);
+    }
   }
 
   async function fetchCommunityCredits() {
     setCommunityLoading(true);
-    const { data, error } = await supabase
-      .from('community_credits')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching community credits:', error);
-      if (error.code === '42P01') setCommunityTableMissing(true);
-      setCommunityCredits([]);
-    } else {
+    try {
+      const data = await apiGet('/api/community-credits', { auth: true });
+      setCommunityTableMissing(false);
       setCommunityCredits(data || []);
+    } catch (error) {
+      console.error('Error fetching community credits:', error);
+      if (error.message?.includes('not set up yet')) setCommunityTableMissing(true);
+      setCommunityCredits([]);
+    } finally {
+      setCommunityLoading(false);
     }
-    setCommunityLoading(false);
   }
 
   async function fetchArtistInterest() {
     setArtistInterestLoading(true);
-    const { data, error } = await supabase
-      .from('artist_interest')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching artist interest:', error);
-      if (error.code === '42P01') setArtistInterestTableMissing(true);
-      setArtistInterest([]);
-    } else {
+    try {
+      const data = await apiGet('/api/artist-interest', { auth: true });
       setArtistInterestTableMissing(false);
       setArtistInterest(data || []);
+    } catch (error) {
+      console.error('Error fetching artist interest:', error);
+      if (error.message?.includes('not set up yet')) setArtistInterestTableMissing(true);
+      setArtistInterest([]);
+    } finally {
+      setArtistInterestLoading(false);
     }
-    setArtistInterestLoading(false);
   }
 
   async function fetchMailingList() {
     setMailingListLoading(true);
-    const { data, error } = await supabase
-      .from('mailing_list')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching mailing list:', error);
-      if (error.code === '42P01') setMailingListTableMissing(true);
-      setMailingList([]);
-    } else {
+    try {
+      const data = await apiGet('/api/mailing-list', { auth: true });
       setMailingListTableMissing(false);
       setMailingList(data || []);
+    } catch (error) {
+      console.error('Error fetching mailing list:', error);
+      if (error.message?.includes('not set up yet')) setMailingListTableMissing(true);
+      setMailingList([]);
+    } finally {
+      setMailingListLoading(false);
     }
-    setMailingListLoading(false);
   }
 
   async function fetchBlogPosts() {
     setBlogLoading(true);
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching blog posts:', error);
-      if (error.code === '42P01') setBlogTableMissing(true);
-      setBlogPosts([]);
-    } else {
+    try {
+      const data = await apiGet('/api/blog-posts', { auth: true });
       setBlogTableMissing(false);
       setBlogPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching blog posts:', error);
+      if (error.message?.includes('not set up yet')) setBlogTableMissing(true);
+      setBlogPosts([]);
+    } finally {
+      setBlogLoading(false);
     }
-    setBlogLoading(false);
   }
 
   async function fetchSquareCatalog() {
     setFetchingCatalog(true);
     setSquareError(null);
     try {
-      const data = await apiGet('/api/square-catalog');
+      const data = await apiGet('/api/square-catalog', { auth: true });
       setSquareItems(data.catalog);
     } catch (err) {
       console.error('Catalog fetch err:', err);
@@ -238,17 +230,15 @@ export default function Admin() {
 
   async function fetchPreorders() {
     setPreordersLoading(true);
-    const { data, error } = await supabase
-      .from('merch_preorders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching preorders:', error);
-    } else {
+    try {
+      const data = await apiGet('/api/preorders', { auth: true });
       setPreorders(data || []);
+    } catch (error) {
+      console.error('Error fetching preorders:', error);
+      setPreorders([]);
+    } finally {
+      setPreordersLoading(false);
     }
-    setPreordersLoading(false);
   }
 
   async function refreshAllData() {
@@ -278,7 +268,7 @@ export default function Admin() {
   async function updateStatus(id, newStatus, requestRecord) {
     try {
       if (newStatus === 'approved') {
-        const result = await apiPost('/api/requests', { action: 'approve', requestId: id });
+        const result = await apiPost('/api/requests', { action: 'approve', requestId: id }, { auth: true });
         fetchRequests();
         if (result.warning) {
           let copiedCheckoutLink = false;
@@ -301,7 +291,7 @@ export default function Admin() {
           showToast(`Approved & email sent to ${requestRecord.customer_name}`);
         }
       } else {
-        await apiPost('/api/requests', { action: 'update', id, status: newStatus });
+        await apiPost('/api/requests', { action: 'update', id, status: newStatus }, { auth: true });
         fetchRequests();
         showToast(`Status updated to ${newStatus}`);
       }
@@ -314,7 +304,7 @@ export default function Admin() {
   async function deleteRequest(id) {
     triggerConfirm('Delete this request permanently?', async () => {
       try {
-        await apiPost('/api/requests', { action: 'delete', id });
+        await apiPost('/api/requests', { action: 'delete', id }, { auth: true });
         fetchRequests();
         showToast('Request removed.');
       } catch (error) {
@@ -325,7 +315,7 @@ export default function Admin() {
 
   async function updateServiceStatus(id, newStatus) {
     try {
-      await apiPost('/api/service-inquiries', { action: 'update', id, status: newStatus });
+      await apiPost('/api/service-inquiries', { action: 'update', id, status: newStatus }, { auth: true });
       fetchServiceInquiries();
       showToast(`Inquiry marked as ${newStatus}`);
     } catch (error) {
@@ -336,7 +326,7 @@ export default function Admin() {
   async function deleteServiceInquiry(id) {
     triggerConfirm('Delete this service inquiry permanently?', async () => {
       try {
-        await apiPost('/api/service-inquiries', { action: 'delete', id });
+        await apiPost('/api/service-inquiries', { action: 'delete', id }, { auth: true });
         fetchServiceInquiries();
         showToast('Inquiry removed.');
       } catch (error) {
@@ -347,7 +337,7 @@ export default function Admin() {
 
   async function updateArtistInterestStatus(id, newStatus) {
     try {
-      await apiPost('/api/artist-interest', { action: 'update', id, status: newStatus });
+      await apiPost('/api/artist-interest', { action: 'update', id, status: newStatus }, { auth: true });
       fetchArtistInterest();
       showToast(`Artist interest marked as ${newStatus}`);
     } catch (error) {
@@ -358,7 +348,7 @@ export default function Admin() {
   async function deleteArtistInterest(id) {
     triggerConfirm('Delete this artist interest entry permanently?', async () => {
       try {
-        await apiPost('/api/artist-interest', { action: 'delete', id });
+        await apiPost('/api/artist-interest', { action: 'delete', id }, { auth: true });
         fetchArtistInterest();
         showToast('Artist interest removed.');
       } catch (error) {

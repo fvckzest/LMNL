@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { apiPost } from '../../lib/api';
 import { ArchiveIcon, TrashIcon, UnarchiveIcon, PinIcon } from './Icons';
 
 export default function CommunityTab({
@@ -86,38 +86,33 @@ export default function CommunityTab({
       link: creditForm.link || ''
     };
 
-    let error;
-    if (editingCredit) {
-      const { error: err } = await supabase.from('community_credits').update(data).eq('id', editingCredit.id);
-      error = err;
-    } else {
-      const { error: err } = await supabase.from('community_credits').insert([data]);
-      error = err;
+    try {
+      await apiPost('/api/community-credits', {
+        ...data,
+        id: editingCredit?.id,
+      }, { auth: true });
+    } catch (error) {
+      showToast('Error saving credit: ' + error.message, 'error');
+      return;
     }
 
-    if (error) {
-      showToast('Error saving credit: ' + error.message, 'error');
-    } else {
-      setIsCommunityModalOpen(false);
-      fetchCommunityCredits();
-      showToast('Credit saved successfully');
-    }
+    setIsCommunityModalOpen(false);
+    fetchCommunityCredits();
+    showToast('Credit saved successfully');
   }
 
   async function deleteCredit(id) {
     triggerConfirm('Are you sure you want to delete this credit permanently?', async () => {
-      const { error } = await supabase
-        .from('community_credits')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
+      try {
+        await apiPost('/api/community-credits', { action: 'delete', id }, { auth: true });
+      } catch (error) {
         console.error('Error deleting credit:', error);
         showToast('Failed to delete credit: ' + error.message, 'error');
-      } else {
-        fetchCommunityCredits();
-        showToast('Credit deleted');
+        return;
       }
+
+      fetchCommunityCredits();
+      showToast('Credit deleted');
     });
   }
 
@@ -175,93 +170,41 @@ export default function CommunityTab({
       source: mailingForm.source || 'manual'
     };
 
-    let error;
-    if (editingMailingEntry) {
-      const { error: err } = await supabase.from('mailing_list').update(data).eq('id', editingMailingEntry.id);
-      error = err;
-    } else {
-      const { error: err } = await supabase.from('mailing_list').insert([data]);
-      error = err;
+    try {
+      await apiPost('/api/mailing-list', {
+        ...data,
+        id: editingMailingEntry?.id,
+      }, { auth: true });
+    } catch (error) {
+      showToast('Error saving contact: ' + error.message, 'error');
+      return;
     }
 
-    if (error) {
-      showToast('Error saving contact: ' + error.message, 'error');
-    } else {
-      setIsMailingListModalOpen(false);
-      fetchMailingList();
-      showToast('Contact saved successfully');
-    }
+    setIsMailingListModalOpen(false);
+    fetchMailingList();
+    showToast('Contact saved successfully');
   }
 
   async function deleteMailingEntry(id) {
     triggerConfirm('Delete this manual entry?', async () => {
-      const { error } = await supabase.from('mailing_list').delete().eq('id', id);
-      if (error) {
+      try {
+        await apiPost('/api/mailing-list', { action: 'delete', id }, { auth: true });
+      } catch (error) {
         showToast('Error deleting: ' + error.message, 'error');
-      } else {
-        fetchMailingList();
-        showToast('Contact removed');
+        return;
       }
+
+      fetchMailingList();
+      showToast('Contact removed');
     });
   }
 
   async function syncFromEvents() {
-    let addedCount = 0;
-    let skippedCount = 0;
-
     try {
-      for (const event of events) {
-        const performers = event.metadata?.performers 
-          ? event.metadata.performers.split(',').map(s => s.trim()).filter(Boolean) 
-          : [];
-        const artists = event.metadata?.artists 
-          ? event.metadata.artists.split(',').map(s => s.trim()).filter(Boolean) 
-          : [];
-
-        for (const name of performers) {
-          const exists = communityCredits.some(c => 
-            c.name.toLowerCase() === name.toLowerCase() && 
-            c.role === 'performer' && 
-            c.event_id === event.id
-          );
-
-          if (!exists) {
-            const { error } = await supabase.from('community_credits').insert([{
-              name,
-              role: 'performer',
-              event_id: event.id,
-              event_name: event.name
-            }]);
-            if (error) throw error;
-            addedCount++;
-          } else {
-            skippedCount++;
-          }
-        }
-
-        for (const name of artists) {
-          const exists = communityCredits.some(c => 
-            c.name.toLowerCase() === name.toLowerCase() && 
-            c.role === 'artist' && 
-            c.event_id === event.id
-          );
-
-          if (!exists) {
-            const { error } = await supabase.from('community_credits').insert([{
-              name,
-              role: 'artist',
-              event_id: event.id,
-              event_name: event.name
-            }]);
-            if (error) throw error;
-            addedCount++;
-          } else {
-            skippedCount++;
-          }
-        }
-      }
-
-      showToast(`Sync complete. Added ${addedCount} credits. Skipped ${skippedCount} duplicates.`);
+      const result = await apiPost('/api/community-credits', {
+        action: 'sync-from-events',
+      }, { auth: true });
+      showToast(`Sync complete. Added ${result.addedCount} credits. Skipped ${result.skippedCount} duplicates.`);
       fetchCommunityCredits();
     } catch (err) {
       console.error('Error syncing from events:', err);
@@ -531,6 +474,7 @@ export default function CommunityTab({
               <h3>DATABASE SETUP REQUIRED</h3>
             </div>
             <p>Please create the <code>artist_interest</code> table in your Supabase SQL Editor.</p>
+            <p style={{ marginTop: '10px' }}>Then apply <code>sql/phase1_admin_authorization.sql</code> so admin access stays allowlisted instead of granting all authenticated users access.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -559,9 +503,8 @@ export default function CommunityTab({
 
 ALTER TABLE artist_interest ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow public insert access" ON artist_interest FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow authenticated read access" ON artist_interest FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING (auth.role() = 'authenticated');`}
+CREATE POLICY "artist_interest_public_insert" ON artist_interest FOR INSERT WITH CHECK (true);
+CREATE POLICY "artist_interest_admin_read_write" ON artist_interest FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
             </pre>
             <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
           </div>
@@ -741,6 +684,7 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
               <h3>DATABASE SETUP REQUIRED</h3>
             </div>
             <p>Please create the <code>community_credits</code> table in your Supabase SQL Editor.</p>
+            <p style={{ marginTop: '10px' }}>Use <code>sql/phase1_admin_authorization.sql</code> for the allowlist-based policy setup after the table exists.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -770,8 +714,8 @@ ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
 
 ALTER TABLE community_credits ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow public read access" ON community_credits FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USING (auth.role() = 'authenticated');`}
+CREATE POLICY "community_credits_public_read" ON community_credits FOR SELECT USING (true);
+CREATE POLICY "community_credits_admin_write" ON community_credits FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
             </pre>
             <button className="admin-btn" onClick={fetchCommunityCredits}>REFRESH</button>
           </div>
@@ -937,6 +881,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
               <h3>MAILING LIST TABLE REQUIRED</h3>
             </div>
             <p>Please create the <code>mailing_list</code> table in your Supabase SQL Editor.</p>
+            <p style={{ marginTop: '10px' }}>After creating it, apply <code>sql/phase1_admin_authorization.sql</code> so only allowlisted admins can manage entries.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -959,8 +904,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
 
 ALTER TABLE mailing_list ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow authenticated read access" ON mailing_list FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (auth.role() = 'authenticated');`}
+CREATE POLICY "mailing_list_admin_only" ON mailing_list FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
             </pre>
             <button className="admin-btn" onClick={fetchMailingList}>REFRESH</button>
           </div>

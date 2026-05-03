@@ -41,8 +41,28 @@ function RouteLoadingFallback() {
 }
 
 // Protected Route Component
-function ProtectedRoute({ children }) {
+function RouteGateFallback({ message = 'VERIFYING ACCESS...' }) {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Gantari, sans-serif',
+        fontSize: '12px',
+        letterSpacing: '0.18em',
+      }}
+    >
+      {message}
+    </div>
+  );
+}
+
+function ProtectedRoute({ children, requireAdmin = false }) {
   const [session, setSession] = useState(undefined);
+  const [adminStatus, setAdminStatus] = useState(requireAdmin ? 'idle' : 'authorized');
+  const [adminError, setAdminError] = useState('');
   const location = useLocation();
 
   useEffect(() => {
@@ -74,11 +94,79 @@ function ProtectedRoute({ children }) {
     };
   }, []);
 
-  if (session === undefined) return null; // Loading state
+  useEffect(() => {
+    let cancelled = false;
+
+    async function verifyAdminAccess() {
+      if (!requireAdmin) {
+        setAdminStatus('authorized');
+        setAdminError('');
+        return;
+      }
+
+      if (!session?.access_token) {
+        setAdminStatus('idle');
+        setAdminError('');
+        return;
+      }
+
+      setAdminStatus('checking');
+      setAdminError('');
+
+      const response = await fetch('/api/admin-session', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (cancelled) {
+        return;
+      }
+
+      if (response.ok && payload?.success) {
+        setAdminStatus('authorized');
+        return;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        setAdminStatus('denied');
+        return;
+      }
+
+      setAdminStatus('error');
+      setAdminError(payload?.error?.message || payload?.message || 'Unable to verify admin access.');
+    }
+
+    verifyAdminAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requireAdmin, session]);
+
+  if (session === undefined) return <RouteGateFallback />;
 
   if (!session) {
     const next = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
+
+  if (requireAdmin) {
+    if (adminStatus === 'checking' || adminStatus === 'idle') {
+      return <RouteGateFallback />;
+    }
+
+    if (adminStatus === 'denied') {
+      const next = `${location.pathname}${location.search}${location.hash}`;
+      return <Navigate to={`/login?next=${encodeURIComponent(next)}&unauthorized=1`} replace />;
+    }
+
+    if (adminStatus === 'error') {
+      return <RouteGateFallback message={adminError || 'ADMIN ACCESS IS UNAVAILABLE.'} />;
+    }
   }
 
   return children;
@@ -108,12 +196,12 @@ function App() {
             <>
               {/* On admin.lmnl.art, the root is the Dashboard */}
               <Route path="/" element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin>
                   <Admin />
                 </ProtectedRoute>
               } />
               <Route path="/check-in/:token" element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin>
                   <CheckIn />
                 </ProtectedRoute>
               } />

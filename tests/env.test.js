@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { getApplePassConfig, getApplePassConfigMissingFields, getBaseConfig, getResendConfig, getSquareConfig, getSupabaseConfig } from '../api/_lib/env.js';
+import {
+  getAdminAuthorizationConfig,
+  getApplePassConfig,
+  getApplePassConfigMissingFields,
+  getBaseConfig,
+  getResendConfig,
+  getSquareConfig,
+  getSupabaseConfig,
+} from '../api/_lib/env.js';
 
 test('getBaseConfig provides stable defaults', () => {
   delete process.env.SITE_URL;
@@ -40,6 +48,17 @@ test('getSupabaseConfig throws when service credentials are missing', () => {
   delete process.env.SUPABASE_ANON_KEY;
 
   assert.throws(() => getSupabaseConfig(), /Supabase service credentials are missing/);
+});
+
+test('getAdminAuthorizationConfig reads explicit admin allowlists', () => {
+  process.env.ADMIN_AUTH_SOURCE = 'env';
+  process.env.ADMIN_USER_IDS = 'user-1, user-2';
+  process.env.ADMIN_USER_EMAILS = 'Admin@LMNL.art, second@lmnl.art';
+
+  const config = getAdminAuthorizationConfig();
+  assert.equal(config.source, 'env');
+  assert.deepEqual(config.adminUserIds, ['user-1', 'user-2']);
+  assert.deepEqual(config.adminUserEmails, ['admin@lmnl.art', 'second@lmnl.art']);
 });
 
 test('getResendConfig returns API key', () => {

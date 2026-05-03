@@ -82,13 +82,13 @@ export default function BlogTab({
           action: 'update',
           id: editingPost.id,
           ...formData
-        });
+        }, { auth: true });
         showToast('Blog post updated.');
       } else {
         await apiPost('/api/blog-posts', {
           action: 'create',
           ...formData
-        });
+        }, { auth: true });
         showToast('Blog post created.');
       }
       fetchBlogPosts();
@@ -103,7 +103,7 @@ export default function BlogTab({
   async function handleDeletePost(id) {
     triggerConfirm('Delete this blog post permanently?', async () => {
       try {
-        await apiPost('/api/blog-posts', { action: 'delete', id });
+        await apiPost('/api/blog-posts', { action: 'delete', id }, { auth: true });
         fetchBlogPosts();
         showToast('Blog post removed.');
       } catch (error) {

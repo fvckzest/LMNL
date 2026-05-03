@@ -111,7 +111,7 @@ function isPersistentEndDate(value) {
         category: formData.category,
         status: formData.status,
         image_url: selectedItem.imageUrl || ''
-      });
+      }, { auth: true });
       showToast('Product added successfully!');
       setIsCreating(false);
       setSelectedItem(null);
@@ -153,7 +153,7 @@ function isPersistentEndDate(value) {
         category: formData.category,
         image_url: formData.image_url,
         status: formData.status
-      })
+      }, { auth: true })
       ;
       showToast('Product updated successfully!');
       setIsEditing(false);
@@ -167,7 +167,7 @@ function isPersistentEndDate(value) {
   async function deletePreorder(id) {
     triggerConfirm('Are you sure you want to delete this preorder permanently?', async () => {
       try {
-        await apiPost('/api/preorders', { action: 'delete', id });
+        await apiPost('/api/preorders', { action: 'delete', id }, { auth: true });
         showToast('Preorder deleted.');
         fetchPreorders();
       } catch (error) {
@@ -198,7 +198,7 @@ function isPersistentEndDate(value) {
 
   async function updatePreorderStatus(id, status) {
     try {
-      await apiPost('/api/preorders', { action: 'update-status', id, status });
+      await apiPost('/api/preorders', { action: 'update-status', id, status }, { auth: true });
       showToast(`Status updated to ${status}`);
       fetchPreorders();
     } catch (error) {
