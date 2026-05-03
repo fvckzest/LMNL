@@ -1,4 +1,5 @@
 const DEFAULT_COMMUNITY_PATH = '/app';
+const COMMUNITY_LOGIN_PATH = '/app/login';
 const COMMUNITY_ONBOARDING_PATH = '/app/onboarding';
 
 export function sanitizeCommunityNextPath(nextPath) {
@@ -20,6 +21,16 @@ export function sanitizeCommunityNextPath(nextPath) {
 
 export function readCommunityNextPath(search) {
   return sanitizeCommunityNextPath(new URLSearchParams(search || '').get('next'));
+}
+
+export function buildCommunityLoginPath(nextPath) {
+  const safeNextPath = sanitizeCommunityNextPath(nextPath);
+
+  if (safeNextPath === DEFAULT_COMMUNITY_PATH) {
+    return COMMUNITY_LOGIN_PATH;
+  }
+
+  return `${COMMUNITY_LOGIN_PATH}?next=${encodeURIComponent(safeNextPath)}`;
 }
 
 export function buildCommunityOnboardingPath(nextPath) {

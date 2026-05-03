@@ -1,8 +1,14 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Suspense, cloneElement, useEffect, useState } from 'react';
 import Home from './pages/Home';
+import ContentPageShell from './components/ContentPageShell';
 import { lazyWithRetry } from './lib/lazyWithRetry';
-import { buildCommunityOnboardingPath, readCommunityNextPath, sanitizeCommunityNextPath } from './lib/communityAuth';
+import {
+  buildCommunityLoginPath,
+  buildCommunityOnboardingPath,
+  readCommunityNextPath,
+  sanitizeCommunityNextPath,
+} from './lib/communityAuth';
 import {
   COMMUNITY_APP_PATH,
   COMMUNITY_ONBOARDING_PATH,
@@ -10,6 +16,7 @@ import {
   profileNeedsOnboarding,
 } from './lib/communityProfile';
 import './index.css';
+import './pages/AppLogin.css';
 
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
@@ -67,6 +74,53 @@ function RouteGateFallback({ message = 'VERIFYING ACCESS...' }) {
     >
       {message}
     </div>
+  );
+}
+
+function CommunityRouteError({ message, nextPath }) {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+
+  async function handleResetSession() {
+    setBusy(true);
+
+    try {
+      const { supabase } = await import('./lib/supabase');
+      await supabase.auth.signOut();
+    } finally {
+      navigate(buildCommunityLoginPath(nextPath), { replace: true });
+    }
+  }
+
+  return (
+    <ContentPageShell title="APP ACCESS" color="#00c2ff" contentClassName="app-login-content">
+      <div className="app-login-layout theme-shell-section">
+        <div className="app-login-panel theme-panel">
+          <p className="app-login-kicker">LMNL Community</p>
+          <h2 className="app-login-title">Community profile setup hit a blocker.</h2>
+          <p className="app-login-copy">{message || 'Unable to prepare your community profile.'}</p>
+
+          <div className="app-login-actions">
+            <button
+              type="button"
+              className="app-login-button theme-button"
+              disabled={busy}
+              onClick={handleResetSession}
+            >
+              {busy ? 'RESETTING SESSION...' : 'SIGN OUT AND TRY AGAIN'}
+            </button>
+            <button
+              type="button"
+              className="app-login-button theme-button"
+              disabled={busy}
+              onClick={() => navigate('/', { replace: true })}
+            >
+              BACK TO LMNL HOME
+            </button>
+          </div>
+        </div>
+      </div>
+    </ContentPageShell>
   );
 }
 
@@ -251,7 +305,7 @@ function CommunityAppRoute({ children, session, allowIncomplete = false }) {
 
   if (!session) {
     const next = sanitizeCommunityNextPath(`${location.pathname}${location.search}${location.hash}`);
-    return <Navigate to={`/app/login?next=${encodeURIComponent(next)}`} replace />;
+    return <Navigate to={buildCommunityLoginPath(next)} replace />;
   }
 
   if (state.status === 'checking' || state.status === 'idle') {
@@ -259,7 +313,8 @@ function CommunityAppRoute({ children, session, allowIncomplete = false }) {
   }
 
   if (state.status === 'error') {
-    return <RouteGateFallback message={state.error || 'COMMUNITY ACCESS IS UNAVAILABLE.'} />;
+    const next = sanitizeCommunityNextPath(`${location.pathname}${location.search}${location.hash}`);
+    return <CommunityRouteError message={state.error} nextPath={next} />;
   }
 
   const needsOnboarding = profileNeedsOnboarding(state.profile);

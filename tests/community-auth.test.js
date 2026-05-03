@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildCommunityAuthPreflightUrl,
   buildCommunityAuthRedirectTo,
+  buildCommunityLoginPath,
   buildCommunityOnboardingPath,
   readCommunityNextPath,
   sanitizeCommunityNextPath,
@@ -48,6 +49,8 @@ test('buildCommunityAuthPreflightUrl forces JSON auth responses for provider che
 
 test('community next-path helpers preserve safe destinations through onboarding', () => {
   assert.equal(readCommunityNextPath('?next=%2Fapp%2Fcollection'), '/app/collection');
+  assert.equal(buildCommunityLoginPath('/app'), '/app/login');
+  assert.equal(buildCommunityLoginPath('/app/collection'), '/app/login?next=%2Fapp%2Fcollection');
   assert.equal(buildCommunityOnboardingPath('/app'), COMMUNITY_ONBOARDING_PATH);
   assert.equal(
     buildCommunityOnboardingPath('/app/collection'),

@@ -146,20 +146,30 @@ The current transitional pieces are now:
 - provider metadata coverage now has direct tests for Google / Discord / Apple-shaped identity payloads in:
   - [tests/community-auth.test.js](../tests/community-auth.test.js)
 - `createUserIdentityPayload()` now prefers provider-owned identity fields like `provider_id` / `sub` over Supabase's internal identity row id when persisting `user_identities.provider_user_id`
+- `/auth/callback` now has a basic recovery path instead of acting like a dead-end error wall:
+  - if the OAuth code exchange errors but a usable community session already exists locally, callback now continues through profile bootstrap instead of failing immediately
+  - callback error states now give the user an in-app route back to `/app/login`, plus a clean sign-out-and-retry option when a session exists but bootstrap needs to be restarted
+- `/app` and `/app/onboarding` now also avoid a bootstrap-failure dead end:
+  - if `ensureCommunityProfile()` fails inside the protected community route gate after sign-in, the user now gets a community-scoped recovery screen with sign-out-and-retry and back-home actions instead of a bare static fallback message
+- local dev runtime now proactively clears stale service workers and caches in `import.meta.env.DEV` on `localhost` / `127.0.0.1`:
+  - this is meant to prevent old PWA workers from pinning the in-app browser to stale community-auth UI while the source tree and served module code have already moved on
+  - after restarting the local Vite server on `http://127.0.0.1:4174`, `/auth/callback?next=%2Fapp` now renders the recovery buttons in-browser again and `RETURN TO COMMUNITY SIGN-IN` successfully routes to `/app/login`
 
 ### Current GitHub checkpoint
 
 The current Phase 1 security-first implementation work has been saved off `main` on:
 
 - branch: `codex-phase1-admin-hardening`
-- latest committed checkpoint: `c6abfbe`
+- latest committed checkpoint: `1c36035`
 - PR entry point:
   - https://github.com/fvckzest/LMNL/pull/new/codex-phase1-admin-hardening
 
-There is also newer uncommitted working-tree hardening on top of `c6abfbe` covering:
+There is also newer uncommitted working-tree hardening on top of `1c36035` covering:
 
-- provider-start error handling for disabled OAuth providers on `/app/login`
-- `provider_user_id` normalization so `user_identities` does not accidentally persist Supabase identity row ids as provider account ids
+- callback recovery when `/auth/callback` is revisited or otherwise lands in an exchange-error state even though a usable community session already exists locally
+- callback error-state recovery CTAs so users can return to community sign-in or sign out and retry instead of being stranded on a static error panel
+- route-gate recovery CTAs so `/app` bootstrap failures do not trap signed-in community users on an inert "community access is unavailable" message
+- local-only service-worker cleanup in `src/main.jsx` to reduce stale-cache false negatives during community-auth browser verification
 
 Future Codex instances working on this rollout should prefer continuing from that branch instead of rebuilding this work from the `main` branch state.
 

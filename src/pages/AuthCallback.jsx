@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
-import { readCommunityNextPath } from '../lib/communityAuth';
+import { buildCommunityLoginPath, readCommunityNextPath } from '../lib/communityAuth';
 import { ensureCommunityProfile, resolveCommunityDestination } from '../lib/communityProfile';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 import './AppLogin.css';
@@ -11,7 +11,9 @@ export default function AuthCallback({ session }) {
   const navigate = useNavigate();
   const [status, setStatus] = useState('working');
   const [error, setError] = useState('');
+  const [hasRecoveredSession, setHasRecoveredSession] = useState(Boolean(session));
   const nextPath = useMemo(() => readCommunityNextPath(location.search), [location.search]);
+  const loginPath = useMemo(() => buildCommunityLoginPath(nextPath), [nextPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,15 +34,18 @@ export default function AuthCallback({ session }) {
       if (hasCode) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(url);
         if (exchangeError) {
-          if (!cancelled) {
-            setStatus('error');
-            setError(exchangeError.message || 'Unable to complete sign-in.');
-          }
-          return;
-        }
+          const { data: recoveredSessionData } = await supabase.auth.getSession();
+          currentSession = recoveredSessionData?.session || currentSession;
 
-        const { data: exchangedSessionData } = await supabase.auth.getSession();
-        currentSession = exchangedSessionData?.session || null;
+          if (!currentSession) {
+            if (!cancelled) {
+              setHasRecoveredSession(false);
+              setStatus('error');
+              setError(exchangeError.message || 'Unable to complete sign-in.');
+            }
+            return;
+          }
+        }
       }
 
       if (!currentSession) {
@@ -49,6 +54,7 @@ export default function AuthCallback({ session }) {
       }
 
       if (!cancelled) {
+        setHasRecoveredSession(Boolean(currentSession));
         if (currentSession) {
           try {
             const { profile } = await ensureCommunityProfile({
@@ -78,6 +84,14 @@ export default function AuthCallback({ session }) {
     };
   }, [navigate, nextPath, session]);
 
+  async function handleRetrySignIn() {
+    if (hasRecoveredSession) {
+      await supabase.auth.signOut();
+    }
+
+    navigate(loginPath, { replace: true });
+  }
+
   return (
     <ContentPageShell title="AUTH" color="#00c2ff" contentClassName="app-login-content">
       <div className="app-login-layout theme-shell-section">
@@ -91,6 +105,17 @@ export default function AuthCallback({ session }) {
               ? error
               : 'We are finishing the community session and routing you into the app shell.'}
           </p>
+
+          {status === 'error' ? (
+            <div className="app-login-actions">
+              <button type="button" className="app-login-button theme-button" onClick={handleRetrySignIn}>
+                {hasRecoveredSession ? 'SIGN OUT AND TRY AGAIN' : 'RETURN TO COMMUNITY SIGN-IN'}
+              </button>
+              <button type="button" className="app-login-button theme-button" onClick={() => navigate('/', { replace: true })}>
+                BACK TO LMNL HOME
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </ContentPageShell>
