@@ -24,8 +24,8 @@ export default function AppHome({ session, profile }) {
           <p className="app-login-kicker">Community Session Active</p>
           <h2 className="app-login-title">Your community profile is live.</h2>
           <p className="app-login-copy">
-            Community auth is now bootstrapping LMNL-owned identity on top of the session shell. This keeps
-            admin authorization separate while giving Phase 1 a stable profile layer to build on.
+            Phase 1 community auth is now establishing LMNL-owned identity on top of the session shell.
+            Admin authorization stays separate while the app gains a stable profile layer for the next buildout.
           </p>
 
           <div className="app-login-note">

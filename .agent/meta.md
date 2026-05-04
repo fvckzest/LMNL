@@ -138,8 +138,11 @@ The current transitional pieces are now:
 - Google OAuth is now enabled in Supabase
 - Supabase signups are now enabled, which was required to allow first-time Google OAuth community users instead of failing with `signup_disabled`
 - Google authorize preflight now reaches Google successfully for the local callback target `http://127.0.0.1:4174/auth/callback?next=%2Fapp`
-- a real local browser pass has now reached `/app/onboarding` for a first-time Google community user, confirming:
+- a real local browser pass has now completed the full Google Phase 1 community flow, confirming:
   - `/app/login` -> Google -> `/auth/callback` -> profile bootstrap -> `/app/onboarding`
+  - onboarding submit now lands correctly in `/app`
+  - sign out and re-enter with Google now skips onboarding and lands directly in `/app`
+  - app home/profile shell state has been manually verified after onboarding completion
   - provider-backed LMNL profile bootstrap is functioning for at least one real community account
 - Discord and Apple still need live provider enablement verification and currently still return `Unsupported provider: provider is not enabled` from authorize preflight
 - the community login surface now preflights provider authorize URLs so disabled providers fail in-app with a readable message instead of bouncing users to a raw Supabase JSON error page
@@ -172,6 +175,10 @@ The current transitional pieces are now:
   - callback error states now give the user an in-app route back to `/app/login`, plus a clean sign-out-and-retry option when a session exists but bootstrap needs to be restarted
 - `/app` and `/app/onboarding` now also avoid a bootstrap-failure dead end:
   - if `ensureCommunityProfile()` fails inside the protected community route gate after sign-in, the user now gets a community-scoped recovery screen with sign-out-and-retry and back-home actions instead of a bare static fallback message
+- mixed admin + community access resolving to the same Supabase user is currently considered acceptable:
+  - admin routes and APIs still require explicit admin authorization
+  - community app routes still require eligible provider-backed community sessions
+  - shared authentication identity is allowed; shared authorization is not
 - local dev runtime now proactively clears stale service workers and caches in `import.meta.env.DEV` on `localhost` / `127.0.0.1`:
   - this is meant to prevent old PWA workers from pinning the in-app browser to stale community-auth UI while the source tree and served module code have already moved on
   - after restarting the local Vite server on `http://127.0.0.1:4174`, `/auth/callback?next=%2Fapp` now renders the recovery buttons in-browser again and `RETURN TO COMMUNITY SIGN-IN` successfully routes to `/app/login`
@@ -185,7 +192,7 @@ The current Phase 1 security-first implementation work has been saved off `main`
 - PR entry point:
   - https://github.com/fvckzest/LMNL/pull/new/codex-phase1-admin-hardening
 
-There is also newer uncommitted working-tree hardening on top of `ee903ad` covering:
+There is also newer post-`ee903ad` hardening covering:
 
 - onboarding hardening so provider-prefilled community profiles still require explicit LMNL confirmation before `/app` access is granted:
   - new profile bootstrap still stores provider-derived `display_name` / `avatar_url` when available
@@ -204,7 +211,9 @@ There is also newer uncommitted working-tree hardening on top of `ee903ad` cover
   - profile and identity bootstrap now recover from duplicate-row races instead of failing on unique constraints
 - real browser verification progress:
   - first-time Google sign-in now reaches `/app/onboarding` locally for a clean community account
-  - onboarding submission into `/app` still needs to be completed and verified before calling the Google path fully closed
+  - onboarding submission into `/app` has now been completed and verified
+  - returning-user Google re-entry now skips onboarding and lands directly in `/app`
+  - app home/profile shell state has now been manually verified after onboarding completion
 
 Future Codex instances working on this rollout should prefer continuing from that branch instead of rebuilding this work from the `main` branch state.
 
@@ -216,14 +225,14 @@ The next implementation priority is not visual social features.
 
 The next priority is:
 
-`Phase 1 with security-first sequencing`
+`Phase 2 orientation: attendance proof on top of the verified identity layer`
 
 That means:
 
-1. harden admin authorization before community auth launches
-2. implement community OAuth shell
-3. add profile bootstrap
-4. later add attendance-backed identity history
+1. preserve the verified Google-backed community auth path
+2. keep admin/community authorization boundaries explicit
+3. design the attendance proof layer from the ground up now that LMNL identity exists
+4. implement attendance-backed identity history before collectibles, links, or unlocks
 
 The admin console currently uses Supabase Auth already.
 
@@ -231,16 +240,19 @@ Because future community users will also use Supabase Auth, admin authorization 
 
 That separation is now enforced at the database-policy level for current admin-managed surfaces, and the next step is completing community-facing identity bootstrap on top of that boundary.
 
-That identity bootstrap now exists, so the remaining near-term Phase 1 work is making the community auth surface feel operationally safe and launch-ready without weakening the admin/community boundary.
+That identity bootstrap now exists, and the Google-backed Phase 1 community path has been browser-verified end to end without weakening the admin/community boundary.
 
-At this point, the most important remaining work is no longer proving that Google OAuth can reach onboarding, because that has now been demonstrated in-browser.
+At this point, Phase 1 can be treated as operationally complete on the verified Google path, and the project can move into Phase 2 planning.
 
-The most important remaining work is:
+The most important remaining work is now:
 
-- completing onboarding submission into `/app`
-- verifying the returning-user path after onboarding is complete
-- deciding how much special handling is needed when an admin identity and a community OAuth identity map to the same Supabase user
-- enabling and verifying Discord and Apple later without regressing the Google path
+- deciding the right conceptual shape for attendance proof now that auth and profiles are real
+- deciding how checked-in tickets or invite artifacts should resolve to a signed-in LMNL community user
+- deciding the first Phase 2 schema and service boundaries for attendance records and verification provenance
+- deciding the first user-facing attendance history surface inside `/app`
+- deciding when to enable and verify Discord without regressing Google
+- deciding when to enable and verify Apple without regressing Google
+- deciding when to retire the temporary env-based admin allowlist fallback
 
 ---
 
@@ -390,6 +402,24 @@ Important files:
 
 These matter when changing auth boundaries or social primitives.
 
+### Existing attendance / ticket operations
+
+Important files:
+
+- [api/_lib/services/tickets.js](../api/_lib/services/tickets.js)
+- [api/_lib/repositories/tickets.js](../api/_lib/repositories/tickets.js)
+- [src/pages/CheckIn.jsx](../src/pages/CheckIn.jsx)
+- [src/pages/Ticket.jsx](../src/pages/Ticket.jsx)
+- [api/_lib/services/webhook-fulfillment.js](../api/_lib/services/webhook-fulfillment.js)
+
+What matters:
+
+- LMNL already has admin-authenticated ticket validation and check-in flows
+- ticket issuance and Square fulfillment already connect ticket records to events and guest contact data
+- current check-in marks ticket usage operationally, but does not yet create a LMNL-owned attendance record
+- there is not yet an `attendances` table or attendance-verification provenance layer in the community system
+- there is not yet a clean bridge from checked-in participation artifacts back to a signed-in community profile
+
 ---
 
 ## 7. Chosen Product Decisions So Far
@@ -414,6 +444,19 @@ Chosen MVP strategy:
 - tied to ticket or invite eligibility when available
 - staff/admin fallback allowed
 
+Phase 2 direction now established:
+
+- the first meaningful authenticated community surface should feel like a dashboard on the user's own page
+- Phase 2 should emphasize collection, access, and status
+- the canonical Phase 2 object should combine:
+  - an artifact proving the user attended
+  - points gained for showing up
+  - a connection to others who attended
+- performer participation should count as more valuable than standard attendance
+- staff-verified attendance must be allowed to attach later so past events can be connected retroactively
+- the MVP should stay lightweight and direct rather than trying to expose every possible social or rarity system immediately
+- the desired emotional outcome is that once someone is inside LMNL, showing up, contributing, or performing makes them part of the network
+
 ### Social reveal posture
 
 Early social surfaces should be conservative.
@@ -436,29 +479,53 @@ Use stable system primitives.
 
 Do not overfit to one final UI metaphor.
 
+### Phase 2 product posture
+
+Phase 2 should not begin as a generic event log.
+
+It should begin as the first real LMNL dashboard:
+
+- a personal status surface
+- a collection-oriented attendance history
+- an access/progression signal
+- the earliest proof that the user is now part of the LMNL network
+
+The implementation should still stay modular underneath that surface:
+
+- attendance record
+- artifact / collectible layer
+- points / status layer
+- relationship / connection layer
+
 ---
 
 ## 8. Expected Next Steps
 
 Unless the user explicitly redirects, the next likely work should follow this order:
 
-1. admin authorization hardening
-2. community auth shell
-3. profile bootstrap
-4. attendance model implementation
+1. Phase 2 attendance model design
+2. attendance schema and verification provenance implementation
+3. attendance-to-profile identity linking
+4. first authenticated attendance history surface in `/app`
 5. first collectible history
 6. first overlap signal
 7. first unlock/access rule
 
 The most urgent technical safety task is:
 
-`make admin authorization explicit before community auth goes live`
+`turn operational check-in into LMNL-owned attendance without weakening legitimacy or auth boundaries`
 
-This now means finishing the remaining pieces around the code hardening that has already started:
+This now means:
 
+- introducing a first-class attendance record and verification provenance model
+- deciding how ticket-linked or invite-linked event participation resolves to a signed-in LMNL user
+- keeping RSVP, purchase, and verified attendance distinct in both schema and product language
+- exposing the first attendance history state inside the community app as a dashboard rather than a bare admin-style log
+- deciding how to represent performer/contributor attendance as a higher-value participation type
+- supporting staff-attached and retroactively attached attendance without weakening legitimacy
+- preserving the now-verified Google path while later providers are added
 - completing the shift from transitional env fallback to table-backed authorization as the only long-term source of truth
 - enabling and verifying the remaining provider configuration for Discord / Apple
-- completing the real Google browser verification pass through onboarding submission and returning-user re-entry
 - extending profile bootstrap after additional real provider rollout if more metadata mapping is needed
 
 Application-side admin dashboard reads and community-management writes now route through protected server APIs rather than browser-side Supabase table access in the main admin flow.

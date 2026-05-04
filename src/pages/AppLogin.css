@@ -6,6 +6,8 @@
 
 .app-login-layout {
   width: min(100%, 720px);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .app-login-panel {

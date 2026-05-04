@@ -167,8 +167,8 @@ export default function AppLogin({ session }) {
           {!session && error ? <p className="app-login-error">{error.toUpperCase()}</p> : null}
 
           <div className="app-login-note">
-            <p>Current scope: separate auth shell only.</p>
-            <p>Profile bootstrap and onboarding land next.</p>
+            <p>Current scope: Phase 1 community identity access.</p>
+            <p>Google community sign-in, profile bootstrap, and onboarding are now live.</p>
           </div>
         </div>
       </div>
