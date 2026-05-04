@@ -75,7 +75,7 @@ function createMessageResponse(content) {
     type: 4,
     data: {
       content,
-      flags: EPHEMERAL_FLAG,
+      //flags: EPHEMERAL_FLAG,
     },
   };
 }
