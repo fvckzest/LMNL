@@ -12,7 +12,17 @@ export const config = {
 };
 
 async function handler(req, res) {
-  allowMethods(req, ['POST']);
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      data: {
+        service: 'discord-interactions',
+        status: 'ready',
+      },
+    });
+  }
 
   const rawBody = await readRawBody(req);
   const signature = req.headers['x-signature-ed25519'];
