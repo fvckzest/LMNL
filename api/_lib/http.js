@@ -29,20 +29,38 @@ export async function parseJsonBody(req) {
     }
   }
 
+  const rawBody = await readRawBody(req);
+  if (rawBody.trim()) {
+    try {
+      const parsed = JSON.parse(rawBody);
+      req.body = parsed;
+      return parsed;
+    } catch (error) {
+      throw new AppError('Invalid JSON body.', {
+        code: 'INVALID_JSON',
+        status: 400,
+        details: error,
+        expose: true,
+      });
+    }
+  }
+
   return {};
 }
 
 export async function readRawBody(req) {
+  if (typeof req.__rawBody === 'string') {
+    return req.__rawBody;
+  }
+
   if (typeof req.body === 'string') {
-    return req.body;
+    req.__rawBody = req.body;
+    return req.__rawBody;
   }
 
   if (Buffer.isBuffer(req.body)) {
-    return req.body.toString('utf8');
-  }
-
-  if (req.body && typeof req.body === 'object') {
-    return JSON.stringify(req.body);
+    req.__rawBody = req.body.toString('utf8');
+    return req.__rawBody;
   }
 
   const chunks = [];
@@ -50,7 +68,8 @@ export async function readRawBody(req) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
 
-  return Buffer.concat(chunks).toString('utf8');
+  req.__rawBody = Buffer.concat(chunks).toString('utf8');
+  return req.__rawBody;
 }
 
 export function sendJson(res, status, payload) {

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError, verifyTurnstileToken } from './_lib/http.js';
 import { requireAdminUser } from './_lib/auth.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
+import handleDiscordInteractions from './discord-interactions.js';
 import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
 import { getVariationInventory } from './_lib/services/inventory.js';
@@ -571,9 +572,16 @@ async function handleSquareCatalog(req, res) {
 
 async function handleSquareWebhook(req, res) {
   allowMethods(req, ['POST']);
-  const result = await processSquareOrderUpdate(req.body, req.headers);
+  const body = await parseJsonBody(req);
+  const result = await processSquareOrderUpdate(body, req.headers);
   return sendJson(res, 200, { success: true, data: result });
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 const handlers = {
   'check-inventory': handleCheckInventory,
@@ -600,6 +608,7 @@ const handlers = {
   'blog-posts': handleBlogPosts,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
+  'discord-interactions': handleDiscordInteractions,
   'square-webhook': handleSquareWebhook,
 };
 
