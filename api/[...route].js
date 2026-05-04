@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppError, verifyTurnstileToken } from './_lib/http.js';
 import { requireAdminUser } from './_lib/auth.js';
+import { requireCommunityUser } from './_lib/auth-community.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
 import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
@@ -9,6 +10,12 @@ import { generateTicketPass } from './_lib/services/passkit.js';
 import { createPaymentForPreorder, getPreorderCheckoutView } from './_lib/services/preorder-checkout.js';
 import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services/request-checkout.js';
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
+import {
+  attachAttendanceSourceToUser,
+  claimAttendanceSourceForUser,
+  createManualAttendanceSource,
+} from './_lib/services/attendance.js';
+import { getCommunityDashboard } from './_lib/services/community-dashboard.js';
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
@@ -337,13 +344,60 @@ async function handleGetTicket(req, res) {
 
 async function handleCheckInTicket(req, res) {
   allowMethods(req, ['GET', 'POST']);
-  await requireAdminUser(req);
+  const adminUser = await requireAdminUser(req);
 
   const body = req.method === 'POST' ? await parseJsonBody(req) : {};
   const token = requireValue(req.query?.token || body.token, 'token is required.');
   const data = req.method === 'POST'
-    ? await confirmCheckInTicket(token)
+    ? await confirmCheckInTicket(token, { verifiedByAdminUserId: adminUser.id })
     : await getCheckInTicketView(token);
+
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleAppDashboard(req, res) {
+  allowMethods(req, ['GET']);
+  const user = await requireCommunityUser(req);
+  const data = await getCommunityDashboard(user);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleAttendanceClaim(req, res) {
+  allowMethods(req, ['POST']);
+  const user = await requireCommunityUser(req);
+  const body = await parseJsonBody(req);
+  const sourceId = requireValue(body.sourceId, 'sourceId is required.');
+  const data = await claimAttendanceSourceForUser(sourceId, user);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleAdminAttendanceAttach(req, res) {
+  allowMethods(req, ['POST']);
+  const adminUser = await requireAdminUser(req);
+  const body = await parseJsonBody(req);
+
+  if (body.sourceId) {
+    const userId = requireValue(body.userId, 'userId is required.');
+    const data = await attachAttendanceSourceToUser({
+      sourceId: body.sourceId,
+      userId,
+      adminUserId: adminUser.id,
+      participationTier: body.participationTier,
+    });
+
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const eventId = requireValue(body.eventId, 'eventId is required.');
+  const data = await createManualAttendanceSource({
+    eventId,
+    userId: body.userId || null,
+    adminUserId: adminUser.id,
+    contactEmail: body.contactEmail || '',
+    contactName: body.contactName || '',
+    participationTier: body.participationTier || 'attendee',
+    notes: body.notes || '',
+  });
 
   return sendJson(res, 200, { success: true, data });
 }
@@ -742,6 +796,9 @@ const handlers = {
   'create-checkout': handleCreateCheckout,
   'create-event-checkout': handleCreateEventCheckout,
   'create-request-checkout': handleCreateRequestCheckout,
+  'app-dashboard': handleAppDashboard,
+  'attendance-claim': handleAttendanceClaim,
+  'admin-attendance-attach': handleAdminAttendanceAttach,
   'event-stats': handleEventStats,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,

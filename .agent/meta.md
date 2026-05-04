@@ -254,6 +254,57 @@ The most important remaining work is now:
 - deciding when to enable and verify Apple without regressing Google
 - deciding when to retire the temporary env-based admin allowlist fallback
 
+Phase 2 orientation has now been translated into a concrete MVP direction in:
+
+- [.agent/phase2_attendance_dashboard_mvp.md](./phase2_attendance_dashboard_mvp.md)
+
+The first implementation slice of that MVP now exists in code:
+
+- [sql/phase2_attendance_dashboard.sql](../sql/phase2_attendance_dashboard.sql)
+- [api/_lib/auth-community.js](../api/_lib/auth-community.js)
+- [api/_lib/repositories/attendance.js](../api/_lib/repositories/attendance.js)
+- [api/_lib/services/attendance.js](../api/_lib/services/attendance.js)
+- [api/_lib/services/community-dashboard.js](../api/_lib/services/community-dashboard.js)
+- [src/pages/AppHome.jsx](../src/pages/AppHome.jsx)
+- [src/pages/AppHome.css](../src/pages/AppHome.css)
+
+That implementation currently provides:
+
+- a separate community bearer-token auth helper so community API reads do not piggyback on admin authorization
+- a first Phase 2 SQL shape for:
+  - attendance verification provenance
+  - canonical attendance records
+  - attendance artifacts
+  - point ledger entries
+- a community dashboard endpoint at `/api/app-dashboard`
+- a community claim endpoint at `/api/attendance-claim`
+- an admin attach endpoint at `/api/admin-attendance-attach`
+- attendance-aware ticket check-in capture:
+  - admin ticket check-in still marks the operational ticket as used
+  - and now also attempts to record Phase 2 attendance provenance without breaking the check-in flow if the new tables are not present yet
+- a new `/app` dashboard UI that surfaces:
+  - latest proof
+  - event/point status
+  - recent attendance history
+  - shared attendance preview
+  - pending claimable proof
+
+That working direction currently assumes:
+
+- `/app` should become a personal dashboard immediately after verified attendance
+- the first canonical Phase 2 object is a verified attendance record connected to:
+  - proof provenance
+  - a user-facing attendance artifact
+  - point ledger entries
+  - derived shared-attendance connections
+- performer participation should be modeled as a stronger attendance tier, not as a duplicate event-history row
+- unresolved ticket or invite proof may exist before user resolution and can later be attached by exact identity match or explicit staff action
+- retroactive staff attachment is an intentional MVP capability and must preserve provenance instead of looking identical to a real-time self-claim
+- the first implementation pass should stay lightweight:
+  - no heavy public social graph
+  - no full collectible economy
+  - no loosened admin/community authorization boundary
+
 ---
 
 ## 4. Non-Negotiable Guardrails

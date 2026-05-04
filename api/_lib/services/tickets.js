@@ -4,6 +4,7 @@ import {
   getTicketWithEventByQrPayload,
   markTicketAsUsed,
 } from '../repositories/tickets.js';
+import { recordTicketAttendanceVerification } from './attendance.js';
 
 function isLocalHostname(hostname = '') {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -62,20 +63,47 @@ export async function confirmCheckInTicket(token, deps = {}) {
 
   const loadTicketByQrPayload = deps.getTicketWithEventByQrPayload || getTicketWithEventByQrPayload;
   const updateTicketUsage = deps.markTicketAsUsed || markTicketAsUsed;
+  const recordAttendance = deps.recordTicketAttendanceVerification || recordTicketAttendanceVerification;
   const { ticket, event } = await loadTicketByQrPayload(normalizedToken);
 
   if (ticket.is_used) {
+    let attendanceResult = null;
+
+    try {
+      attendanceResult = await recordAttendance({
+        ticket,
+        event,
+        verifiedByAdminUserId: deps.verifiedByAdminUserId || null,
+      });
+    } catch (error) {
+      console.error('[attendance] failed to capture already-used ticket verification', error);
+    }
+
     return {
       status: 'already_used',
       ticket,
       event,
+      attendance: attendanceResult,
     };
   }
 
   const updatedTicket = await updateTicketUsage(ticket.id);
+  let attendanceResult = null;
+
+  try {
+    attendanceResult = await recordAttendance({
+      ticket: updatedTicket,
+      event,
+      verifiedByAdminUserId: deps.verifiedByAdminUserId || null,
+    });
+  } catch (error) {
+    console.error('[attendance] failed to capture ticket verification', error);
+  }
+
   return {
     status: 'checked_in',
     ticket: updatedTicket,
     event,
+    attendance: attendanceResult,
   };
 }
