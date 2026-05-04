@@ -24,6 +24,10 @@ export function getBaseConfig() {
     siteUrl: readEnv('SITE_URL') || 'https://lmnl.art',
     squareWebhookUrl: readEnv('SQUARE_WEBHOOK_URL') || 'https://lmnl.art/api/square-webhook',
     squareWebhookSignatureKey: readEnv('SQUARE_WEBHOOK_SIGNATURE_KEY'),
+    discordApplicationId: readEnv('DISCORD_APPLICATION_ID'),
+    discordBotToken: readEnv('DISCORD_BOT_TOKEN'),
+    discordPublicKey: readEnv('DISCORD_PUBLIC_KEY'),
+    discordTicketChannelId: readEnv('DISCORD_TICKET_CHANNEL_ID'),
     nodeEnv: readEnv('NODE_ENV') || 'development',
   };
 }

@@ -8,10 +8,18 @@ import { getApplePassConfig, getApplePassConfigMissingFields, getBaseConfig, get
 test('getBaseConfig provides stable defaults', () => {
   delete process.env.SITE_URL;
   delete process.env.SQUARE_WEBHOOK_URL;
+  delete process.env.DISCORD_APPLICATION_ID;
+  delete process.env.DISCORD_BOT_TOKEN;
+  delete process.env.DISCORD_PUBLIC_KEY;
+  delete process.env.DISCORD_TICKET_CHANNEL_ID;
 
   const config = getBaseConfig();
   assert.equal(config.siteUrl, 'https://lmnl.art');
   assert.equal(config.squareWebhookUrl, 'https://lmnl.art/api/square-webhook');
+  assert.equal(config.discordApplicationId, '');
+  assert.equal(config.discordBotToken, '');
+  assert.equal(config.discordPublicKey, '');
+  assert.equal(config.discordTicketChannelId, '');
 });
 
 test('getSquareConfig reads sandbox token', () => {

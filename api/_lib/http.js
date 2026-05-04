@@ -32,6 +32,27 @@ export async function parseJsonBody(req) {
   return {};
 }
 
+export async function readRawBody(req) {
+  if (typeof req.body === 'string') {
+    return req.body;
+  }
+
+  if (Buffer.isBuffer(req.body)) {
+    return req.body.toString('utf8');
+  }
+
+  if (req.body && typeof req.body === 'object') {
+    return JSON.stringify(req.body);
+  }
+
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 export function sendJson(res, status, payload) {
   return res.status(status).json(payload);
 }

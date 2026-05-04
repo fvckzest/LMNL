@@ -60,6 +60,10 @@ SQUARE_ACCESS_TOKEN=your_square_access_token
 SQUARE_WEBHOOK_SIGNATURE_KEY=your_webhook_signature
 SITE_URL=https://lmnl.space (or your domain)
 RESEND_API_KEY=your_resend_api_key
+DISCORD_APPLICATION_ID=your_discord_application_id
+DISCORD_BOT_TOKEN=your_discord_bot_token
+DISCORD_PUBLIC_KEY=your_discord_public_key
+DISCORD_TICKET_CHANNEL_ID=your_discord_channel_id
 APPLE_PASS_TYPE_IDENTIFIER=pass.art.lmnl
 APPLE_TEAM_ID=your_apple_team_id
 APPLE_PASS_CERTIFICATE=base64_encoded_p12_contents
@@ -69,6 +73,11 @@ APPLE_PASS_CERTIFICATE_PASSWORD=your_p12_export_password
 
 For Apple Wallet, provide either `APPLE_PASS_CERTIFICATE` or `APPLE_PASS_CERTIFICATE_PATH`.
 The repo now supports password-protected `.p12` exports directly, which is the normal Apple certificate flow.
+
+For Discord slash commands:
+- Set the Interactions Endpoint URL in the Discord developer portal to `https://your-domain/api/discord-interactions`.
+- Add `DISCORD_APPLICATION_ID`, `DISCORD_BOT_TOKEN`, and `DISCORD_PUBLIC_KEY` to production.
+- Register commands with `npm run register:discord-commands`.
 
 ---
 

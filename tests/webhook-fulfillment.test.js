@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { processSquareOrderUpdate, resolveCustomer, sendTicketEmail } from '../api/_lib/services/webhook-fulfillment.js';
+import {
+  processSquareOrderUpdate,
+  resolveCustomer,
+  sendTicketEmail,
+} from '../api/_lib/services/webhook-fulfillment.js';
 
 test('processSquareOrderUpdate returns replay when ticket already exists', async () => {
   const result = await processSquareOrderUpdate(
@@ -20,6 +24,7 @@ test('processSquareOrderUpdate returns replay when ticket already exists', async
 
 test('processSquareOrderUpdate creates ticket when order is fulfillable', async () => {
   const createdTickets = [];
+  const discordNotifications = [];
   const result = await processSquareOrderUpdate(
     {
       type: 'order.updated',
@@ -52,10 +57,15 @@ test('processSquareOrderUpdate creates ticket when order is fulfillable', async 
         return { id: 'ticket_new', ...payload };
       },
       sendTicketEmail: async () => {},
+      sendDiscordTicketNotification: async (...args) => {
+        discordNotifications.push(args);
+      },
     }
   );
 
   assert.equal(createdTickets.length, 1);
+  assert.equal(discordNotifications.length, 1);
+  assert.equal(discordNotifications[0][0].id, 'ticket_new');
   assert.equal(createdTickets[0].square_order_id, 'order_2');
   assert.deepEqual(result, { success: true, ticketId: 'ticket_new' });
 });
