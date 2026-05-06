@@ -1,11 +1,18 @@
 import { useState, Fragment } from 'react';
 import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
+import ServiceProductsPanel from './ServiceProductsPanel';
 
  export default function InquiriesTab({
    serviceInquiries,
    servicesLoading,
    updateServiceStatus,
    deleteServiceInquiry,
+   serviceProducts,
+   serviceProductsLoading,
+   serviceProductsTableMissing,
+   fetchServiceProducts,
+   showToast,
+   triggerConfirm,
    pinnedSections = [],
    onTogglePin = () => {},
    renderMode = 'all'
@@ -107,7 +114,7 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
                         <td>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {Array.isArray(req.selected_services) && req.selected_services.map(s => (
-                              <span key={s} className="status-pill active" style={{ fontSize: '10px', background: '#6222d8', color: '#ffffff', borderRadius: '0px' }}>
+                              <span key={s} className="status-pill active">
                                 {s.toUpperCase()}
                               </span>
                             ))}
@@ -204,6 +211,18 @@ import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
           </table>
         )}
       </div>
+
+      <div className="section-title-container" style={{ marginTop: '18px' }}>
+        <h2 className="section-title">PRODUCT TABLE OFFERINGS</h2>
+      </div>
+      <ServiceProductsPanel
+        serviceProducts={serviceProducts}
+        serviceProductsLoading={serviceProductsLoading}
+        serviceProductsTableMissing={serviceProductsTableMissing}
+        fetchServiceProducts={fetchServiceProducts}
+        showToast={showToast}
+        triggerConfirm={triggerConfirm}
+      />
      </section>
   ) : null;
 }

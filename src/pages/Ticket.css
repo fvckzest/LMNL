@@ -1,93 +1,56 @@
-.ticket-page {
-  /* Inherits standard white background from .page-container */
-}
-
-.ticket-content {
-  display: flex;
-  flex-direction: column;
+.ticket-content,
+.ticket-body {
   width: 100%;
 }
 
 .ticket-body {
-  margin-top: 160px;
-  padding: 0 40px;
   display: flex;
   flex-direction: column;
-  gap: 60px;
-  width: 100%;
-  max-width: 1200px;
+  gap: 18px;
 }
 
 .ticket-message {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  letter-spacing: 0.2em;
+  gap: 10px;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(11px * 1.25);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: black;
-  font-weight: 600;
-  margin-top: 40px;
+  color: var(--lmnl-color-text);
 }
 
 .ticket-message.error {
-  color: #ff0000;
+  color: #d45e5e;
 }
 
 .pulse-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background-color: black;
+  border-radius: 999px;
+  background: var(--page-color);
 }
 
 .pulse-dot.active {
-  background-color: #00ff41;
-  box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
-  animation: pulse 2s infinite;
-}
-
-.pulse-dot.error-dot {
-  background-color: #ff0000;
-  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+  animation: ticket-pulse 1.6s infinite;
 }
 
 .ticket-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 60px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.86fr);
+  gap: 18px;
 }
-
-@media (min-width: 1024px) {
-  .ticket-grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-    gap: 80px;
-  }
-  .ticket-qr-col {
-    order: 0;
-  }
-}
-
 
 .ticket-details-col {
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  border-left: 2px solid black;
-  padding-left: 30px;
-  animation: revealRight 0.5s ease-out forwards;
-}
-
-@keyframes revealRight {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
+  gap: 18px;
 }
 
 .ticket-section-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .ticket-section {
@@ -96,158 +59,85 @@
   gap: 8px;
 }
 
-.ticket-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #666;
+.ticket-label,
+.ticket-qr-caption {
   margin: 0;
-  font-weight: 500;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lmnl-color-text-subtle);
 }
 
 .ticket-value {
-  font-size: 24px;
-  font-weight: 500;
-  color: black;
   margin: 0;
+  font-size: calc(20px * 1.25);
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .ticket-value.huge {
-  font-size: 48px;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.status-section {
-  margin-top: 10px;
-}
-
-.ticket-status-badge {
-  display: inline-flex;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  border: 2px solid black;
-  background: white;
-  color: black;
-  text-transform: uppercase;
-  width: fit-content;
+  font-size: calc(34px * 1.25);
 }
 
 .ticket-status-badge.valid {
-  background: #00ff41;
-  border-color: #00ff41;
-  color: black;
+  border-color: var(--lmnl-color-text);
+  color: var(--page-color);
 }
 
 .ticket-status-badge.used {
-  background: #ff0000;
-  border-color: #ff0000;
-  color: white;
-  text-decoration: line-through;
+  color: #d45e5e;
+  border-color: #d45e5e;
 }
 
-/* QR Column */
 .ticket-qr-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  animation: revealUp 0.6s ease-out forwards;
-  order: -1;
-}
-
-
-@keyframes revealUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  gap: 16px;
 }
 
 .ticket-qr-wrapper {
   position: relative;
-  padding: 20px;
-  background: white;
-  border: 2px solid black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 16px;
+  background: #ffffff;
+  border: var(--lmnl-border-medium);
 }
 
 .ticket-qr-wrapper.is-used {
-  opacity: 0.4;
-  filter: grayscale(100%);
+  opacity: 0.45;
 }
 
 .ticket-qr-corners .corner {
   position: absolute;
-  width: 15px;
-  height: 15px;
-  border: 2px solid black;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #000000;
 }
 
-.ticket-qr-corners .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-.ticket-qr-corners .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-.ticket-qr-corners .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-.ticket-qr-corners .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.ticket-qr-corners .tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.ticket-qr-corners .tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+.ticket-qr-corners .bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+.ticket-qr-corners .br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
-.ticket-qr-caption {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #666;
-  margin: 0;
-  text-align: center;
+@keyframes ticket-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
-@media (max-width: 768px) {
-  .ticket-body {
-    margin-top: 76px;
-    padding: 0 20px;
+@media (max-width: 980px) {
+  .ticket-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .ticket-value.huge {
-    font-size: 36px;
+}
+
+@media (max-width: 640px) {
+  .ticket-section-group {
+    grid-template-columns: 1fr;
   }
-  
-  .ticket-details-col {
-    padding-left: 20px;
-  }
-  
+
   .ticket-qr-wrapper svg {
     width: 220px !important;
     height: 220px !important;
   }
-}
-
-.wallet-section {
-}
-
-.apple-wallet-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px 32px;
-  background-color: black;
-  color: white;
-  border: 2px solid black;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: fit-content;
-}
-
-.apple-wallet-button:hover {
-  background-color: white;
-  color: black;
-}
-
-.apple-icon {
-  flex-shrink: 0;
 }

@@ -538,7 +538,7 @@ function isPersistentEndDate(value) {
                           </span>
                         )}
                       </td>
-                      <td style={{ fontSize: '10px', color: '#999', fontFamily: 'monospace' }}>
+                      <td style={{ fontSize: '10px', color: '#999', fontFamily: 'var(--lmnl-font-mono)' }}>
                         {isExpanded ? (
                           <div className="variations-expanded">
                             {item.variations.map(v => (

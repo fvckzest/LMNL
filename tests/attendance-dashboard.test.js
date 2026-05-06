@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildKnownCommunityEmails,
   claimAttendanceSourceForUser,
+  getAdminAttendanceQueue,
   recordTicketAttendanceVerification,
 } from '../api/_lib/services/attendance.js';
 import { getCommunityDashboard } from '../api/_lib/services/community-dashboard.js';
@@ -142,6 +143,7 @@ test('getCommunityDashboard aggregates attendance, points, overlap, and pending 
           {
             id: 'source_pending',
             event_id: 'event_3',
+            verification_status: 'pending_resolution',
             participation_tier: 'attendee',
             verification_method: 'ticket_check_in',
             contact_email: 'zest@example.com',
@@ -167,4 +169,97 @@ test('getCommunityDashboard aggregates attendance, points, overlap, and pending 
   assert.equal(dashboard.sharedAttendancePreview[0].displayName, 'Shared Member');
   assert.equal(dashboard.sharedAttendancePreview[0].overlapCount, 2);
   assert.equal(dashboard.pendingClaims[0].eventName, 'LMNL Night');
+});
+
+test('getCommunityDashboard includes unresolved pending-resolution proof in claimable history', async () => {
+  const dashboard = await getCommunityDashboard(
+    { id: 'user_1', email: 'zest@example.com' },
+    {
+      repo: {
+        listUserIdentitiesByUserId: async () => [{ provider_email: 'zest@example.com' }],
+        listAttendanceRecordsByUser: async () => [],
+        listAttendanceArtifactsByAttendanceIds: async () => [],
+        listPointTransactionsByUser: async () => [],
+        listEventsByIds: async (eventIds) => eventIds.map((id) => ({
+          id,
+          name: id === 'event_pending' ? 'Unclaimed LMNL Night' : 'LMNL Event',
+          event_date: '2026-05-04',
+          location_name: 'LMNL Space',
+        })),
+        listOverlappingAttendanceByEventIds: async () => [],
+        listPendingVerificationSourcesByEmails: async () => ([
+          {
+            id: 'source_pending',
+            event_id: 'event_pending',
+            verification_status: 'pending_resolution',
+            participation_tier: 'attendee',
+            verification_method: 'ticket_check_in',
+            contact_email: 'zest@example.com',
+          },
+        ]),
+        listProfilesByIds: async () => [],
+      },
+    },
+  );
+
+  assert.equal(dashboard.summary.pendingClaims, 1);
+  assert.equal(dashboard.pendingClaims[0].id, 'source_pending');
+  assert.equal(dashboard.pendingClaims[0].eventName, 'Unclaimed LMNL Night');
+});
+
+test('getAdminAttendanceQueue groups unresolved proof with exact-match LMNL candidates', async () => {
+  const queue = await getAdminAttendanceQueue({
+    repo: {
+      listUnresolvedVerificationSources: async () => ([
+        {
+          id: 'source_1',
+          event_id: 'event_1',
+          source_type: 'ticket',
+          source_id: 'ticket_1',
+          verification_method: 'ticket_check_in',
+          verification_status: 'pending_resolution',
+          participation_tier: 'attendee',
+          verified_at: '2026-05-04T19:00:00.000Z',
+          contact_email: 'member@example.com',
+          contact_name: 'Member One',
+        },
+        {
+          id: 'source_2',
+          event_id: 'event_2',
+          source_type: 'manual_staff',
+          source_id: null,
+          verification_method: 'staff_confirmed',
+          verification_status: 'pending_resolution',
+          participation_tier: 'performer',
+          verified_at: '2026-05-05T19:00:00.000Z',
+          contact_email: 'nomatch@example.com',
+          contact_name: 'Mystery Guest',
+        },
+      ]),
+      listEventsByIds: async (eventIds) => eventIds.map((id) => ({
+        id,
+        name: id === 'event_1' ? 'LMNL Night' : 'After Hours',
+        event_date: '2026-05-04',
+        location_name: 'LMNL Space',
+      })),
+      findCommunityUserIdsByEmail: async (email) => (
+        email === 'member@example.com' ? ['user_1'] : []
+      ),
+      listProfilesByIds: async () => ([
+        {
+          id: 'user_1',
+          display_name: 'Member One',
+          profile_slug: 'member-one',
+          avatar_url: null,
+          visibility: 'community',
+        },
+      ]),
+    },
+  });
+
+  assert.equal(queue.summary.unresolvedCount, 2);
+  assert.equal(queue.summary.exactMatchCount, 1);
+  assert.equal(queue.summary.noMatchCount, 1);
+  assert.equal(queue.items[0].candidates[0].displayName, 'Member One');
+  assert.equal(queue.items[1].candidateCount, 0);
 });

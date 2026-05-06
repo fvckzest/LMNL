@@ -106,7 +106,6 @@ export default function ContactTab({
                           onClick={() => toggleExpansion(req.id)}
                           aria-expanded={isExpanded}
                           title={isExpanded ? 'Hide details' : 'Show details'}
-                          style={{ '--004ffa': '#90e937' }}
                         >
                           <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#90e937' }}>▶</span>
                         </button>
@@ -179,23 +178,15 @@ export default function ContactTab({
                       <tr className="inquiry-metadata-row">
                         <td></td>
                         <td colSpan="4">
-                          <div className="inquiry-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #90e937' }}>
-                            <div className="inquiry-metadata-grid" style={{ paddingLeft: '15px' }}>
-                              <div className="inquiry-metadata-item" style={{ marginBottom: '15px' }}>
-                                <span className="inquiry-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>SUBMITTED ON</span>
-                                <span className="inquiry-metadata-value" style={{ fontWeight: 600 }}>{new Date(req.created_at).toLocaleString()}</span>
+                          <div className="inquiry-metadata-panel">
+                            <div className="inquiry-metadata-grid">
+                              <div className="inquiry-metadata-item">
+                                <span className="inquiry-metadata-label">Submitted On</span>
+                                <span className="inquiry-metadata-value">{new Date(req.created_at).toLocaleString()}</span>
                               </div>
                               <div className="inquiry-metadata-item">
-                                <span className="inquiry-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>MESSAGE</span>
-                                <div className="inquiry-metadata-value" style={{
-                                  whiteSpace: 'pre-wrap',
-                                  fontSize: '13px',
-                                  lineHeight: '1.6',
-                                  color: '#333',
-                                  background: '#f9f9f9',
-                                  padding: '12px',
-                                  border: '1px solid #eee'
-                                }}>
+                                <span className="inquiry-metadata-label">Message</span>
+                                <div className="inquiry-metadata-message">
                                   {message || 'No message provided.'}
                                 </div>
                               </div>

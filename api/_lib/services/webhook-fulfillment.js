@@ -62,20 +62,50 @@ function isPlaceholderEmail(email) {
   return normalized.endsWith('@example.com');
 }
 
-function verifySignature(payload, headers) {
+function normalizeWebhookUrl(url) {
+  if (!url) return '';
+  return String(url).trim().replace(/\/+$/, '');
+}
+
+function buildSignatureCandidates(configuredUrl, requestUrl) {
+  const candidates = new Set();
+  const normalizedConfigured = normalizeWebhookUrl(configuredUrl);
+  const normalizedRequest = normalizeWebhookUrl(requestUrl);
+
+  if (normalizedConfigured) {
+    candidates.add(normalizedConfigured);
+    candidates.add(`${normalizedConfigured}/`);
+  }
+
+  if (normalizedRequest) {
+    candidates.add(normalizedRequest);
+    candidates.add(`${normalizedRequest}/`);
+  }
+
+  return [...candidates].filter(Boolean);
+}
+
+function verifySignature(payload, headers, options = {}) {
   const { squareWebhookSignatureKey, squareWebhookUrl } = getBaseConfig();
   const signature = headers['x-square-hmacsha256-signature'];
+  const rawBody = typeof options.rawBody === 'string' && options.rawBody.length
+    ? options.rawBody
+    : JSON.stringify(payload);
 
   if (!squareWebhookSignatureKey || !signature) {
     return;
   }
 
-  const digest = crypto
-    .createHmac('sha256', squareWebhookSignatureKey)
-    .update(squareWebhookUrl + JSON.stringify(payload))
-    .digest('base64');
+  const candidateUrls = buildSignatureCandidates(squareWebhookUrl, options.requestUrl);
+  const isValid = candidateUrls.some((candidateUrl) => {
+    const digest = crypto
+      .createHmac('sha256', squareWebhookSignatureKey)
+      .update(candidateUrl + rawBody)
+      .digest('base64');
+    return digest === signature;
+  });
 
-  if (digest !== signature) {
+  if (!isValid) {
     throw new AppError('Invalid signature', {
       code: 'INVALID_SIGNATURE',
       status: 403,
@@ -380,7 +410,7 @@ export async function reconcileApprovedRequestTicket(requestId, deps = {}) {
 
 export async function processSquareOrderUpdate(payload, headers, deps = {}) {
   const verify = deps.verifySignature || verifySignature;
-  verify(payload, headers);
+  verify(payload, headers, deps);
 
   const { orderId, ignored, reason } = await resolveSquareOrderIdFromPayload(payload, deps);
   if (!orderId) {

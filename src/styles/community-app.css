@@ -2,6 +2,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  --page-color: var(--lmnl-color-text);
+  --terminal-line-soft: var(--lmnl-color-text);
+  --terminal-line-medium: var(--lmnl-color-text);
+  --lmnl-border-subtle: var(--lmnl-line-width) solid var(--lmnl-color-text);
+  --lmnl-border-medium: var(--lmnl-line-width) solid var(--lmnl-color-text);
 }
 
 .app-login-layout {
@@ -15,20 +20,6 @@
   flex-direction: column;
   gap: 18px;
   padding: 28px;
-}
-
-.app-login-kicker {
-  margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #00c2ff;
-}
-
-.app-login-title {
-  margin: 0;
-  font-size: clamp(28px, 5vw, 48px);
-  line-height: 0.95;
 }
 
 .app-login-copy,
@@ -53,18 +44,25 @@
 }
 
 .app-login-error {
-  color: #ff4d4f;
-  font-size: 12px;
+  color: var(--lmnl-color-text);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(11px * 1.25);
   letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .app-login-note {
   display: grid;
   gap: 4px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.75;
+  color: var(--lmnl-color-text-subtle);
+}
+
+.app-login-note code {
+  font-family: inherit;
 }
 
 @media (max-width: 640px) {

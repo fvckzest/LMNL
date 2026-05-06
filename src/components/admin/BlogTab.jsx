@@ -134,7 +134,7 @@ export default function BlogTab({
           <span className="stat-label">PUBLISHED</span>
           <span className="stat-value">{blogPosts.filter(p => p.status === 'published').length}</span>
         </div>
-        <div className="stat-item" style={{ marginLeft: 'auto', borderRight: 'none', paddingRight: 0 }}>
+        <div className="stat-item stat-item--action">
           <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD POST</button>
         </div>
       </div>
@@ -194,7 +194,7 @@ export default function BlogTab({
                         <strong>{post.title}</strong>
                         <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{post.date ? new Date(post.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : new Date(post.created_at).toLocaleString()}</div>
                       </td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', color: '#666' }}>
+                      <td style={{ fontFamily: 'var(--lmnl-font-mono)', fontSize: '12px', color: '#666' }}>
                         /{post.slug || '—'}
                       </td>
                       <td>{post.author || '—'}</td>

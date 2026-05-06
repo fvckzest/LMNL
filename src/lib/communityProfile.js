@@ -2,6 +2,7 @@ import { buildCommunityOnboardingPath } from './communityAuth.js';
 
 export const COMMUNITY_APP_PATH = '/app';
 export const COMMUNITY_ONBOARDING_PATH = '/app/onboarding';
+export const COMMUNITY_DASHBOARD_BASE_PATH = '/dashboard';
 export const COMMUNITY_AUTH_PROVIDERS = ['google', 'discord', 'apple'];
 
 function readUserMetadata(user) {
@@ -133,6 +134,11 @@ export function deriveProfileSlug(value) {
   return slug.replace(/-+$/g, '');
 }
 
+export function buildCommunityDashboardPath(profileSlug) {
+  const slug = deriveProfileSlug(profileSlug);
+  return slug ? `${COMMUNITY_DASHBOARD_BASE_PATH}/${slug}` : COMMUNITY_APP_PATH;
+}
+
 export function profileNeedsOnboarding(profile) {
   if (!profile) {
     return true;
@@ -142,11 +148,23 @@ export function profileNeedsOnboarding(profile) {
     return true;
   }
 
+  if (!normalizeString(profile.profile_slug)) {
+    return true;
+  }
+
   return profile.onboarding_completed !== true;
 }
 
 export function resolveCommunityDestination(profile, nextPath = COMMUNITY_APP_PATH) {
-  return profileNeedsOnboarding(profile) ? buildCommunityOnboardingPath(nextPath) : nextPath;
+  if (profileNeedsOnboarding(profile)) {
+    return buildCommunityOnboardingPath(nextPath);
+  }
+
+  if (nextPath && nextPath !== COMMUNITY_APP_PATH) {
+    return nextPath;
+  }
+
+  return buildCommunityDashboardPath(profile?.profile_slug);
 }
 
 export function createUserIdentityPayload(session) {

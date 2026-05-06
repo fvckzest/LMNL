@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import GenericPage from './GenericPage';
+import { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import { apiPost } from '../lib/api';
 import { fetchOpenProducts } from '../lib/siteData';
 import './Shop.css';
@@ -228,16 +229,28 @@ export default function Shop() {
 
   if (loading) {
     return (
-      <GenericPage title="SHOP" color="#ff0000">
+      <GenericPage
+        title="SHOP"
+        color="#ff0000"
+        introTitle="SHOP"
+        introCopy="DROPS, PREORDERS, AND CORE PIECES"
+        contentClassName="page-stack"
+      >
         <div className="shop-layout">
-          <p className="loading-text">FETCHING SHOP...</p>
+          <PageStatus>FETCHING SHOP...</PageStatus>
         </div>
       </GenericPage>
     );
   }
 
   return (
-    <GenericPage title="SHOP" color="#ff0000">
+    <GenericPage
+      title="SHOP"
+      color="#ff0000"
+      introTitle="SHOP"
+      introCopy="DROPS, PREORDERS, AND CORE PIECES"
+      contentClassName="page-stack"
+    >
       <div className="shop-layout">
         {checkoutSuccess && (
           <div className="shop-success-banner">
@@ -245,7 +258,7 @@ export default function Shop() {
           </div>
         )}
         {products.length === 0 ? (
-          <p className="loading-text" style={{ marginTop: '100px' }}>NO ACTIVE PRODUCTS AT THE MOMENT. CHECK BACK SOON.</p>
+          <PageEmptyState>NO ACTIVE PRODUCTS AT THE MOMENT. CHECK BACK SOON.</PageEmptyState>
         ) : (
           <>
             {preorderProducts.length > 0 && (
@@ -289,7 +302,7 @@ export default function Shop() {
             )}
           </>
         )}
-        {error && <p className="error-text" style={{ color: '#ff0000', fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>{error}</p>}
+        {error && <p className="page-form-error">{error}</p>}
       </div>
     </GenericPage>
   );

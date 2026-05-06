@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles/theme.css'
 import './index.css'
 import App from './App.jsx'
+import { initializeTheme } from './components/ThemeProvider.jsx'
 
 const PRELOAD_RETRY_KEY = 'lmnl:preload-retry'
 const DEV_SW_RESET_KEY = 'lmnl:dev-sw-reset'
@@ -40,6 +41,7 @@ async function resetLocalDevServiceWorkers() {
   sessionStorage.removeItem(DEV_SW_RESET_KEY)
 }
 
+initializeTheme()
 resetLocalDevServiceWorkers()
 
 window.addEventListener('vite:preloadError', (event) => {

@@ -1,103 +1,184 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
+import SystemPanel from '../components/SystemPanel';
+import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
-import { apiPost, getTurnstileSiteKey } from '../lib/api';
+import { apiGet, apiPost, getTurnstileSiteKey } from '../lib/api';
 import './Services.css';
 
-
-const SERVICES_DATA = {
-  design: {
+const PRIMARY_SERVICES = [
+  {
     id: 'design',
+    index: '01.',
     title: 'DESIGN',
-    tagline: 'Crafting visuals that define your era.',
-    description: 'Visual identity, UI/UX, release artwork, and merchandise. We don\'t just make it look good; we create visual systems that stick.',
-    items: ['Creative Direction', 'UI/UX Design', 'Merchandise & Apparel', 'Digital Assets', 'Print & Editorial']
+    category: 'CREATIVE',
+    description: 'Visual systems and brand identity development.',
+    output: 'IDENTITY / ASSETS / GUIDELINES',
+    status: 'ACTIVE',
+    details: ['Creative Direction', 'UI/UX Design', 'Merchandise & Apparel', 'Digital Assets', 'Print & Editorial'],
   },
-  production: {
-    id: 'production',
-    title: 'PRODUCTION',
-    tagline: 'Bringing ambitious concepts to life.',
-    description: 'Audio engineering, video direction, content creation, and experiential set design. High-fidelity execution for digital and physical spaces.',
-    items: ['Audio Engineering', 'Video & Content Production', 'Photography', 'Experiential Setups', '3D Assets']
-  },
-  branding: {
+  {
     id: 'branding',
+    index: '02.',
     title: 'BRANDING',
-    tagline: 'Building a cohesive narrative.',
-    description: 'Positioning, storytelling, brand voice, and rollout strategy. We help you define who you are before you tell the world.',
-    items: ['Brand Identity', 'Storytelling', 'Tone of Voice', 'Go-to-Market Strategy', 'Market Research']
+    category: 'STRATEGY',
+    description: 'Narrative structure and brand positioning.',
+    output: 'POSITIONING / VOICE / STORY',
+    status: 'ACTIVE',
+    details: ['Brand Identity', 'Storytelling', 'Tone of Voice', 'Go-to-Market Strategy', 'Market Research'],
   },
-  marketing: {
+  {
+    id: 'production',
+    index: '03.',
+    title: 'PRODUCTION',
+    category: 'PRODUCTION',
+    description: 'Photo, video, audio and content execution.',
+    output: 'MEDIA / CONTENT / CAMPAIGN ASSETS',
+    status: 'ACTIVE',
+    details: ['Audio Engineering', 'Video & Content Production', 'Photography', 'Experiential Setups', '3D Assets'],
+  },
+  {
     id: 'marketing',
+    index: '04.',
     title: 'MARKETING',
-    tagline: 'Amplifying your voice.',
-    description: 'Campaign execution, social strategy, audience growth, and analytics. Directing traffic and attention to where it matters most.',
-    items: ['Campaign Strategy', 'Social Growth', 'Paid Acquisition', 'Community Building', 'Data Analytics']
-  }
-};
-
-const CURATED_PACKAGES = [
-  {
-    title: 'THE BIG RELEASE',
-    services: ['Production', 'Marketing', 'Design'],
-    description: 'Perfect for dropping an album, launching a flagship product, or executing a highly anticipated rollout.',
-    features: ['Full production execution', 'Pre/Post launch marketing', 'Release visual assets']
+    category: 'DISTRIBUTION',
+    description: 'Strategic distribution and community growth.',
+    output: 'CAMPAIGN / COMMUNITY / DISTRIBUTION',
+    status: 'ACTIVE',
+    details: ['Campaign Strategy', 'Social Growth', 'Paid Acquisition', 'Community Building', 'Data Analytics'],
   },
-  {
-    title: 'THE DIRECTIONAL PIVOT',
-    services: ['Branding', 'Design'],
-    description: 'Perfect for established entities undergoing major shifts or refreshing a stale identity.',
-    features: ['Comprehensive rebrand', 'New design guidelines', 'Strategic positioning']
-  },
-  {
-    title: 'THE FULL ECOSYSTEM',
-    services: ['Design', 'Production', 'Branding', 'Marketing'],
-    description: 'End-to-end execution. We handle everything from concept to market dominance.',
-    features: ['Priority resource allocation', 'Dedicated creative lead', 'All sync benefits']
-  }
 ];
 
+const PRINCIPLES = [
+  'CULTURAL INTEGRITY',
+  'SYSTEMIC THINKING',
+  'COMMUNITY FIRST',
+  'CREATIVE EXCELLENCE',
+  'LONG TERM IMPACT',
+];
+
+const DEFAULT_PRODUCT_ROWS = [
+  {
+    capability: 'BRANDING',
+    product: 'Brand Identity System',
+    scope: 'Logo suite, typography, color direction, asset kit',
+  },
+  {
+    capability: 'BRANDING',
+    product: 'Positioning & Messaging',
+    scope: 'Narrative strategy, voice framework, audience alignment',
+  },
+  {
+    capability: 'MARKETING',
+    product: 'Campaign Rollout',
+    scope: 'Launch planning, channel strategy, paid and organic mix',
+  },
+  {
+    capability: 'MARKETING',
+    product: 'Community Growth System',
+    scope: 'Audience development, retention loops, reporting rhythms',
+  },
+  {
+    capability: 'DESIGN',
+    product: 'Website & UI Design',
+    scope: 'Wireframes, interface design, responsive page systems',
+  },
+  {
+    capability: 'DESIGN',
+    product: 'Merch & Print Assets',
+    scope: 'Apparel graphics, editorial layouts, physical collateral',
+  },
+  {
+    capability: 'PRODUCTION',
+    product: 'Photo / Video Production',
+    scope: 'Creative planning, shoot execution, edit delivery',
+  },
+  {
+    capability: 'PRODUCTION',
+    product: 'Content Package',
+    scope: 'Short-form content, campaign cutdowns, launch-ready files',
+  },
+].map((item, index) => ({ ...item, id: `${item.capability}-${index}`, is_active: true }));
+
+function ServicesSidebar({ selectedCount, productCount }) {
+  return (
+    <>
+      <SystemPanel title="MODULE OVERVIEW">
+        <div className="services-sidebar-metrics">
+          <div><span>PRIMARY CAPABILITIES</span><span>4</span></div>
+          <div><span>SELECTED</span><span>{String(selectedCount).padStart(2, '0')}</span></div>
+          <div><span>PRODUCT LINES</span><span>{productCount}</span></div>
+          <div><span>ACTIVE</span><span>4</span></div>
+        </div>
+      </SystemPanel>
+
+      <SystemPanel title="CORE PRINCIPLES">
+        <div className="services-principles">
+          {PRINCIPLES.map((item) => (
+            <div key={item} className="services-principles__item">
+              <span>{item}</span>
+              <span>+</span>
+            </div>
+          ))}
+        </div>
+      </SystemPanel>
+
+      <SystemPanel title="INQUIRE">
+        <div className="services-sidebar-card">
+          <p>Start a conversation about your project.</p>
+          <a href="#inquiry-form-section">SUBMIT INQUIRY →</a>
+        </div>
+      </SystemPanel>
+    </>
+  );
+}
+
 export default function Services() {
+  const { theme } = useTheme();
   const [selectedServices, setSelectedServices] = useState([]);
-  const [selectedBundleName, setSelectedBundleName] = useState(null);
+  const [productRows, setProductRows] = useState(DEFAULT_PRODUCT_ROWS);
+  const [activeServiceId, setActiveServiceId] = useState(PRIMARY_SERVICES[0].id);
   const [inquirySent, setInquirySent] = useState(false);
-  const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, error
+  const [requestStatus, setRequestStatus] = useState('idle');
   const [formData, setFormData] = useState({ name: '', email: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
+  useEffect(() => {
+    let isMounted = true;
 
-  const toggleService = (serviceId) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId]
-    );
-    setSelectedBundleName(null);
+    async function fetchServiceProducts() {
+      try {
+        const data = await apiGet('/api/service-products');
+        if (!isMounted) return;
+        setProductRows((data || []).filter((item) => item.is_active !== false));
+      } catch (error) {
+        console.error('Error fetching service products:', error);
+        if (isMounted) {
+          setProductRows(DEFAULT_PRODUCT_ROWS);
+        }
+      }
+    }
+
+    fetchServiceProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activeService =
+    PRIMARY_SERVICES.find((service) => service.id === activeServiceId) ?? PRIMARY_SERVICES[0];
+  const activeServiceSelected = selectedServices.includes(activeService.id);
+
+  const showService = (serviceId) => {
+    setActiveServiceId(serviceId);
   };
 
-  const getPackageRecommendation = () => {
-    if (selectedServices.length === 0) return null;
-    if (selectedServices.length === 4) return {
-      title: 'THE FULL ECOSYSTEM',
-      discount: '15% Sync Discount Applied',
-      note: 'Complete synchronized deployment.'
-    };
-    if (selectedServices.length === 3) return {
-      title: 'THE TRIAD SYSTEM',
-      discount: '10% Sync Discount Applied',
-      note: 'Optimized 3-pillar workflow.'
-    };
-    if (selectedServices.length === 2) {
-      if (selectedServices.includes('design') && selectedServices.includes('branding')) {
-        return { title: 'THE PIVOT BUNDLE', discount: '5% Sync Discount', note: 'Visual identity & strategy.' };
-      }
-      if (selectedServices.includes('production') && selectedServices.includes('marketing')) {
-        return { title: 'THE DROP BUNDLE', discount: '5% Sync Discount', note: 'Execution & amplification.' };
-      }
-      return { title: 'CUSTOM DUAL SYNC', discount: '5% Sync Discount', note: 'Two-pillar integration.' };
-    }
-    return { title: 'SINGLE MODULE', discount: 'Add more for Sync discounts', note: 'Standalone execution.' };
+  const toggleServiceSelection = (serviceId) => {
+    setSelectedServices((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+    );
   };
 
   const handleInquirySubmit = async (e) => {
@@ -110,7 +191,7 @@ export default function Services() {
         name: formData.name,
         email: formData.email,
         notes: formData.notes,
-        selectedServices: selectedServices,
+        selectedServices,
         turnstileToken,
       });
       setInquirySent(true);
@@ -126,201 +207,175 @@ export default function Services() {
     }
   };
 
-
-  const recommendation = getPackageRecommendation();
-
   return (
-    <ContentPageShell title="SERVICES" color="#6222d8">
-      <div className="services-layout">
-        
-        {/* Section 1: Capabilities */}
-        <section className="services-section">
-          <div className="services-intro-container">
-            <p className="services-intro-text">
-              LMNL offers a synchronized ecosystem of capabilities tailored for brands and artists making definitive moves. 
-              Whether launching a major rollout or executing a complete directional pivot, our modules work in lockstep.
-            </p>
-            <p className="services-instructions-text">
-              Click the cards below to select modules and build a custom bundle.
-            </p>
-          </div>
+    <ContentPageShell
+      title="SERVICES"
+      color="#7b52d6"
+      introLabel="SERVICES / CAPABILITY MATRIX"
+      introTitle="SERVICES"
+      introCopy="INTEGRATED MODULES FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
+      rightSidebar={<ServicesSidebar selectedCount={selectedServices.length} productCount={productRows.length} />}
+      contentClassName="services-layout page-stack"
+    >
+      <section className="services-capabilities">
+        <div className="services-capabilities__layout">
+          <div className="services-capabilities__stack">
+            <div className="services-capabilities__grid">
+              {PRIMARY_SERVICES.map((service) => {
+                const isSelected = selectedServices.includes(service.id);
+                const isActive = activeService.id === service.id;
+                return (
+                  <button
+                    type="button"
+                    key={service.id}
+                    className={`services-capability-card theme-button ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
+                    aria-pressed={isActive}
+                    aria-current={isActive ? 'true' : undefined}
+                    onClick={() => showService(service.id)}
+                  >
+                    <span className="services-capability-card__index">{service.index}</span>
+                    <strong>{service.title}</strong>
+                  </button>
+                );
+              })}
+            </div>
 
-          <h2 className="services-section-title capabilities-title">CAPABILITIES</h2>
-          
-          <div className="capabilities-grid">
-            {Object.values(SERVICES_DATA).map(service => (
-              <div 
-                key={service.id} 
-                className={`capability-card ${selectedServices.includes(service.id) ? 'selected' : ''}`}
-                onClick={() => toggleService(service.id)}
-                id={`capability-${service.id}`}
-              >
-                <div className="capability-header">
-                  <h3 className="capability-title">{service.title}</h3>
-                  <div className="capability-toggle-indicator">
-                    {selectedServices.includes(service.id) ? '[-]' : '[+]'}
-                  </div>
+            <SystemPanel title="BUNDLE BUILDER">
+              <div className="services-bundle-builder">
+                <div className="services-bundle-builder__meter" aria-hidden="true">
+                  {PRIMARY_SERVICES.map((service, index) => {
+                    const isSelected = index < selectedServices.length;
+                    return (
+                      <div
+                        key={service.id}
+                        className={`services-bundle-builder__node ${isSelected ? 'is-active' : ''}`}
+                      >
+                        <span className="services-bundle-builder__node-dot" />
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="capability-tagline">{service.tagline}</p>
-                <p className="capability-desc">{service.description}</p>
-                <ul className="capability-list">
-                  {service.items.map((item, i) => (
-                    <li key={i} className="capability-list-item">{item}</li>
-                  ))}
-                </ul>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Section 2: Package Sync Builder (Interactive) */}
-        <section className="services-section sync-builder-section">
-          <div className="sync-builder-header">
-            <h2 className="services-section-title sync-builder-title">
-              <span>SYNC BUILDER</span>
-              <span className="sync-counter">
-                {recommendation && <span className="sync-discount-text">({recommendation.discount.replace(' Applied', '')})</span>}
-                <span className="sync-counter-number">{selectedServices.length}/4</span>
-              </span>
-            </h2>
-
-            <div className="sync-display-meter">
-              {Object.values(SERVICES_DATA).map(s => (
-                <div 
-                  key={s.id} 
-                  className={`sync-meter-node ${selectedServices.includes(s.id) ? 'active' : ''}`}
-                />
-              ))}
-            </div>
-            
-            <p className="services-section-subtitle">Select capabilities above to configure your custom bundle.</p>
+            </SystemPanel>
           </div>
 
-          <div className="sync-builder-container">
-            <div className="sync-display">
-              {/* Large indicator removed per request */}
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Curated Packages */}
-        <section className="services-section curated-bundles-section">
-          <h2 className="services-section-title curated-bundles-title">CURATED BUNDLES</h2>
-          <div className="packages-grid">
-            {CURATED_PACKAGES.map((pkg, i) => (
-              <div key={i} className="package-card">
-                <h3 className="package-title">{pkg.title}</h3>
-                <div className="package-tags">
-                  {pkg.services.map((s, j) => (
-                    <span key={j} className="package-tag">{s}</span>
-                  ))}
-                </div>
-                <p className="package-desc">{pkg.description}</p>
-                <ul className="package-features">
-                  {pkg.features.map((feat, j) => (
-                    <li key={j} className="package-feat-item">{feat}</li>
-                  ))}
-                </ul>
-                <button 
-                  className="package-select-btn"
-                  onClick={() => {
-                    const serviceIds = pkg.services.map(s => s.toLowerCase());
-                    setSelectedServices(serviceIds);
-                    setSelectedBundleName(pkg.title);
-                    document.getElementById('inquiry-form-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
+          <SystemPanel title="SELECTED CAPABILITY">
+            <div className="services-capability-detail">
+              <div className="services-capability-detail__header">
+                <strong>{activeService.title}</strong>
+                <button
+                  type="button"
+                  className={`theme-button services-capability-detail__action ${activeServiceSelected ? 'is-active' : ''}`}
+                  aria-pressed={activeServiceSelected}
+                  onClick={() => toggleServiceSelection(activeService.id)}
                 >
-                  SELECT BUNDLE
+                  {activeServiceSelected ? 'ADDED' : 'ADD'}
                 </button>
               </div>
+              <p>{activeService.description}</p>
+              <div className="services-capability-detail__meta">
+                <span>OUTPUT</span>
+                <strong>{activeService.output}</strong>
+              </div>
+              <div className="services-capability-detail__list">
+                {activeService.details.map((detail) => (
+                  <div key={detail} className="services-capability-detail__item">
+                    <span>{detail}</span>
+                    <span>+</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </SystemPanel>
+        </div>
+      </section>
+
+      <section className="services-products">
+        <SystemPanel title="PRODUCT TABLE">
+          <div className="services-products__table">
+            <div className="services-products__header">
+              <span>CAPABILITY</span>
+              <span>PRODUCT</span>
+              <span>SCOPE</span>
+            </div>
+            {productRows.map((row) => (
+              <div key={row.id || `${row.capability}-${row.product}`} className="services-products__row">
+                <span>{row.capability}</span>
+                <strong>{row.product}</strong>
+                <span>{row.scope}</span>
+              </div>
             ))}
           </div>
-        </section>
+        </SystemPanel>
+      </section>
 
-        {/* Section 4: Inquiry Form */}
-        <section className="services-section inquiry-section" id="inquiry-form-section">
-          <h2 className="services-section-title inquiry-title">INITIATE PROJECT</h2>
+      <section className="services-inquiry" id="inquiry-form-section">
+        <SystemPanel title="SUBMIT INQUIRY">
           {inquirySent ? (
-            <div className="inquiry-success">
-              <h3 className="success-title">TRANSMISSION RECEIVED.</h3>
-              <p className="success-text">A creative lead will reach out within 24 hours.</p>
-              <button className="reset-btn" onClick={() => {
-                setInquirySent(false);
-                setSelectedServices([]);
-                setSelectedBundleName(null);
-              }}>NEW INQUIRY</button>
+            <div className="services-inquiry__success theme-message-stack">
+              <h3 className="theme-title-md">TRANSMISSION RECEIVED.</h3>
+              <p className="theme-body-copy">A creative lead will reach out within 24 hours.</p>
+              <button
+                type="button"
+                className="theme-button"
+                onClick={() => {
+                  setInquirySent(false);
+                  setSelectedServices([]);
+                }}
+              >
+                NEW INQUIRY
+              </button>
             </div>
           ) : (
-            <>
-              {selectedServices.length > 0 && (
-                <div className="form-selected-services" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <span className="form-selected-label">Selected: </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {selectedBundleName ? (
-                      <span className="package-tag">{selectedBundleName}</span>
-                    ) : (
-                      selectedServices.map((s, j) => (
-                        <span key={j} className="package-tag">{SERVICES_DATA[s].title}</span>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-              <form onSubmit={handleInquirySubmit} className="inquiry-form">
-                <div className="form-row">
-                  <input 
-                    type="text" 
-                    placeholder="NAME / ENTITY" 
-                    required 
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="inquiry-input"
-                    id="inquiry-name"
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="EMAIL ADDRESS" 
-                    required 
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="inquiry-input"
-                    id="inquiry-email"
-                  />
-                </div>
-                <textarea 
-                  placeholder="PROJECT BRIEF / DIRECTIONAL GOALS" 
-                  required 
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="inquiry-textarea"
-                  id="inquiry-notes"
+            <form onSubmit={handleInquirySubmit} className="services-inquiry__form theme-form">
+              <div className="services-inquiry__grid theme-form-grid">
+                <input
+                  type="text"
+                  placeholder="NAME / ENTITY"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="theme-input"
                 />
-
-                <Turnstile
-                  siteKey={getTurnstileSiteKey()}
-                  onTokenChange={setTurnstileToken}
-                  resetSignal={turnstileResetSignal}
+                <input
+                  type="email"
+                  placeholder="EMAIL ADDRESS"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="theme-input"
                 />
-                
-                {requestStatus === 'error' && (
-                  <p className="error-message" style={{ color: '#ff0055', margin: '10px 0', fontFamily: 'monospace' }}>
-                    Transmission failed. Ensure database setup is complete.
-                  </p>
-                )}
-                <button 
-                  type="submit" 
-                  className="inquiry-submit-btn"
-                  disabled={requestStatus === 'loading' || !turnstileToken}
-                >
-                  {requestStatus === 'loading' ? 'TRANSMITTING...' : (selectedServices.length > 0 ? 'SUBMIT BUNDLE INQUIRY' : 'SUBMIT INQUIRY')}
-                </button>
+              </div>
+              <textarea
+                placeholder="PROJECT BRIEF / DIRECTIONAL GOALS"
+                required
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="theme-input services-inquiry__textarea"
+              />
 
-              </form>
-            </>
+              <Turnstile
+                siteKey={getTurnstileSiteKey()}
+                onTokenChange={setTurnstileToken}
+                resetSignal={turnstileResetSignal}
+                theme={theme}
+              />
+
+              {requestStatus === 'error' ? (
+                <p className="services-inquiry__error">Transmission failed. Please try again.</p>
+              ) : null}
+
+              <button
+                type="submit"
+                className="theme-button"
+                disabled={requestStatus === 'loading' || !turnstileToken}
+              >
+                {requestStatus === 'loading' ? 'TRANSMITTING...' : 'SUBMIT INQUIRY'}
+              </button>
+            </form>
           )}
-        </section>
-
-      </div>
+        </SystemPanel>
+      </section>
     </ContentPageShell>
   );
 }

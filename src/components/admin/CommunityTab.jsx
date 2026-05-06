@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import { apiPost } from '../../lib/api';
 import { ArchiveIcon, TrashIcon, UnarchiveIcon, PinIcon } from './Icons';
 
@@ -8,6 +9,9 @@ export default function CommunityTab({
   communityLoading,
   communityTableMissing,
   fetchCommunityCredits,
+  attendanceQueue = [],
+  attendanceQueueLoading = false,
+  fetchAttendanceQueue = () => {},
   requests,
   requestsLoading,
   tickets,
@@ -31,6 +35,7 @@ export default function CommunityTab({
   renderMode = 'all'
 }) {
   const sectionIds = {
+    attendance: 'attendance_queue',
     artist: 'artist_interest',
     credits: 'community_credits',
     mailing: 'mailing_list'
@@ -51,6 +56,9 @@ export default function CommunityTab({
   const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
   const [expandedCredits, setExpandedCredits] = useState({});
   const [expandedContacts, setExpandedContacts] = useState({});
+  const [expandedAttendance, setExpandedAttendance] = useState({});
+  const [attendanceTierById, setAttendanceTierById] = useState({});
+  const [attachingSourceId, setAttachingSourceId] = useState('');
   const [creditForm, setCreditForm] = useState({
     name: '',
     email: '',
@@ -86,33 +94,38 @@ export default function CommunityTab({
       link: creditForm.link || ''
     };
 
-    try {
-      await apiPost('/api/community-credits', {
-        ...data,
-        id: editingCredit?.id,
-      }, { auth: true });
-    } catch (error) {
-      showToast('Error saving credit: ' + error.message, 'error');
-      return;
+    let error;
+    if (editingCredit) {
+      const { error: err } = await supabase.from('community_credits').update(data).eq('id', editingCredit.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('community_credits').insert([data]);
+      error = err;
     }
 
-    setIsCommunityModalOpen(false);
-    fetchCommunityCredits();
-    showToast('Credit saved successfully');
+    if (error) {
+      showToast('Error saving credit: ' + error.message, 'error');
+    } else {
+      setIsCommunityModalOpen(false);
+      fetchCommunityCredits();
+      showToast('Credit saved successfully');
+    }
   }
 
   async function deleteCredit(id) {
     triggerConfirm('Are you sure you want to delete this credit permanently?', async () => {
-      try {
-        await apiPost('/api/community-credits', { action: 'delete', id }, { auth: true });
-      } catch (error) {
+      const { error } = await supabase
+        .from('community_credits')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
         console.error('Error deleting credit:', error);
         showToast('Failed to delete credit: ' + error.message, 'error');
-        return;
+      } else {
+        fetchCommunityCredits();
+        showToast('Credit deleted');
       }
-
-      fetchCommunityCredits();
-      showToast('Credit deleted');
     });
   }
 
@@ -170,41 +183,93 @@ export default function CommunityTab({
       source: mailingForm.source || 'manual'
     };
 
-    try {
-      await apiPost('/api/mailing-list', {
-        ...data,
-        id: editingMailingEntry?.id,
-      }, { auth: true });
-    } catch (error) {
-      showToast('Error saving contact: ' + error.message, 'error');
-      return;
+    let error;
+    if (editingMailingEntry) {
+      const { error: err } = await supabase.from('mailing_list').update(data).eq('id', editingMailingEntry.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('mailing_list').insert([data]);
+      error = err;
     }
 
-    setIsMailingListModalOpen(false);
-    fetchMailingList();
-    showToast('Contact saved successfully');
+    if (error) {
+      showToast('Error saving contact: ' + error.message, 'error');
+    } else {
+      setIsMailingListModalOpen(false);
+      fetchMailingList();
+      showToast('Contact saved successfully');
+    }
   }
 
   async function deleteMailingEntry(id) {
     triggerConfirm('Delete this manual entry?', async () => {
-      try {
-        await apiPost('/api/mailing-list', { action: 'delete', id }, { auth: true });
-      } catch (error) {
+      const { error } = await supabase.from('mailing_list').delete().eq('id', id);
+      if (error) {
         showToast('Error deleting: ' + error.message, 'error');
-        return;
+      } else {
+        fetchMailingList();
+        showToast('Contact removed');
       }
-
-      fetchMailingList();
-      showToast('Contact removed');
     });
   }
 
   async function syncFromEvents() {
+    let addedCount = 0;
+    let skippedCount = 0;
+
     try {
-      const result = await apiPost('/api/community-credits', {
-        action: 'sync-from-events',
-      }, { auth: true });
-      showToast(`Sync complete. Added ${result.addedCount} credits. Skipped ${result.skippedCount} duplicates.`);
+      for (const event of events) {
+        const performers = event.metadata?.performers 
+          ? event.metadata.performers.split(',').map(s => s.trim()).filter(Boolean) 
+          : [];
+        const artists = event.metadata?.artists 
+          ? event.metadata.artists.split(',').map(s => s.trim()).filter(Boolean) 
+          : [];
+
+        for (const name of performers) {
+          const exists = communityCredits.some(c => 
+            c.name.toLowerCase() === name.toLowerCase() && 
+            c.role === 'performer' && 
+            c.event_id === event.id
+          );
+
+          if (!exists) {
+            const { error } = await supabase.from('community_credits').insert([{
+              name,
+              role: 'performer',
+              event_id: event.id,
+              event_name: event.name
+            }]);
+            if (error) throw error;
+            addedCount++;
+          } else {
+            skippedCount++;
+          }
+        }
+
+        for (const name of artists) {
+          const exists = communityCredits.some(c => 
+            c.name.toLowerCase() === name.toLowerCase() && 
+            c.role === 'artist' && 
+            c.event_id === event.id
+          );
+
+          if (!exists) {
+            const { error } = await supabase.from('community_credits').insert([{
+              name,
+              role: 'artist',
+              event_id: event.id,
+              event_name: event.name
+            }]);
+            if (error) throw error;
+            addedCount++;
+          } else {
+            skippedCount++;
+          }
+        }
+      }
+
+      showToast(`Sync complete. Added ${addedCount} credits. Skipped ${skippedCount} duplicates.`);
       fetchCommunityCredits();
     } catch (err) {
       console.error('Error syncing from events:', err);
@@ -240,6 +305,13 @@ export default function CommunityTab({
     }));
   }
 
+  function toggleAttendanceExpansion(sourceId) {
+    setExpandedAttendance(prev => ({
+      ...prev,
+      [sourceId]: !prev[sourceId]
+    }));
+  }
+
   const eventOrderLookup = events.reduce((acc, event, index) => {
     acc[event.id] = index;
     return acc;
@@ -252,6 +324,31 @@ export default function CommunityTab({
   function isPlaceholderEmail(email) {
     const normalized = normalizeEmail(email);
     return !normalized || normalized.endsWith('@example.com');
+  }
+
+  function formatDate(value) {
+    if (!value) return '-';
+    return new Date(value).toLocaleDateString();
+  }
+
+  async function handleAttachAttendance(source, candidateUserId) {
+    if (!source?.id || !candidateUserId || attachingSourceId) return;
+
+    setAttachingSourceId(source.id);
+    try {
+      await apiPost('/api/admin-attendance-attach', {
+        sourceId: source.id,
+        userId: candidateUserId,
+        participationTier: attendanceTierById[source.id] || source.participationTier || 'attendee'
+      }, { auth: true });
+
+      await fetchAttendanceQueue();
+      showToast(`Attendance attached for ${source.eventName || 'LMNL Event'}.`);
+    } catch (error) {
+      showToast('Attendance attach failed: ' + error.message, 'error');
+    } finally {
+      setAttachingSourceId('');
+    }
   }
 
   const emailContactsByEmail = new Map();
@@ -446,6 +543,181 @@ export default function CommunityTab({
 
   return (
      <>
+      {shouldRender(sectionIds.attendance) && (
+      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+        <div className="section-header-flex">
+          <div className="section-title-container">
+            <button
+              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.attendance) ? 'pinned' : ''}`}
+              onClick={() => onTogglePin(sectionIds.attendance)}
+              title={pinnedSections.includes(sectionIds.attendance) ? 'Unpin from top' : 'Pin to top'}
+            >
+              <PinIcon filled={pinnedSections.includes(sectionIds.attendance)} />
+            </button>
+            <h2 className="section-title">ATTENDANCE RESOLUTION QUEUE</h2>
+          </div>
+          <div className="action-buttons">
+            <button className="admin-btn" onClick={fetchAttendanceQueue} disabled={attendanceQueueLoading}>
+              {attendanceQueueLoading ? 'LOADING...' : 'REFRESH'}
+            </button>
+          </div>
+        </div>
+
+        <div className="admin-stats">
+          <div className="stat-item">
+            <span className="stat-label">UNRESOLVED</span>
+            <span className="stat-value">{attendanceQueue.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">EXACT MATCH READY</span>
+            <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount === 1).length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">NEEDS REVIEW</span>
+            <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount !== 1).length}</span>
+          </div>
+        </div>
+
+        <div className="events-table-container admin-table-shell">
+          {attendanceQueueLoading ? (
+            <p className="loading-text">RETRIEVING ATTENDANCE PROOF...</p>
+          ) : attendanceQueue.length === 0 ? (
+            <p className="loading-text">NO UNRESOLVED ATTENDANCE PROOF IS WAITING RIGHT NOW.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>EVENT</th>
+                  <th>CONTACT</th>
+                  <th>PROOF</th>
+                  <th>CANDIDATES</th>
+                  <th>ATTACH</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendanceQueue.map((source) => {
+                  const isExpanded = Boolean(expandedAttendance[source.id]);
+                  const selectedTier = attendanceTierById[source.id] || source.participationTier || 'attendee';
+
+                  return (
+                    <Fragment key={source.id}>
+                      <tr className={isExpanded ? 'contact-row-expanded' : ''}>
+                        <td className="ticket-detail-toggle-cell">
+                          <button
+                            type="button"
+                            className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
+                            onClick={() => toggleAttendanceExpansion(source.id)}
+                            aria-expanded={isExpanded}
+                            title={isExpanded ? 'Hide details' : 'Show details'}
+                            style={{ '--004ffa': '#ff5bb8' }}
+                          >
+                            <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
+                          </button>
+                        </td>
+                        <td>
+                          <strong>{source.eventName}</strong>
+                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                            {formatDate(source.eventDate)}{source.locationName ? ` • ${source.locationName}` : ''}
+                          </div>
+                        </td>
+                        <td>
+                          <div>{source.contactName || 'Unnamed guest'}</div>
+                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                            {source.contactEmail || 'No contact email'}
+                          </div>
+                        </td>
+                        <td>
+                          <div>{String(source.verificationMethod || '').replace(/_/g, ' ')}</div>
+                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                            {String(source.sourceType || '').replace(/_/g, ' ')}{source.sourceId ? ` • ${source.sourceId}` : ''}
+                          </div>
+                        </td>
+                        <td>
+                          {source.candidateCount === 0
+                            ? 'No exact LMNL match'
+                            : source.candidateCount === 1
+                              ? '1 exact candidate'
+                              : `${source.candidateCount} exact candidates`}
+                        </td>
+                        <td>
+                          <select
+                            value={selectedTier}
+                            onChange={(event) => setAttendanceTierById((prev) => ({
+                              ...prev,
+                              [source.id]: event.target.value
+                            }))}
+                          >
+                            <option value="attendee">ATTENDEE</option>
+                            <option value="performer">PERFORMER</option>
+                          </select>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="contact-metadata-row">
+                          <td></td>
+                          <td colSpan="5">
+                            <div className="contact-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #ff5bb8' }}>
+                              <div style={{ display: 'grid', gap: '14px', paddingLeft: '15px' }}>
+                                <div className="contact-metadata-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                                  <div className="contact-metadata-item">
+                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>VERIFIED</span>
+                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{formatDate(source.verifiedAt)}</span>
+                                  </div>
+                                  <div className="contact-metadata-item">
+                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>STATUS</span>
+                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{source.verificationStatus}</span>
+                                  </div>
+                                  <div className="contact-metadata-item">
+                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>CURRENT TIER</span>
+                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{selectedTier}</span>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '8px' }}>LMNL CANDIDATES</span>
+                                  {source.candidates.length > 0 ? (
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                      {source.candidates.map((candidate) => (
+                                        <div key={`${source.id}-${candidate.userId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 12px', border: '1px solid rgba(255, 91, 184, 0.24)' }}>
+                                          <div>
+                                            <div style={{ fontWeight: 700 }}>{candidate.displayName}</div>
+                                            <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                                              {candidate.profileSlug ? `@${candidate.profileSlug}` : 'Profile slug pending'}
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            className="admin-btn approve"
+                                            disabled={Boolean(attachingSourceId)}
+                                            onClick={() => handleAttachAttendance(source, candidate.userId)}
+                                          >
+                                            {attachingSourceId === source.id ? 'ATTACHING...' : 'ATTACH'}
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="loading-text" style={{ textAlign: 'left', padding: 0 }}>
+                                      No exact LMNL profile match was found for this email yet. This record still needs manual follow-up or a later member sign-in.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+      )}
+
       {shouldRender(sectionIds.artist) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
@@ -474,7 +746,6 @@ export default function CommunityTab({
               <h3>DATABASE SETUP REQUIRED</h3>
             </div>
             <p>Please create the <code>artist_interest</code> table in your Supabase SQL Editor.</p>
-            <p style={{ marginTop: '10px' }}>Then apply <code>sql/phase1_admin_authorization.sql</code> so admin access stays allowlisted instead of granting all authenticated users access.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -485,7 +756,7 @@ export default function CommunityTab({
               overflowX: 'auto',
               marginTop: '10px',
               marginBottom: '20px',
-              fontFamily: 'monospace'
+              fontFamily: 'var(--lmnl-font-mono)'
             }}>
 {`CREATE TABLE IF NOT EXISTS artist_interest (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -503,8 +774,9 @@ export default function CommunityTab({
 
 ALTER TABLE artist_interest ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "artist_interest_public_insert" ON artist_interest FOR INSERT WITH CHECK (true);
-CREATE POLICY "artist_interest_admin_read_write" ON artist_interest FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
+CREATE POLICY "Allow public insert access" ON artist_interest FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated read access" ON artist_interest FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING (auth.role() = 'authenticated');`}
             </pre>
             <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
           </div>
@@ -684,7 +956,6 @@ CREATE POLICY "artist_interest_admin_read_write" ON artist_interest FOR ALL USIN
               <h3>DATABASE SETUP REQUIRED</h3>
             </div>
             <p>Please create the <code>community_credits</code> table in your Supabase SQL Editor.</p>
-            <p style={{ marginTop: '10px' }}>Use <code>sql/phase1_admin_authorization.sql</code> for the allowlist-based policy setup after the table exists.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -695,7 +966,7 @@ CREATE POLICY "artist_interest_admin_read_write" ON artist_interest FOR ALL USIN
               overflowX: 'auto',
               marginTop: '10px',
               marginBottom: '20px',
-              fontFamily: 'monospace'
+              fontFamily: 'var(--lmnl-font-mono)'
             }}>
 {`CREATE TABLE IF NOT EXISTS community_credits (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -714,8 +985,8 @@ ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
 
 ALTER TABLE community_credits ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "community_credits_public_read" ON community_credits FOR SELECT USING (true);
-CREATE POLICY "community_credits_admin_write" ON community_credits FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
+CREATE POLICY "Allow public read access" ON community_credits FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USING (auth.role() = 'authenticated');`}
             </pre>
             <button className="admin-btn" onClick={fetchCommunityCredits}>REFRESH</button>
           </div>
@@ -881,7 +1152,6 @@ CREATE POLICY "community_credits_admin_write" ON community_credits FOR ALL USING
               <h3>MAILING LIST TABLE REQUIRED</h3>
             </div>
             <p>Please create the <code>mailing_list</code> table in your Supabase SQL Editor.</p>
-            <p style={{ marginTop: '10px' }}>After creating it, apply <code>sql/phase1_admin_authorization.sql</code> so only allowlisted admins can manage entries.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -892,7 +1162,7 @@ CREATE POLICY "community_credits_admin_write" ON community_credits FOR ALL USING
               overflowX: 'auto',
               marginTop: '10px',
               marginBottom: '20px',
-              fontFamily: 'monospace'
+              fontFamily: 'var(--lmnl-font-mono)'
             }}>
 {`CREATE TABLE IF NOT EXISTS mailing_list (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -904,7 +1174,8 @@ CREATE POLICY "community_credits_admin_write" ON community_credits FOR ALL USING
 
 ALTER TABLE mailing_list ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "mailing_list_admin_only" ON mailing_list FOR ALL USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());`}
+CREATE POLICY "Allow authenticated read access" ON mailing_list FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (auth.role() = 'authenticated');`}
             </pre>
             <button className="admin-btn" onClick={fetchMailingList}>REFRESH</button>
           </div>

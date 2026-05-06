@@ -409,3 +409,77 @@ export async function createManualAttendanceSource(
     wrapPhase2SetupError(error);
   }
 }
+
+export async function getAdminAttendanceQueue(deps = {}) {
+  const repo = deps.repo || attendanceRepo;
+
+  try {
+    const sources = await repo.listUnresolvedVerificationSources(deps);
+    const eventIds = dedupe(sources.map((source) => source.event_id).filter(Boolean));
+    const events = await repo.listEventsByIds(eventIds, deps);
+    const eventById = new Map(events.map((event) => [event.id, event]));
+
+    const emails = dedupe(sources.map((source) => normalizeEmail(source.contact_email)).filter(Boolean));
+    const userIdsByEmail = new Map();
+
+    await Promise.all(
+      emails.map(async (email) => {
+        const matchingUserIds = dedupe(await repo.findCommunityUserIdsByEmail(email, deps));
+        userIdsByEmail.set(email, matchingUserIds);
+      }),
+    );
+
+    const candidateUserIds = dedupe(
+      Array.from(userIdsByEmail.values()).flat().filter(Boolean),
+    );
+    const profiles = await repo.listProfilesByIds(candidateUserIds, deps);
+    const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    const items = sources.map((source) => {
+      const normalizedEmail = normalizeEmail(source.contact_email);
+      const candidateIds = userIdsByEmail.get(normalizedEmail) || [];
+      const candidates = candidateIds
+        .map((userId) => {
+          const profile = profileById.get(userId);
+          return {
+            userId,
+            displayName: profile?.display_name || 'LMNL Member',
+            profileSlug: profile?.profile_slug || '',
+            avatarUrl: profile?.avatar_url || '',
+            visibility: profile?.visibility || '',
+          };
+        })
+        .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+      return {
+        id: source.id,
+        eventId: source.event_id,
+        eventName: eventById.get(source.event_id)?.name || 'LMNL Event',
+        eventDate: eventById.get(source.event_id)?.event_date || null,
+        locationName: eventById.get(source.event_id)?.location_name || '',
+        sourceType: source.source_type,
+        sourceId: source.source_id || '',
+        verificationMethod: source.verification_method,
+        verificationStatus: source.verification_status,
+        participationTier: source.participation_tier || 'attendee',
+        verifiedAt: source.verified_at || source.created_at || '',
+        contactEmail: source.contact_email || '',
+        contactName: source.contact_name || '',
+        candidateCount: candidates.length,
+        candidates,
+      };
+    });
+
+    return {
+      summary: {
+        unresolvedCount: items.length,
+        exactMatchCount: items.filter((item) => item.candidateCount === 1).length,
+        multiMatchCount: items.filter((item) => item.candidateCount > 1).length,
+        noMatchCount: items.filter((item) => item.candidateCount === 0).length,
+      },
+      items,
+    };
+  } catch (error) {
+    wrapPhase2SetupError(error);
+  }
+}

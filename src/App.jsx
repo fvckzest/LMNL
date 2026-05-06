@@ -3,6 +3,8 @@ import { Suspense, cloneElement, useEffect, useState } from 'react';
 import Home from './pages/Home';
 import ContentPageShell from './components/ContentPageShell';
 import { lazyWithRetry } from './lib/lazyWithRetry';
+import { ThemeProvider, useThemeNeutralColor } from './components/ThemeProvider';
+import RouteStatusScreen from './components/RouteStatusScreen';
 import {
   buildCommunityLoginPath,
   buildCommunityOnboardingPath,
@@ -11,12 +13,12 @@ import {
 } from './lib/communityAuth';
 import {
   COMMUNITY_APP_PATH,
+  COMMUNITY_DASHBOARD_BASE_PATH,
   COMMUNITY_ONBOARDING_PATH,
   ensureCommunityProfile,
   profileNeedsOnboarding,
 } from './lib/communityProfile';
-import './index.css';
-import './pages/AppLogin.css';
+import './styles/community-app.css';
 
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
@@ -39,45 +41,24 @@ const AppLogin = lazyWithRetry(() => import('./pages/AppLogin'));
 const AuthCallback = lazyWithRetry(() => import('./pages/AuthCallback'));
 const AppHome = lazyWithRetry(() => import('./pages/AppHome'));
 const AppOnboarding = lazyWithRetry(() => import('./pages/AppOnboarding'));
+const UserDashboard = lazyWithRetry(() => import('./pages/UserDashboard'));
 
 function RouteLoadingFallback() {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Gantari, sans-serif',
-        fontSize: '12px',
-        letterSpacing: '0.18em',
-      }}
-    >
-      LOADING PAGE...
-    </div>
-  );
+  return <RouteStatusScreen message="LOADING PAGE..." />;
 }
 
-// Protected Route Component
 function RouteGateFallback({ message = 'VERIFYING ACCESS...' }) {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Gantari, sans-serif',
-        fontSize: '12px',
-        letterSpacing: '0.18em',
-      }}
-    >
-      {message}
-    </div>
-  );
+  return <RouteStatusScreen message={message} />;
+}
+
+function PrsmPage() {
+  const neutralColor = useThemeNeutralColor();
+
+  return <GenericPage title="PRSM" color={neutralColor} />;
 }
 
 function CommunityRouteError({ message, nextPath }) {
+  const neutralColor = useThemeNeutralColor();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
 
@@ -93,12 +74,12 @@ function CommunityRouteError({ message, nextPath }) {
   }
 
   return (
-    <ContentPageShell title="APP ACCESS" color="#00c2ff" contentClassName="app-login-content">
+    <ContentPageShell title="APP ACCESS" color={neutralColor} contentClassName="app-login-content">
       <div className="app-login-layout theme-shell-section">
-        <div className="app-login-panel theme-panel">
-          <p className="app-login-kicker">LMNL Community</p>
-          <h2 className="app-login-title">Community profile setup hit a blocker.</h2>
-          <p className="app-login-copy">{message || 'Unable to prepare your community profile.'}</p>
+        <div className="app-login-panel theme-panel theme-panel-stack">
+          <p className="app-login-kicker theme-kicker">LMNL Community</p>
+          <h2 className="app-login-title theme-title-xl">Community profile setup hit a blocker.</h2>
+          <p className="app-login-copy theme-body-copy">{message || 'Unable to prepare your community profile.'}</p>
 
           <div className="app-login-actions">
             <button
@@ -340,7 +321,6 @@ function App() {
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
   const isAdminSubdomain = hostname.startsWith('admin.');
 
-  // Admin is accessible if we are on the admin subdomain OR working locally
   const showAdmin = isLocal || isAdminSubdomain;
   const showCommunityApp = isLocal || !isAdminSubdomain;
   const [appSession, setAppSession] = useState(undefined);
@@ -375,91 +355,95 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Suspense fallback={<RouteLoadingFallback />}>
-        <Routes>
-          {/* SHARED / PUBLIC CONTENT */}
-          <Route path="/ticket/:ticketId" element={<Ticket />} />
-          <Route path="/success" element={<Success />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/space" element={<Space />} />
-          <Route path="/about" element={<About />} />
+    <ThemeProvider>
+      <Router>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route path="/ticket/:ticketId" element={<Ticket />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/space" element={<Space />} />
+            <Route path="/about" element={<About />} />
 
-          {/* SUBDOMAIN SPECIFIC LOGIC */}
-          {showAdmin ? (
-            <>
-              {/* On admin.lmnl.art, the root is the Dashboard */}
-              <Route path="/" element={
-                <ProtectedRoute requireAdmin>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/check-in/:token" element={
-                <ProtectedRoute requireAdmin>
-                  <CheckIn />
-                </ProtectedRoute>
-              } />
-              {/* Allow viewing the public home via /home on the subdomain */}
-              <Route path="/home" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
-              {showCommunityApp ? <Route path="/auth/callback" element={<AuthCallback session={appSession} />} /> : null}
-            </>
-          ) : (
-            <>
-              {/* On the main site, the root is the Home page */}
-              <Route path="/" element={<Home />} />
-              {/* Block /admin and /login on the public site */}
-              <Route path="/admin" element={<Navigate to="/" />} />
-              <Route path="/login" element={<Navigate to="/" />} />
-              {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
-              <Route path="/auth/callback" element={<AuthCallback session={appSession} />} />
-            </>
-          )}
+            {showAdmin ? (
+              <>
+                <Route path="/" element={
+                  <ProtectedRoute requireAdmin>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/check-in/:token" element={
+                  <ProtectedRoute requireAdmin>
+                    <CheckIn />
+                  </ProtectedRoute>
+                } />
+                <Route path="/home" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
+                {showCommunityApp ? <Route path="/auth/callback" element={<AuthCallback session={appSession} />} /> : null}
+              </>
+            ) : (
+              <>
+                <Route path="/" element={<Home />} />
+                <Route path="/admin" element={<Navigate to="/" />} />
+                <Route path="/login" element={<Navigate to="/" />} />
+                {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
+                <Route path="/auth/callback" element={<AuthCallback session={appSession} />} />
+              </>
+            )}
 
-          {showCommunityApp ? (
-            <>
-              <Route path="/app/login" element={<AppLogin session={appSession} />} />
-              <Route
-                path="/app"
-                element={(
-                  <CommunityAppRoute session={appSession}>
-                    <AppHome session={appSession} />
-                  </CommunityAppRoute>
-                )}
-              />
-              <Route
-                path="/app/onboarding"
-                element={(
-                  <CommunityAppRoute session={appSession} allowIncomplete>
-                    <AppOnboarding session={appSession} />
-                  </CommunityAppRoute>
-                )}
-              />
-            </>
-          ) : (
-            <>
-              <Route path="/app/login" element={<Navigate to="/" replace />} />
-              <Route path="/app" element={<Navigate to="/" replace />} />
-              <Route path="/app/onboarding" element={<Navigate to="/" replace />} />
-            </>
-          )}
+            {showCommunityApp ? (
+              <>
+                <Route path={buildCommunityLoginPath(COMMUNITY_APP_PATH)} element={<AppLogin session={appSession} />} />
+                <Route
+                  path={COMMUNITY_APP_PATH}
+                  element={(
+                    <CommunityAppRoute session={appSession}>
+                      <AppHome session={appSession} />
+                    </CommunityAppRoute>
+                  )}
+                />
+                <Route
+                  path={`${COMMUNITY_DASHBOARD_BASE_PATH}/:userSlug`}
+                  element={(
+                    <CommunityAppRoute session={appSession}>
+                      <UserDashboard session={appSession} />
+                    </CommunityAppRoute>
+                  )}
+                />
+                <Route
+                  path={COMMUNITY_ONBOARDING_PATH}
+                  element={(
+                    <CommunityAppRoute session={appSession} allowIncomplete>
+                      <AppOnboarding session={appSession} />
+                    </CommunityAppRoute>
+                  )}
+                />
+              </>
+            ) : (
+              <>
+                <Route path={buildCommunityLoginPath(COMMUNITY_APP_PATH)} element={<Navigate to="/" replace />} />
+                <Route path={COMMUNITY_APP_PATH} element={<Navigate to="/" replace />} />
+                <Route path={`${COMMUNITY_DASHBOARD_BASE_PATH}/:userSlug`} element={<Navigate to="/" replace />} />
+                <Route path={COMMUNITY_ONBOARDING_PATH} element={<Navigate to="/" replace />} />
+              </>
+            )}
 
-          {/* CATCH-ALL / UTILITY */}
-          <Route path="/services" element={<Services />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/community/share" element={<ArtistInterest />} />
-          <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPostView />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/prsm" element={<GenericPage title="PRSM" color="#000000" />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/community/share" element={<ArtistInterest />} />
+            <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPostView />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/prsm" element={<PrsmPage />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </Router>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </Router>
+    </ThemeProvider>
   );
 }
 

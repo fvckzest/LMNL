@@ -1,93 +1,37 @@
-.login-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: 80vh;
-}
-
 .login-box {
   width: 100%;
-  max-width: 400px;
-  padding: 40px;
-  --theme-panel-bg: #fff;
-  --theme-panel-border: 2px solid #000;
+  max-width: 520px;
 }
 
 .login-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 40px;
+  gap: 12px;
 }
 
-.login-rect {
-  width: 12px;
-  height: 40px;
-  background: black;
-}
+.login-header h1,
+.login-input-group label,
+.login-error { margin: 0; }
 
 .login-header h1 {
-  font-size: 14px;
-  letter-spacing: 0.3em;
-  margin: 0;
+  color: var(--page-color);
 }
 
 .login-form {
-  --theme-form-gap: 25px;
+  --theme-form-gap: 18px;
 }
 
 .login-input-group {
   --theme-field-gap: 8px;
   --theme-field-size: 10px;
-  --theme-field-tracking: 0.15em;
-  --theme-field-label-color: #666;
-}
-
-.login-input-group label {
-  font-weight: 700;
-}
-
-.login-input-group .theme-input {
-  --theme-input-padding: 12px;
-  --theme-input-border: 1px solid #000;
-  --theme-input-size: 14px;
-  --theme-input-resize: none;
-}
-
-.login-input-group .theme-input:focus {
-  --theme-input-focus-bg: #fcfcfc;
-  --theme-input-focus-ring: none;
-  border-width: 2px;
-  padding: 11px;
 }
 
 .login-error {
-  font-size: 10px;
-  color: #ff0000;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  margin: 0;
+  color: var(--lmnl-color-text);
+  font-size: calc(11px * 1.25);
+  letter-spacing: 0.12em;
 }
 
 .login-btn {
-  margin-top: 10px;
-  --theme-button-height: auto;
-  --theme-button-padding: 15px;
-  --theme-button-border: 0;
-  --theme-button-bg: #000;
-  --theme-button-color: #fff;
-  --theme-button-tracking: 0.2em;
-  transition: all 0.2s ease;
-}
-
-.login-btn:hover {
-  --theme-button-bg: #333;
-  transform: translateY(-2px);
-}
-
-.login-btn:disabled {
-  --theme-button-bg: #999;
+  --theme-button-font: var(--lmnl-font-mono);
 }

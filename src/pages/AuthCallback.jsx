@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import { useThemeNeutralColor } from '../components/ThemeProvider';
 import { buildCommunityLoginPath, readCommunityNextPath } from '../lib/communityAuth';
 import {
   ensureCommunityProfile,
@@ -8,9 +9,9 @@ import {
   resolveCommunityDestination,
 } from '../lib/communityProfile';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
-import './AppLogin.css';
 
 export default function AuthCallback({ session }) {
+  const neutralColor = useThemeNeutralColor();
   const location = useLocation();
   const navigate = useNavigate();
   const [status, setStatus] = useState('working');
@@ -99,14 +100,14 @@ export default function AuthCallback({ session }) {
   }
 
   return (
-    <ContentPageShell title="AUTH" color="#00c2ff" contentClassName="app-login-content">
+    <ContentPageShell title="AUTH" color={neutralColor} contentClassName="app-login-content">
       <div className="app-login-layout theme-shell-section">
-        <div className="app-login-panel theme-panel">
-          <p className="app-login-kicker">LMNL Community</p>
-          <h2 className="app-login-title">
+        <div className="app-login-panel theme-panel theme-panel-stack">
+          <p className="app-login-kicker theme-kicker">LMNL Community</p>
+          <h2 className="app-login-title theme-title-xl">
             {status === 'error' ? 'Sign-in could not be completed.' : 'Completing sign-in...'}
           </h2>
-          <p className="app-login-copy">
+          <p className="app-login-copy theme-body-copy">
             {status === 'error'
               ? error
               : 'We are finishing the community session and routing you into the app shell.'}

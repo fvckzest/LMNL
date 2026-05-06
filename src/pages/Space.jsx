@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import ContentPageShell from '../components/ContentPageShell';
 import SpaceCountdown from '../components/space/SpaceCountdown';
 import SpaceOccupancy from '../components/space/SpaceOccupancy';
 import SpacePriceCard from '../components/space/SpacePriceCard';
@@ -11,7 +10,7 @@ import { fetchSpaceEventSnapshot } from '../lib/siteData';
 import './Space.css';
 
 export default function Space() {
-  usePageColor('#000000');
+  usePageColor('#a0a0a0');
 
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -102,15 +101,14 @@ export default function Space() {
   };
 
   return (
-    <div className="page-container space-page">
-      <HeaderBar />
-      <div className="page-content space-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#000000' }} />
-          <h1 className="page-title">[{eventData.name}]</h1>
-        </div>
-
-        <div className="space-body">
+    <ContentPageShell
+      title={eventData.name || 'SPACE'}
+      color="#a0a0a0"
+      introTitle={eventData.name || 'SPACE'}
+      introCopy="CURRENT PHYSICAL NODE / ACCESS, FUNDING, OCCUPANCY, AND BRIEFING"
+      contentClassName="space-content page-stack"
+    >
+      <div className="space-body">
           <div className="space-grid">
             <div className="space-metrics-stack">
               <SpaceCountdown eventDate={eventData.event_date} eventTime={eventData.event_time} />
@@ -247,8 +245,6 @@ export default function Space() {
             </div>
           </div>
         )}
-      </div>
-      <Footer />
-    </div>
+    </ContentPageShell>
   );
 }

@@ -250,9 +250,18 @@ const MANAGED_METADATA_KEYS = new Set([
   async function enableSquareTracking(variationId) {
     triggerConfirm('Turn on inventory tracking for this item in Square?', async () => {
       try {
-        await apiPost('/api/enable-square-tracking', { variationId }, { auth: true });
-        showToast('Tracking enabled! Now set your stock count in Square.');
-        fetchSquareCatalog();
+        const response = await fetch('/api/enable-square-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variationId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('Tracking enabled! Now set your stock count in Square.');
+          fetchSquareCatalog();
+        } else {
+          throw new Error(result.error);
+        }
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       }
@@ -262,9 +271,16 @@ const MANAGED_METADATA_KEYS = new Set([
   async function createTestItem() {
     triggerConfirm('This will create a real item called "API TEST TICKET" in your Square account. Proceed?', async () => {
       try {
-        await apiPost('/api/create-test-item', {}, { auth: true });
-        showToast('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
-        fetchSquareCatalog();
+        const response = await fetch('/api/create-test-item', {
+          method: 'POST'
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('SUCCESS! "API TEST TICKET" created in Square. Refreshing catalog...');
+          fetchSquareCatalog();
+        } else {
+          throw new Error(result.error);
+        }
       } catch (err) {
         showToast('Error creating test item: ' + err.message, 'error');
       }

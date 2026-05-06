@@ -10,6 +10,7 @@ import {
 } from '../src/lib/communityAuth.js';
 import {
   COMMUNITY_ONBOARDING_PATH,
+  buildCommunityDashboardPath,
   createUserIdentityPayload,
   deriveCommunityDisplayName,
   deriveCommunityAvatarUrl,
@@ -26,6 +27,7 @@ test('sanitizeCommunityNextPath keeps only community app paths', () => {
   assert.equal(sanitizeCommunityNextPath('/app'), '/app');
   assert.equal(sanitizeCommunityNextPath('/app/profile?tab=1'), '/app/profile?tab=1');
   assert.equal(sanitizeCommunityNextPath('/app/onboarding?next=%2Fapp%2Fcollection'), '/app/onboarding?next=%2Fapp%2Fcollection');
+  assert.equal(sanitizeCommunityNextPath('/dashboard/member-one'), '/dashboard/member-one');
   assert.equal(sanitizeCommunityNextPath('/login'), '/app');
   assert.equal(sanitizeCommunityNextPath('https://evil.example/app'), '/app');
   assert.equal(sanitizeCommunityNextPath('/app//escape'), '/app');
@@ -45,6 +47,18 @@ test('buildCommunityAuthRedirectTo builds a callback URL with a safe next path',
   );
 });
 
+test('buildCommunityAuthRedirectTo preserves the active app base path for preview routes', () => {
+  assert.equal(
+    buildCommunityAuthRedirectTo('https://preview.lmnl.art', '/app/collection', '/branches/feature-x/app/login'),
+    'https://preview.lmnl.art/branches/feature-x/auth/callback?next=%2Fapp%2Fcollection',
+  );
+
+  assert.equal(
+    buildCommunityAuthRedirectTo('', '/app', '/branches/feature-x/auth/callback'),
+    '/branches/feature-x/auth/callback?next=%2Fapp',
+  );
+});
+
 test('buildCommunityAuthPreflightUrl forces JSON auth responses for provider checks', () => {
   assert.equal(
     buildCommunityAuthPreflightUrl('https://example.supabase.co/auth/v1/authorize?provider=google'),
@@ -54,6 +68,7 @@ test('buildCommunityAuthPreflightUrl forces JSON auth responses for provider che
 
 test('community next-path helpers preserve safe destinations through onboarding', () => {
   assert.equal(readCommunityNextPath('?next=%2Fapp%2Fcollection'), '/app/collection');
+  assert.equal(readCommunityNextPath('?next=%2Fdashboard%2Fmember-one'), '/dashboard/member-one');
   assert.equal(buildCommunityLoginPath('/app'), '/app/login');
   assert.equal(buildCommunityLoginPath('/app/collection'), '/app/login?next=%2Fapp%2Fcollection');
   assert.equal(buildCommunityOnboardingPath('/app'), COMMUNITY_ONBOARDING_PATH);
@@ -123,7 +138,8 @@ test('profileNeedsOnboarding requires both a name and a completed flag', () => {
   assert.equal(profileNeedsOnboarding(null), true);
   assert.equal(profileNeedsOnboarding({ display_name: '', onboarding_completed: false }), true);
   assert.equal(profileNeedsOnboarding({ display_name: 'LMNL', onboarding_completed: false }), true);
-  assert.equal(profileNeedsOnboarding({ display_name: 'LMNL', onboarding_completed: true }), false);
+  assert.equal(profileNeedsOnboarding({ display_name: 'LMNL', profile_slug: '', onboarding_completed: true }), true);
+  assert.equal(profileNeedsOnboarding({ display_name: 'LMNL', profile_slug: 'lmnl', onboarding_completed: true }), false);
 });
 
 test('resolveCommunityDestination sends incomplete users into onboarding', () => {
@@ -133,9 +149,13 @@ test('resolveCommunityDestination sends incomplete users into onboarding', () =>
   );
 
   assert.equal(
-    resolveCommunityDestination({ display_name: 'LMNL', onboarding_completed: true }, '/app'),
-    '/app',
+    resolveCommunityDestination({ display_name: 'LMNL', profile_slug: 'lmnl', onboarding_completed: true }, '/app'),
+    '/dashboard/lmnl',
   );
+});
+
+test('buildCommunityDashboardPath normalizes dashboard routes from profile slugs', () => {
+  assert.equal(buildCommunityDashboardPath('LMNL Member'), '/dashboard/lmnl-member');
 });
 
 test('createUserIdentityPayload extracts normalized provider identity details', () => {

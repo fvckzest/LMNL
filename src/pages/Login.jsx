@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import HeaderBar from '../components/HeaderBar';
+import ContentPageShell from '../components/ContentPageShell';
+import { useThemeNeutralColor } from '../components/ThemeProvider';
 import './Login.css';
 
 export default function Login() {
+  const neutralColor = useThemeNeutralColor();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,10 +16,6 @@ export default function Login() {
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get('next') || '/';
-  }, [location.search]);
-  const unauthorized = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get('unauthorized') === '1';
   }, [location.search]);
 
   async function handleLogin(e) {
@@ -39,22 +37,22 @@ export default function Login() {
   }
 
   return (
-    <div className="page-container">
-      <HeaderBar />
-      <div className="page-content login-content">
-        <div className="login-box theme-panel">
-          <div className="login-header">
-            <div className="login-rect" />
+    <ContentPageShell
+      title="LOGIN"
+      color={neutralColor}
+      introTitle="LOGIN"
+      introCopy="AUTHENTICATED NODE / ESTABLISH SESSION TO CONTINUE"
+      contentClassName="login-content page-stack"
+    >
+        <div className="login-box theme-panel theme-form-shell">
+          <div className="login-header theme-panel-header">
+            <div className="login-rect theme-accent-bar" />
             <h1>ADMIN ACCESS</h1>
           </div>
 
-          {unauthorized ? (
-            <p className="login-error">ADMIN AUTHORIZATION REQUIRED FOR THIS SURFACE.</p>
-          ) : null}
-
           <form onSubmit={handleLogin} className="login-form theme-form">
             <div className="login-input-group theme-field">
-              <label>IDENTIFIER</label>
+              <label className="theme-field-label">IDENTIFIER</label>
               <input 
                 className="theme-input"
                 type="email" 
@@ -66,7 +64,7 @@ export default function Login() {
             </div>
 
             <div className="login-input-group theme-field">
-              <label>CREDENTIAL</label>
+              <label className="theme-field-label">CREDENTIAL</label>
               <input 
                 className="theme-input"
                 type="password" 
@@ -84,7 +82,6 @@ export default function Login() {
             </button>
           </form>
         </div>
-      </div>
-    </div>
+    </ContentPageShell>
   );
 }

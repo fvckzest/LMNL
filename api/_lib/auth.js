@@ -72,6 +72,10 @@ export async function assertAdminAccess(user, deps = {}) {
     return { source: 'table' };
   }
 
+  if (config.source === 'auto' && envMatch) {
+    return { source: 'env_fallback' };
+  }
+
   throw new AppError('Admin access denied.', {
     code: 'FORBIDDEN',
     status: 403,

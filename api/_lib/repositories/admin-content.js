@@ -34,6 +34,74 @@ export async function listServiceInquiries() {
   return data || [];
 }
 
+export async function listServiceProducts() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('service_products')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throwMissingTable(error, 'service_products', 'Service products');
+  }
+
+  return data || [];
+}
+
+export async function saveServiceProduct(payload) {
+  const supabase = getAdminSupabase();
+  const { id, ...rawData } = payload;
+  const data = {
+    capability: rawData.capability || '',
+    product: rawData.product || '',
+    scope: rawData.scope || '',
+    sort_order: Number.isFinite(Number(rawData.sort_order)) ? Number(rawData.sort_order) : 0,
+    is_active: rawData.is_active !== false,
+  };
+
+  if (id) {
+    const { data: updated, error } = await supabase
+      .from('service_products')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throwMissingTable(error, 'service_products', 'Service products');
+    }
+
+    return updated;
+  }
+
+  const { data: inserted, error } = await supabase
+    .from('service_products')
+    .insert([data])
+    .select()
+    .single();
+
+  if (error) {
+    throwMissingTable(error, 'service_products', 'Service products');
+  }
+
+  return inserted;
+}
+
+export async function deleteServiceProductById(id) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase
+    .from('service_products')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throwMissingTable(error, 'service_products', 'Service products');
+  }
+
+  return true;
+}
+
 export async function listArtistInterest() {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase

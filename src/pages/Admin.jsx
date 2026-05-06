@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiGet, apiPost } from '../lib/api';
-import HeaderBar from '../components/HeaderBar';
+import ContentPageShell, {
+  MetadataList,
+  ModuleStrip,
+} from '../components/ContentPageShell';
+import SystemPanel from '../components/SystemPanel';
 import EventsTab from '../components/admin/EventsTab';
 import InquiriesTab from '../components/admin/InquiriesTab';
 import ContactTab from '../components/admin/ContactTab';
@@ -20,10 +24,15 @@ export default function Admin() {
   const [tableMissing, setTableMissing] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [serviceProducts, setServiceProducts] = useState([]);
+  const [serviceProductsLoading, setServiceProductsLoading] = useState(true);
+  const [serviceProductsTableMissing, setServiceProductsTableMissing] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); 
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
+  const [attendanceQueue, setAttendanceQueue] = useState([]);
+  const [attendanceQueueLoading, setAttendanceQueueLoading] = useState(true);
   const [artistInterest, setArtistInterest] = useState([]);
   const [artistInterestLoading, setArtistInterestLoading] = useState(true);
   const [artistInterestTableMissing, setArtistInterestTableMissing] = useState(false);
@@ -76,12 +85,24 @@ export default function Admin() {
     blog: '#ffde00'
   };
 
+  const tabOptions = [
+    { id: 'all', label: 'ALL' },
+    { id: 'events', label: 'EVENTS' },
+    { id: 'inquiries', label: 'SERVICES' },
+    { id: 'shop', label: 'SHOP' },
+    { id: 'community', label: 'COMMUNITY' },
+    { id: 'contact', label: 'CONTACT' },
+    { id: 'blog', label: 'BLOG' },
+  ];
+
   useEffect(() => {
     fetchRequests();
     fetchEvents();
     fetchTickets();
     fetchServiceInquiries();
+    fetchServiceProducts();
     fetchCommunityCredits();
+    fetchAttendanceQueue();
     fetchArtistInterest();
     fetchSquareCatalog();
     fetchPreorders();
@@ -154,6 +175,21 @@ export default function Admin() {
     }
   }
 
+  async function fetchServiceProducts() {
+    setServiceProductsLoading(true);
+    try {
+      const data = await apiGet('/api/service-products', { auth: true });
+      setServiceProductsTableMissing(false);
+      setServiceProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching service products:', error);
+      if (error.message?.includes('not set up yet')) setServiceProductsTableMissing(true);
+      setServiceProducts([]);
+    } finally {
+      setServiceProductsLoading(false);
+    }
+  }
+
   async function fetchCommunityCredits() {
     setCommunityLoading(true);
     try {
@@ -166,6 +202,19 @@ export default function Admin() {
       setCommunityCredits([]);
     } finally {
       setCommunityLoading(false);
+    }
+  }
+
+  async function fetchAttendanceQueue() {
+    setAttendanceQueueLoading(true);
+    try {
+      const data = await apiGet('/api/admin-attendance-sources', { auth: true });
+      setAttendanceQueue(data?.items || []);
+    } catch (error) {
+      console.error('Error fetching attendance queue:', error);
+      setAttendanceQueue([]);
+    } finally {
+      setAttendanceQueueLoading(false);
     }
   }
 
@@ -249,7 +298,9 @@ export default function Admin() {
         fetchEvents(),
         fetchTickets(),
         fetchServiceInquiries(),
+        fetchServiceProducts(),
         fetchCommunityCredits(),
+        fetchAttendanceQueue(),
         fetchArtistInterest(),
         fetchMailingList(),
         fetchSquareCatalog(),
@@ -362,112 +413,132 @@ export default function Admin() {
     window.location.href = '/';
   }
 
+  const activeColor = tabColors[activeTab] || '#000000';
+  const serviceOnlyInquiries = serviceInquiries.filter((iq) => !iq.selected_services?.includes('general'));
+  const contactOnlyInquiries = serviceInquiries.filter((iq) => iq.selected_services?.includes('general'));
+
+  const sidebarStatus = useMemo(() => ([
+    { label: 'Mode', value: activeTab.toUpperCase() },
+    { label: 'Refresh', value: isRefreshing ? 'Running' : 'Idle' },
+    { label: 'Auth', value: 'Supabase' },
+    { label: 'Surface', value: 'Admin' },
+  ]), [activeTab, isRefreshing]);
+
+  const sidebarQueues = useMemo(() => ([
+    {
+      label: 'Pending requests',
+      value: String(requests.filter((item) => item.status === 'pending').length).padStart(2, '0'),
+      copy: 'Private access and invite queue awaiting action.',
+    },
+    {
+      label: 'Service inquiries',
+      value: String(serviceOnlyInquiries.filter((item) => item.status !== 'archived').length).padStart(2, '0'),
+      copy: 'Active service leads routed from the front-end inquiry flow.',
+    },
+    {
+      label: 'Contact inbox',
+      value: String(contactOnlyInquiries.filter((item) => item.status !== 'archived').length).padStart(2, '0'),
+      copy: 'General contact submissions that still need review.',
+    },
+  ]), [contactOnlyInquiries, requests, serviceOnlyInquiries]);
+
+  const rightSidebar = (
+    <>
+      <SystemPanel title="NODE STATUS">
+        <MetadataList items={sidebarStatus} />
+      </SystemPanel>
+      <SystemPanel title="QUEUE OVERVIEW">
+        <ModuleStrip items={sidebarQueues} />
+      </SystemPanel>
+      <SystemPanel title="SESSION ACTIONS">
+        <div className="admin-sidebar-actions">
+          <button
+            type="button"
+            className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+            onClick={refreshAllData}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? 'REFRESHING...' : 'REFRESH DATA'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn logout-btn"
+            onClick={handleSignOut}
+          >
+            LOG OUT
+          </button>
+        </div>
+      </SystemPanel>
+    </>
+  );
+
   return (
-    <div className="page-container">
-      <HeaderBar />
-      <div className="page-content">
-        <div className="page-header" style={{ left: 0, right: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="page-header-rect" style={{ backgroundColor: tabColors[activeTab] || '#000' }} />
-            <h1 className="page-title">ADMIN</h1>
-          </div>
-          <div style={{ 
-            position: 'absolute', 
-            right: 'var(--lmnl-page-padding-inline)',
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '10px' 
-          }}>
-            <button 
-              className="admin-btn logout-btn"
-              onClick={handleSignOut}
-            >
-              LOG OUT
-            </button>
-            <button 
-              className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-              onClick={refreshAllData}
-              disabled={isRefreshing}
-              title="Refresh all data"
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px' 
-              }}
-            >
-              <svg 
-                width="14" 
-                height="14" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                className={isRefreshing ? 'refresh-spin' : ''}
+    <>
+      <ContentPageShell
+        title="ADMIN"
+        color={activeColor}
+        introLabel="CONTROL NODE"
+        introTitle="Admin"
+        introCopy="Operations surface for events, inquiries, inventory, editorial, and community records."
+        rightSidebar={rightSidebar}
+        contentClassName="admin-content page-stack"
+      >
+        <section
+          className="admin-shell-panel page-panel admin-shell-panel--routed"
+          style={{ '--admin-shell-accent': activeColor }}
+        >
+          <div className="admin-shell-panel__header">
+            <div>
+              <p className="page-label">Section routing</p>
+            </div>
+            <div className="admin-toolbar">
+              <button
+                type="button"
+                className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+                onClick={refreshAllData}
+                disabled={isRefreshing}
+                title="Refresh all data"
               >
-                <path d="M23 4v6h-6"></path>
-                <path d="M1 20v-6h6"></path>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-              <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
-            </button>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={isRefreshing ? 'refresh-spin' : ''}
+                >
+                  <path d="M23 4v6h-6" />
+                  <path d="M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+                <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
+              </button>
+              <button
+                type="button"
+                className="admin-btn logout-btn"
+                onClick={handleSignOut}
+              >
+                LOG OUT
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div className="admin-body">
-        
-        <div className="admin-tabs">
-          <button 
-            className={`admin-tab ${activeTab === 'all' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('all')} 
-            style={{ borderBottomColor: tabColors.all, '--tab-accent': tabColors.all }}
-          >
-            ALL
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'events' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('events')} 
-            style={{ borderBottomColor: tabColors.events, '--tab-accent': tabColors.events }}
-          >
-            EVENTS
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'inquiries' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('inquiries')} 
-            style={{ borderBottomColor: tabColors.inquiries, '--tab-accent': tabColors.inquiries }}
-          >
-            INQUIRIES
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'shop' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('shop')} 
-            style={{ borderBottomColor: tabColors.shop, '--tab-accent': tabColors.shop }}
-          >
-            SHOP
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'community' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('community')} 
-            style={{ borderBottomColor: tabColors.community, '--tab-accent': tabColors.community }}
-          >
-            COMMUNITY
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'contact' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('contact')} 
-            style={{ borderBottomColor: tabColors.contact, '--tab-accent': tabColors.contact }}
-          >
-            CONTACT
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'blog' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('blog')} 
-            style={{ borderBottomColor: tabColors.blog, '--tab-accent': tabColors.blog }}
-          >
-            BLOG
-          </button>
-        </div>
+          <div className="admin-tabs">
+            {tabOptions.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+                style={{ '--tab-accent': tabColors[tab.id] }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
       {/* Pinned Sections (Only visible in 'all' tab) */}
       {activeTab === 'all' && pinnedSections.length > 0 && (
@@ -500,6 +571,12 @@ export default function Admin() {
             servicesLoading={servicesLoading}
             updateServiceStatus={updateServiceStatus}
             deleteServiceInquiry={deleteServiceInquiry}
+            serviceProducts={serviceProducts}
+            serviceProductsLoading={serviceProductsLoading}
+            serviceProductsTableMissing={serviceProductsTableMissing}
+            fetchServiceProducts={fetchServiceProducts}
+            showToast={showToast}
+            triggerConfirm={triggerConfirm}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
             renderMode="pinned"
@@ -535,6 +612,9 @@ export default function Admin() {
             communityLoading={communityLoading}
             communityTableMissing={communityTableMissing}
             fetchCommunityCredits={fetchCommunityCredits}
+            attendanceQueue={attendanceQueue}
+            attendanceQueueLoading={attendanceQueueLoading}
+            fetchAttendanceQueue={fetchAttendanceQueue}
             requests={requests}
             requestsLoading={loading}
             tickets={tickets}
@@ -568,23 +648,8 @@ export default function Admin() {
             onTogglePin={togglePin}
             renderMode="pinned"
           />
-          <div className="pinned-divider" style={{ 
-            height: '1px', 
-            background: '#eee', 
-            margin: '40px 0',
-            position: 'relative'
-          }}>
-            <span style={{ 
-              position: 'absolute', 
-              top: '50%', 
-              left: '50%', 
-              transform: 'translate(-50%, -50%)',
-              background: '#fff',
-              padding: '0 20px',
-              fontSize: '10px',
-              color: '#999',
-              letterSpacing: '0.2em'
-            }}>END OF PINNED SECTIONS</span>
+          <div className="pinned-divider">
+            <span className="pinned-divider__label">End Of Pinned Sections</span>
           </div>
         </div>
       )}
@@ -621,6 +686,12 @@ export default function Admin() {
           servicesLoading={servicesLoading}
           updateServiceStatus={updateServiceStatus}
           deleteServiceInquiry={deleteServiceInquiry}
+          serviceProducts={serviceProducts}
+          serviceProductsLoading={serviceProductsLoading}
+          serviceProductsTableMissing={serviceProductsTableMissing}
+          fetchServiceProducts={fetchServiceProducts}
+          showToast={showToast}
+          triggerConfirm={triggerConfirm}
           pinnedSections={pinnedSections}
           onTogglePin={togglePin}
           renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
@@ -665,6 +736,9 @@ export default function Admin() {
           communityLoading={communityLoading}
           communityTableMissing={communityTableMissing}
           fetchCommunityCredits={fetchCommunityCredits}
+          attendanceQueue={attendanceQueue}
+          attendanceQueueLoading={attendanceQueueLoading}
+          fetchAttendanceQueue={fetchAttendanceQueue}
           requests={requests}
           requestsLoading={loading}
           tickets={tickets}
@@ -700,10 +774,9 @@ export default function Admin() {
           pinnedSections={pinnedSections}
           onTogglePin={togglePin}
           renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-      </div>
-      </div>
+          />
+        )}
+      </ContentPageShell>
 
       {/* Toast Notification */}
       {toast && (
@@ -736,6 +809,6 @@ export default function Admin() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

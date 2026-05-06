@@ -279,8 +279,21 @@ export async function listPendingVerificationSourcesByEmails(emails, deps = {}) 
     .from('attendance_verification_sources')
     .select('*')
     .is('resolved_user_id', null)
-    .eq('verification_status', 'verified')
+    .neq('verification_status', 'revoked')
     .in('contact_email', emails)
+    .order('verified_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function listUnresolvedVerificationSources(deps = {}) {
+  const supabase = getSupabase(deps);
+  const { data, error } = await supabase
+    .from('attendance_verification_sources')
+    .select('*')
+    .is('resolved_user_id', null)
+    .neq('verification_status', 'revoked')
     .order('verified_at', { ascending: false });
 
   if (error) throw error;

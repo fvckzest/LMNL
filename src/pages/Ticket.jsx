@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiGet } from '../lib/api';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import ContentPageShell from '../components/ContentPageShell';
 import { buildAdminCheckInUrl } from '../utils/checkInUrl';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './Ticket.css';
@@ -44,15 +43,14 @@ export default function Ticket() {
   }, [ticketId]);
 
   return (
-    <div className="page-container ticket-page">
-      <HeaderBar />
-      <div className="page-content ticket-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#000000' }} />
-          <h1 className="page-title">TICKET</h1>
-        </div>
-
-        <div className="ticket-body">
+    <ContentPageShell
+      title="TICKET"
+      color="#9aa0a6"
+      introTitle="TICKET"
+      introCopy="SECURE ENTRY PASS / VALIDATION, QR DELIVERY, AND EVENT DATA"
+      contentClassName="ticket-content page-stack"
+    >
+      <div className="ticket-body">
           {loading ? (
             <div className="ticket-message">
               <span className="pulse-dot active" />
@@ -66,7 +64,7 @@ export default function Ticket() {
           ) : (
             <div className="ticket-grid">
 
-              <div className="ticket-details-col">
+              <div className="ticket-details-col page-panel">
                 <div className="ticket-section">
                   <p className="ticket-label">EVENT</p>
                   <p className="ticket-value huge">{eventData?.name || 'LMNL Event'}</p>
@@ -101,7 +99,7 @@ export default function Ticket() {
                 </div>
               </div>
 
-              <div className="ticket-qr-col">
+              <div className="ticket-qr-col page-panel">
                 {!ticket.is_used && (
                   <div className="ticket-section wallet-section">
                     <a 
@@ -142,9 +140,7 @@ export default function Ticket() {
 
             </div>
           )}
-        </div>
       </div>
-      <Footer />
-    </div>
+    </ContentPageShell>
   );
 }

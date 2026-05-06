@@ -192,3 +192,161 @@ export async function fetchOpenProducts() {
     price: catalogPriceMap.get(product.square_item_id) ?? 0,
   }));
 }
+
+function parseActivityDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatActivityDate(value) {
+  const date = parseActivityDate(value);
+  if (!date) return '';
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+  }).toUpperCase();
+}
+
+function formatActivityTimeAgo(value) {
+  const date = parseActivityDate(value);
+  if (!date) return 'Unknown';
+
+  const elapsed = date.getTime() - Date.now();
+  const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const minutes = Math.round(elapsed / (1000 * 60));
+
+  if (Math.abs(minutes) < 60) {
+    return formatter.format(minutes, 'minute');
+  }
+
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) {
+    return formatter.format(hours, 'hour');
+  }
+
+  const days = Math.round(hours / 24);
+  if (Math.abs(days) < 30) {
+    return formatter.format(days, 'day');
+  }
+
+  const months = Math.round(days / 30);
+  if (Math.abs(months) < 12) {
+    return formatter.format(months, 'month');
+  }
+
+  const years = Math.round(months / 12);
+  return formatter.format(years, 'year');
+}
+
+function buildActivityItem({
+  id,
+  type,
+  title,
+  date,
+  href,
+  accent,
+  meta,
+}) {
+  return {
+    id,
+    type,
+    title,
+    date,
+    href,
+    accent,
+    meta,
+    stamp: formatActivityDate(date),
+    timeAgo: formatActivityTimeAgo(date),
+  };
+}
+
+export async function fetchSiteActivityHistory(limit = 6) {
+  const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.allSettled([
+    safeSupabaseQuery(
+      () => supabase
+        .from('events')
+        .select('id,name,event_date,created_at,partiful_url,metadata')
+        .order('created_at', { ascending: false })
+        .limit(Math.max(limit, 6)),
+      []
+    ),
+    safeSupabaseQuery(
+      () => supabase
+        .from('blog_posts')
+        .select('id,title,slug,date,created_at,status')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(Math.max(limit, 6)),
+      []
+    ),
+    safeSupabaseQuery(
+      () => supabase
+        .from('merch_preorders')
+        .select('id,item_name,category,created_at,status')
+        .order('created_at', { ascending: false })
+        .limit(Math.max(limit, 6)),
+      []
+    ),
+    safeSupabaseQuery(
+      () => supabase
+        .from('tickets')
+        .select('id,event_id,created_at')
+        .order('created_at', { ascending: false })
+        .limit(Math.max(limit, 6)),
+      []
+    ),
+  ]);
+
+  const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+  const posts = postsResult.status === 'fulfilled' ? postsResult.value : [];
+  const products = productsResult.status === 'fulfilled' ? productsResult.value : [];
+  const tickets = ticketsResult.status === 'fulfilled' ? ticketsResult.value : [];
+
+  const eventNameById = new Map(events.map((event) => [event.id, event.name || 'LMNL Event']));
+
+  const activity = [
+    ...events.map((event) => buildActivityItem({
+      id: `event-${event.id}`,
+      type: 'EVENT',
+      title: event.name || 'Untitled event',
+      date: event.created_at || event.event_date,
+      href: event.metadata?.event_link || event.partiful_url || '/events',
+      accent: '#004ffa',
+      meta: 'Added to Events',
+    })),
+    ...posts.map((post) => buildActivityItem({
+      id: `post-${post.id}`,
+      type: 'BLOG',
+      title: post.title || 'Untitled post',
+      date: post.date || post.created_at,
+      href: post.slug ? `/blog/${post.slug}` : '/blog',
+      accent: '#ffde00',
+      meta: 'Published to Blog',
+    })),
+    ...products.map((product) => buildActivityItem({
+      id: `product-${product.id}`,
+      type: 'SHOP',
+      title: product.item_name || 'Untitled artifact',
+      date: product.created_at,
+      href: '/shop',
+      accent: '#ff0000',
+      meta: product.category ? `${product.category} artifact` : 'Artifact release',
+    })),
+    ...tickets.map((ticket) => buildActivityItem({
+      id: `ticket-${ticket.id}`,
+      type: 'TICKET',
+      title: eventNameById.get(ticket.event_id) || 'Event ticket issued',
+      date: ticket.created_at,
+      href: '/events',
+      accent: '#00c2ff',
+      meta: 'Ticket purchased',
+    })),
+  ]
+    .filter((item) => parseActivityDate(item.date))
+    .sort((a, b) => parseActivityDate(b.date).getTime() - parseActivityDate(a.date).getTime())
+    .slice(0, limit);
+
+  return activity;
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import ContentPageShell from '../components/ContentPageShell';
+import ContentPageShell, { SignalList } from '../components/ContentPageShell';
+import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost, getTurnstileSiteKey } from '../lib/api';
@@ -18,6 +19,7 @@ const initialForm = {
 }
 
 export default function ArtistInterest() {
+  const { theme } = useTheme();
   const [formData, setFormData] = useState(initialForm);
   const [requestStatus, setRequestStatus] = useState('idle');
   const [submitted, setSubmitted] = useState(false);
@@ -65,27 +67,39 @@ export default function ArtistInterest() {
   }
 
   return (
-    <ContentPageShell title="SHARE" color="#ff5bb8">
-      <div className="artist-interest-layout">
-        <section className="artist-interest-intro">
-          <p className="artist-interest-eyebrow">LMNL community signal</p>
-          <h2 className="artist-interest-title">Let us know what you make.</h2>
-          <p className="artist-interest-copy">
-            This is not a formal application. It is simply a way for artists, performers, and curators to raise a hand and
-            let us know they would be open to sharing work with LMNL in the future.
-          </p>
-          <p className="artist-interest-copy artist-interest-copy-secondary">
-            Send us a few details, a couple links, and the kind of work you would be excited to bring into a LMNL context.
-            We will keep it on hand as we shape upcoming programming.
-          </p>
+    <ContentPageShell
+      title="SHARE"
+      color="#ff5bb8"
+      introTitle="SHARE"
+      introCopy="ARTIST INTEREST, PROGRAMMING NOTES, AND FUTURE COLLABORATION INTAKE"
+      contentClassName="page-stack"
+    >
+      <div className="artist-interest-layout theme-split-layout">
+        <section className="artist-interest-intro page-stack">
+          <div className="page-panel">
+            <p className="page-block-label">What this is</p>
+            <p className="page-copy">
+              This is not a formal application. It is a way to raise a hand and share the type of work you would be excited to bring into a LMNL context.
+            </p>
+          </div>
+          <div className="page-panel">
+            <p className="page-block-label">What to include</p>
+            <SignalList
+              items={[
+                { label: 'Practice', meta: 'What you make and how you work' },
+                { label: 'Links', meta: 'Portfolio, Instagram, SoundCloud, or site' },
+                { label: 'Context', meta: 'Formats you would be open to sharing' },
+              ]}
+            />
+          </div>
         </section>
 
-        <section className="artist-interest-form-shell theme-panel">
+        <section className="artist-interest-form-shell page-form-shell">
           {submitted ? (
-            <div className="artist-interest-success">
-              <p className="artist-interest-success-label">Received</p>
-              <h3>Thanks for sharing your work.</h3>
-              <p>
+            <div className="artist-interest-success theme-message-stack">
+              <p className="artist-interest-success-label theme-kicker">Received</p>
+              <h3 className="theme-title-md">Thanks for sharing your work.</h3>
+              <p className="theme-body-copy">
                 Your information is now in our programming queue, and we will reach out when there is a fit.
               </p>
               <div className="artist-interest-success-actions theme-action-row">
@@ -103,7 +117,7 @@ export default function ArtistInterest() {
             </div>
           ) : (
             <form className="artist-interest-form theme-form" onSubmit={handleSubmit}>
-              <div className="artist-interest-grid">
+              <div className="artist-interest-grid page-form-grid">
                 <label className="artist-interest-field theme-field">
                   <span className="theme-field-label">Name</span>
                   <input
@@ -150,7 +164,7 @@ export default function ArtistInterest() {
                   />
                 </label>
 
-                <label className="artist-interest-field artist-interest-field-full theme-field">
+                <label className="artist-interest-field artist-interest-field-full theme-field is-full">
                   <span className="theme-field-label">Practice</span>
                   <input
                     className="theme-input"
@@ -162,7 +176,7 @@ export default function ArtistInterest() {
                   />
                 </label>
 
-                <label className="artist-interest-field artist-interest-field-full theme-field">
+                <label className="artist-interest-field artist-interest-field-full theme-field is-full">
                   <span className="theme-field-label">What would you be open to sharing?</span>
                   <input
                     className="theme-input"
@@ -173,7 +187,7 @@ export default function ArtistInterest() {
                   />
                 </label>
 
-                <label className="artist-interest-field artist-interest-field-full theme-field">
+                <label className="artist-interest-field artist-interest-field-full theme-field is-full">
                   <span className="theme-field-label">Links</span>
                   <input
                     className="theme-input"
@@ -184,7 +198,7 @@ export default function ArtistInterest() {
                   />
                 </label>
 
-                <label className="artist-interest-field artist-interest-field-full theme-field">
+                <label className="artist-interest-field artist-interest-field-full theme-field is-full">
                   <span className="theme-field-label">Tell us a little about the work</span>
                   <textarea
                     className="theme-input"
@@ -204,6 +218,7 @@ export default function ArtistInterest() {
                 siteKey={getTurnstileSiteKey()}
                 onTokenChange={setTurnstileToken}
                 resetSignal={turnstileResetSignal}
+                theme={theme}
               />
 
               <div className="artist-interest-actions theme-action-row">

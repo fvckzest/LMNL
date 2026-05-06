@@ -14,6 +14,7 @@ import {
   attachAttendanceSourceToUser,
   claimAttendanceSourceForUser,
   createManualAttendanceSource,
+  getAdminAttendanceQueue,
 } from './_lib/services/attendance.js';
 import { getCommunityDashboard } from './_lib/services/community-dashboard.js';
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
@@ -33,16 +34,25 @@ import { listTickets } from './_lib/repositories/tickets.js';
 import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
 import {
   deleteCommunityCreditById,
+  deleteServiceProductById,
   deleteMailingListEntryById,
   listArtistInterest,
   listBlogPostsAdmin,
   listCommunityCredits,
   listMailingListEntries,
+  listServiceProducts,
   listServiceInquiries,
   saveCommunityCredit,
   saveMailingListEntry,
+  saveServiceProduct,
   syncCommunityCreditsFromEvents,
 } from './_lib/repositories/admin-content.js';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 function throwMissingArtistInterestTable(error) {
   if (error?.code === 'PGRST205' && error?.message?.includes('artist_interest')) {
@@ -402,6 +412,13 @@ async function handleAdminAttendanceAttach(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
+async function handleAdminAttendanceSources(req, res) {
+  allowMethods(req, ['GET']);
+  await requireAdminUser(req);
+  const data = await getAdminAttendanceQueue();
+  return sendJson(res, 200, { success: true, data });
+}
+
 async function handleAdminTickets(req, res) {
   allowMethods(req, ['GET']);
   await requireAdminUser(req);
@@ -563,6 +580,34 @@ async function handleServiceInquiries(req, res) {
   }
 
   throw new Error('Unsupported service inquiries action.');
+}
+
+async function handleServiceProducts(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    const data = await listServiceProducts();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  await requireAdminUser(req);
+  const body = await parseJsonBody(req);
+
+  if (body.action === 'delete') {
+    await deleteServiceProductById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  const data = await saveServiceProduct({
+    id: body.id || null,
+    capability: requireValue(body.capability, 'capability is required.'),
+    product: requireValue(body.product, 'product is required.'),
+    scope: body.scope || '',
+    sort_order: body.sortOrder ?? 0,
+    is_active: body.isActive !== false,
+  });
+
+  return sendJson(res, 200, { success: true, data });
 }
 
 async function handleArtistInterest(req, res) {
@@ -786,7 +831,15 @@ async function handleSquareCatalog(req, res) {
 
 async function handleSquareWebhook(req, res) {
   allowMethods(req, ['POST']);
-  const result = await processSquareOrderUpdate(req.body, req.headers);
+  const body = await parseJsonBody(req);
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+  const path = new URL(req.url, `${protocol}://${host}`).pathname;
+  const requestUrl = `${protocol}://${host}${path}`;
+  const result = await processSquareOrderUpdate(body, req.headers, {
+    rawBody: req.rawBody,
+    requestUrl,
+  });
   return sendJson(res, 200, { success: true, data: result });
 }
 
@@ -799,6 +852,7 @@ const handlers = {
   'app-dashboard': handleAppDashboard,
   'attendance-claim': handleAttendanceClaim,
   'admin-attendance-attach': handleAdminAttendanceAttach,
+  'admin-attendance-sources': handleAdminAttendanceSources,
   'event-stats': handleEventStats,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
@@ -820,6 +874,7 @@ const handlers = {
   'blog-posts': handleBlogPosts,
   'community-credits': handleCommunityCredits,
   'mailing-list': handleMailingList,
+  'service-products': handleServiceProducts,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
   'square-webhook': handleSquareWebhook,

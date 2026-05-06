@@ -5,6 +5,9 @@ create table if not exists profiles (
   display_name text,
   profile_slug text unique,
   avatar_url text,
+  website_url text,
+  x_url text,
+  instagram_url text,
   bio text,
   primary_role text,
   visibility text not null default 'private',
@@ -103,4 +106,3 @@ for update
 to authenticated
 using ((select auth.uid()) is not null and (select auth.uid()) = user_id)
 with check ((select auth.uid()) is not null and (select auth.uid()) = user_id);
-

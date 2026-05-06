@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import ContentPageShell from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
 import './Success.css';
@@ -95,25 +94,24 @@ export default function Success() {
   const ticket = summary?.ticket;
 
   return (
-    <div className="page-container success-page">
-      <HeaderBar />
-      <div className="page-content success-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#004ffa' }} />
-          <h1 className="page-title">SUCCESS</h1>
-        </div>
-
-        <div className="success-grid theme-shell-section">
-          <section className="success-hero-card">
-            <div className="success-kicker">ORDER CONFIRMED</div>
-            <h2 className="success-subtitle">
+    <ContentPageShell
+      title="SUCCESS"
+      color="#004ffa"
+      introTitle="SUCCESS"
+      introCopy="PAYMENT ACKNOWLEDGED / TICKET ISSUANCE AND DELIVERY STATUS"
+      contentClassName="success-content page-stack"
+    >
+      <div className="page-grid page-grid--two">
+          <section className="success-hero-card theme-message-stack">
+            <div className="success-kicker theme-kicker">ORDER CONFIRMED</div>
+            <h2 className="success-subtitle theme-title-md">
               {state.loading
                 ? 'Confirming your ticket now...'
                 : ticket
                   ? 'Your ticket is ready.'
                   : 'Your order was received.'}
             </h2>
-            <p className="success-copy">
+            <p className="success-copy theme-body-copy">
               {state.loading
                 ? 'We are validating your payment and pulling together your ticket details.'
                 : state.error
@@ -154,9 +152,7 @@ export default function Success() {
               <InfoRow label="Issued" value={formatIssuedAt(ticket?.issuedAt || request?.createdAt)} />
             </div>
           </section>
-        </div>
       </div>
-      <Footer />
-    </div>
+    </ContentPageShell>
   );
 }

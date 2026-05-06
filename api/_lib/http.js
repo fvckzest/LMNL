@@ -12,13 +12,70 @@ export function allowMethods(req, methods) {
 }
 
 export async function parseJsonBody(req) {
+  if (req.parsedBody && typeof req.parsedBody === 'object') {
+    return req.parsedBody;
+  }
+
   if (req.body && typeof req.body === 'object') {
-    return req.body;
+    req.parsedBody = req.body;
+    req.rawBody = req.rawBody || JSON.stringify(req.body);
+    return req.parsedBody;
   }
 
   if (typeof req.body === 'string' && req.body.trim()) {
     try {
-      return JSON.parse(req.body);
+      req.rawBody = req.rawBody || req.body;
+      req.parsedBody = JSON.parse(req.body);
+      return req.parsedBody;
+    } catch (error) {
+      throw new AppError('Invalid JSON body.', {
+        code: 'INVALID_JSON',
+        status: 400,
+        details: error,
+        expose: true,
+      });
+    }
+  }
+
+  if (req.body && Buffer.isBuffer(req.body)) {
+    const text = req.body.toString('utf8');
+    req.rawBody = req.rawBody || text;
+    if (!text.trim()) {
+      req.parsedBody = {};
+      return req.parsedBody;
+    }
+
+    try {
+      req.parsedBody = JSON.parse(text);
+      return req.parsedBody;
+    } catch (error) {
+      throw new AppError('Invalid JSON body.', {
+        code: 'INVALID_JSON',
+        status: 400,
+        details: error,
+        expose: true,
+      });
+    }
+  }
+
+  if (typeof req.on === 'function') {
+    const chunks = [];
+    await new Promise((resolve, reject) => {
+      req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+
+    const text = Buffer.concat(chunks).toString('utf8');
+    req.rawBody = text;
+    if (!text.trim()) {
+      req.parsedBody = {};
+      return req.parsedBody;
+    }
+
+    try {
+      req.parsedBody = JSON.parse(text);
+      return req.parsedBody;
     } catch (error) {
       throw new AppError('Invalid JSON body.', {
         code: 'INVALID_JSON',

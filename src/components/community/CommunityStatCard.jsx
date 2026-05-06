@@ -1,4 +1,4 @@
-export default function CommunityStatCard({ label, value, color }) {
+export default function CommunityStatCard({ label, value, color = 'var(--page-color)' }) {
   return (
     <div className="community-stat-card">
       <p className="community-stat-card-label">{label}</p>

@@ -4,45 +4,51 @@
 
 .checkin-body {
   width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: calc(115px + 48px) 20px 72px;
+  max-width: 860px;
+  display: grid;
+  gap: 18px;
 }
 
 .checkin-card {
-  border: 2px solid #004ffa;
+  border: var(--lmnl-border-medium);
   background:
-    linear-gradient(180deg, rgba(0, 79, 250, 0.05), rgba(0, 79, 250, 0.01)),
-    #ffffff;
-  padding: 24px;
+    linear-gradient(180deg, color-mix(in srgb, var(--page-color) 5%, transparent), transparent 84%),
+    var(--terminal-panel-bg);
+  padding: 18px;
   display: grid;
-  gap: 24px;
+  gap: 18px;
+}
+
+.checkin-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: var(--lmnl-border-subtle);
 }
 
 .checkin-status {
   width: fit-content;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  border: 2px solid currentColor;
+  font-weight: 600;
+  border-color: currentColor;
 }
 
 .checkin-status-valid {
   color: #0f7a38;
-  background: #ebfff1;
+  background: color-mix(in srgb, #0f7a38 10%, transparent);
 }
 
 .checkin-status-checked_in {
-  color: #ffffff;
-  background: #004ffa;
+  color: var(--page-color);
+  background: color-mix(in srgb, var(--page-color) 10%, transparent);
 }
 
 .checkin-status-already_used,
 .checkin-status-invalid {
   color: #b91c1c;
-  background: #fff1f2;
+  background: color-mix(in srgb, #b91c1c 10%, transparent);
 }
 
 .checkin-section {
@@ -50,6 +56,7 @@
   gap: 6px;
 }
 
+.checkin-record-grid,
 .checkin-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -58,46 +65,61 @@
 
 .checkin-label {
   margin: 0;
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #5f6b85;
+  color: var(--lmnl-color-text-subtle);
 }
 
 .checkin-value,
 .checkin-meta-value,
 .checkin-note {
   margin: 0;
-  color: #111;
+  color: var(--lmnl-color-text);
 }
 
 .checkin-value {
-  font-size: 32px;
-  font-weight: 700;
+  font-size: calc(clamp(20px, 2vw, 28px) * 1.25);
+  font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .checkin-meta-value,
 .checkin-note {
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: calc(14px * 1.25);
+  line-height: 1.6;
+  color: var(--lmnl-color-text-strong);
+}
+
+.checkin-note--muted {
+  color: var(--lmnl-color-text-subtle);
+}
+
+.checkin-message-block {
+  display: grid;
+  gap: 10px;
+}
+
+.checkin-protocol {
+  display: grid;
+  gap: 14px;
 }
 
 .checkin-primary-button {
-  width: 100%;
-  border: none;
-  background: #004ffa;
-  color: #ffffff;
-  padding: 18px 20px;
-  font: inherit;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 0.18s ease, opacity 0.18s ease;
+  --theme-button-width: 100%;
+  --theme-button-padding: 16px 20px;
+  --theme-button-height: 58px;
+  --theme-button-size: 11px;
+  --theme-button-weight: 600;
+  --theme-button-font: var(--lmnl-font-mono);
+  --theme-button-border: var(--lmnl-border-medium);
+  --theme-button-bg: color-mix(in srgb, var(--page-color) 6%, transparent);
+  --theme-button-color: var(--page-color);
+  --theme-button-hover-bg: color-mix(in srgb, var(--page-color) 11%, transparent);
 }
 
 .checkin-primary-button:disabled {
@@ -105,13 +127,10 @@
   opacity: 0.42;
 }
 
-.checkin-primary-button:not(:disabled):active {
-  transform: scale(0.99);
-}
-
 @media (max-width: 640px) {
-  .checkin-body {
-    padding-top: 112px;
+  .checkin-record-grid,
+  .checkin-meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .checkin-card {
@@ -119,15 +138,11 @@
     gap: 20px;
   }
 
-  .checkin-meta-grid {
-    grid-template-columns: 1fr;
+  .checkin-card__header {
+    align-items: flex-start;
   }
 
   .checkin-value {
-    font-size: 26px;
-  }
-
-  .checkin-primary-button {
-    min-height: 68px;
+    font-size: calc(22px * 1.25);
   }
 }

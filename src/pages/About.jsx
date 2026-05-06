@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import ContentPageShell from '../components/ContentPageShell';
-import './About.css';
+import ContentPageShell, { ModuleStrip, PageStat, PageStatGrid, SectionRail } from '../components/ContentPageShell';
 
 const aboutStats = [
   { label: 'Modes', value: 'Studio / Space / System' },
@@ -68,37 +67,26 @@ const pathways = [
 
 export default function About() {
   return (
-    <ContentPageShell title="ABOUT" color="#ff9300" contentClassName="about-page">
-      <section className="about-hero">
-        <div className="about-hero-copy">
-          <h2 className="about-hero-title">
-            LMNL is a creative platform for people building culture in public.
-          </h2>
-          <p className="about-hero-body">
-            Part studio, part event framework, part collaborative network, LMNL brings
-            together artists, performers, curators, brands, and builders through
-            experiences, visuals, strategy, and shared momentum.
-          </p>
-        </div>
-      </section>
-
-      <section className="about-stats" aria-label="LMNL summary">
+    <ContentPageShell
+      title="ABOUT"
+      color="#ff9300"
+      introTitle="ABOUT"
+      introCopy="MISSION BRIEF, OPERATING LAYERS, AND ENTRY POINTS"
+      contentClassName="about-page page-stack"
+    >
+      <PageStatGrid aria-label="LMNL summary">
         {aboutStats.map((stat) => (
-          <div key={stat.label} className="about-stat-card theme-panel">
-            <p className="about-stat-label">{stat.label}</p>
-            <p className="about-stat-value">{stat.value}</p>
-          </div>
+          <PageStat key={stat.label} label={stat.label} value={stat.value} />
         ))}
-      </section>
+      </PageStatGrid>
 
-      <section className="about-section about-story">
-        <div className="theme-section-heading">
-          <p className="theme-section-kicker">What We Are</p>
-          <h2 className="theme-section-title">A studio, a network, and a connective layer.</h2>
-        </div>
-
-        <div className="about-story-grid">
-          <div className="about-story-panel theme-panel">
+      <SectionRail
+        label="WHAT WE ARE"
+        title="A studio, a network, and a connective layer."
+        className="about-section"
+      >
+        <div className="page-grid page-grid--two">
+          <div className="page-detail-pane page-detail-pane--accent">
             <p>
               Across the site, LMNL shows up as more than a brand page. It is an operating
               environment for programming events, connecting a creative community, launching
@@ -111,86 +99,67 @@ export default function About() {
               audience, and the tools all matter together.
             </p>
           </div>
-
-          <div className="about-story-aside">
-            <p className="about-aside-label">Built to support</p>
-            <div className="about-aside-list theme-data-list">
-              <div className="theme-data-row">
-                <span className="theme-data-label">Artists</span>
-                <span>Releases, visuals, performances, installations</span>
-              </div>
-              <div className="theme-data-row">
-                <span className="theme-data-label">Brands</span>
-                <span>Identity, campaigns, activations, direction shifts</span>
-              </div>
-              <div className="theme-data-row">
-                <span className="theme-data-label">Community</span>
-                <span>Shared discovery, contribution, attendance, collaboration</span>
-              </div>
-            </div>
+          <div className="page-panel">
+            <p className="page-block-label">Built to support</p>
+            <ModuleStrip
+              items={[
+                { label: 'Artists', copy: 'Releases, visuals, performances, installations' },
+                { label: 'Brands', copy: 'Identity, campaigns, activations, direction shifts' },
+                { label: 'Community', copy: 'Shared discovery, contribution, attendance, collaboration' },
+              ]}
+            />
           </div>
         </div>
-      </section>
+      </SectionRail>
 
-      <section className="about-section">
-        <div className="theme-section-heading">
-          <p className="theme-section-kicker">How It Works</p>
-          <h2 className="theme-section-title">LMNL operates as an ecosystem.</h2>
-          <p className="theme-section-copy">
-            The website itself reflects that structure: public-facing storytelling, event and
-            ticket flows, community participation, services, and storefront moments all living
-            inside one connected system.
-          </p>
-        </div>
-
-        <div className="about-ecosystem-grid">
+      <SectionRail
+        label="HOW IT WORKS"
+        title="LMNL operates as an ecosystem."
+        copy="The website itself reflects that structure: public-facing storytelling, event and ticket flows, community participation, services, and storefront moments all living inside one connected system."
+        className="about-section"
+      >
+        <div className="page-grid page-grid--three">
           {ecosystemCards.map((card) => (
-            <article key={card.title} className="about-ecosystem-card theme-panel">
-              <h3>{card.title}</h3>
-              <p>{card.copy}</p>
+            <article key={card.title} className="page-detail-pane">
+              <h3 className="page-panel-title">{card.title}</h3>
+              <p className="page-copy">{card.copy}</p>
             </article>
           ))}
         </div>
-      </section>
+      </SectionRail>
 
-      <section className="about-section">
-        <div className="theme-section-heading">
-          <p className="theme-section-kicker">Operating Layers</p>
-          <h2 className="theme-section-title">Each layer has a job.</h2>
-        </div>
-
-        <div className="about-layers-grid">
+      <SectionRail
+        label="OPERATING LAYERS"
+        title="Each layer has a job."
+        className="about-section"
+      >
+        <div className="page-grid page-grid--four">
           {operatingLayers.map((layer) => (
-            <div key={layer.title} className="about-layer-card theme-panel">
-              <h3>{layer.title}</h3>
-              <ul>
-                {layer.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+            <div key={layer.title} className="page-panel">
+              <p className="page-block-label">{layer.title}</p>
+              <ModuleStrip items={layer.items.map((item) => ({ label: item }))} />
             </div>
           ))}
         </div>
-      </section>
+      </SectionRail>
 
-      <section className="about-section about-cta-section">
-        <div className="theme-section-heading">
-          <p className="theme-section-kicker">Plug In</p>
-          <h2 className="theme-section-title">Choose your entry point.</h2>
-        </div>
-
-        <div className="about-pathways">
+      <SectionRail
+        label="PLUG IN"
+        title="Choose your entry point."
+        className="about-section"
+      >
+        <div className="page-grid page-grid--three">
           {pathways.map((pathway) => (
-            <article key={pathway.title} className="about-pathway theme-panel">
-              <h3>{pathway.title}</h3>
-              <p>{pathway.copy}</p>
-              <Link to={pathway.to} className="theme-button about-pathway-link">
+            <article key={pathway.title} className="page-detail-pane">
+              <h3 className="page-panel-title">{pathway.title}</h3>
+              <p className="page-copy">{pathway.copy}</p>
+              <Link to={pathway.to} className="theme-button">
                 {pathway.label}
               </Link>
             </article>
           ))}
         </div>
-      </section>
+      </SectionRail>
     </ContentPageShell>
   );
 }

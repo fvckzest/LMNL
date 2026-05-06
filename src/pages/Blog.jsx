@@ -1,8 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import ContentPageShell from '../components/ContentPageShell';
+import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import SystemPanel from '../components/SystemPanel';
 import { supabase } from '../lib/supabase';
 import './Blog.css';
+
+function BlogSidebar({ posts, loading }) {
+  const latestDate = posts[0]
+    ? new Date(posts[0].date || posts[0].created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()
+    : '---';
+
+  return (
+    <>
+      <SystemPanel title="ARCHIVE INDEX">
+        <div className="terminal-metric-list">
+          <div className="terminal-metric-row"><span>RECORDS</span><span>{loading ? '---' : String(posts.length).padStart(2, '0')}</span></div>
+          <div className="terminal-metric-row"><span>STATE</span><span>{loading ? 'SYNCING' : 'LIVE'}</span></div>
+          <div className="terminal-metric-row"><span>LATEST</span><span>{latestDate}</span></div>
+        </div>
+      </SystemPanel>
+
+      <SystemPanel title="ARCHIVE MODE">
+        <div className="blog-sidebar-copy">
+          <p>Field notes, releases, and transmissions are logged here as indexed records.</p>
+          <p>Open any record to enter the full transmission view.</p>
+        </div>
+      </SystemPanel>
+    </>
+  );
+}
 
 export default function Blog() {
   const [posts, setPosts] = useState([]);
@@ -29,26 +55,34 @@ export default function Blog() {
   }, []);
 
   return (
-    <ContentPageShell title="BLOG" color="#ffde00" contentClassName="blog-content">
+    <ContentPageShell
+      title="BLOG"
+      color="#ffde00"
+      introTitle="BLOG"
+      introCopy="TRANSMISSIONS, WRITING, AND SYSTEM LOGS"
+      rightSidebar={<BlogSidebar posts={posts} loading={loading} />}
+      contentClassName="blog-content page-stack"
+    >
       <div className="blog-layout">
         {loading ? (
-          <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', color: '#000', letterSpacing: '0.1em', fontWeight: '600' }}>LOADING POSTS...</p>
+          <PageStatus>LOADING POSTS...</PageStatus>
         ) : posts.length === 0 ? (
-          <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', letterSpacing: '0.1em', fontWeight: '600' }}>NO POSTS FOUND.</p>
+          <PageEmptyState>NO POSTS FOUND.</PageEmptyState>
         ) : (
           <div className="blog-posts-grid">
             {posts.map(post => (
-              <Link to={`/blog/${post.slug || post.id}`} key={post.id} className="blog-post-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                <h2 className="post-title" style={{ transition: 'color 0.2s' }}>{post.title}</h2>
+              <Link to={`/blog/${post.slug || post.id}`} key={post.id} className="blog-post-card">
                 <div className="post-meta">
-                  <span className="post-author">{post.author || 'LMNL'}</span>
+                  <span className="post-index">TRANSMISSION</span>
                   <span className="post-date">{post.date ? new Date(post.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : new Date(post.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="post-content" style={{ maxHeight: '100px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                <h2 className="post-title">{post.title}</h2>
+                <div className="post-content post-content--clamped">
                   {post.content}
                 </div>
-                <div className="post-read-more" style={{ marginTop: '15px', color: '#ffde00', fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.1em' }}>
-                  READ MORE ↗
+                <div className="post-read-more">
+                  <span>{post.author || 'LMNL'}</span>
+                  <span>OPEN RECORD ↗</span>
                 </div>
               </Link>
             ))}

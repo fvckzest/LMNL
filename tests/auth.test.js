@@ -103,3 +103,36 @@ test('requireAdminUser can fall back to env allowlist when admin_users is not re
 
   assert.equal(user.email, 'admin@lmnl.art');
 });
+
+test('requireAdminUser can fall back to env allowlist when user is not yet in admin_users', async () => {
+  const user = await requireAdminUser(
+    { headers: { authorization: 'Bearer test-token' } },
+    {
+      config: {
+        source: 'auto',
+        adminUserIds: [],
+        adminUserEmails: ['admin@lmnl.art'],
+      },
+      supabase: {
+        auth: {
+          getUser: async () => ({
+            data: { user: { id: 'user-1', email: 'admin@lmnl.art' } },
+            error: null,
+          }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: null,
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      },
+    },
+  );
+
+  assert.equal(user.email, 'admin@lmnl.art');
+});

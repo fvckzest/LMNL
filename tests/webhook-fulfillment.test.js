@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'crypto';
 import { processSquareOrderUpdate, resolveCustomer, sendTicketEmail } from '../api/_lib/services/webhook-fulfillment.js';
 
 test('processSquareOrderUpdate returns replay when ticket already exists', async () => {
@@ -150,6 +151,66 @@ test('processSquareOrderUpdate fulfills completed payment.updated events', async
   assert.equal(createdTickets.length, 1);
   assert.equal(createdTickets[0].square_order_id, 'order_3');
   assert.deepEqual(result, { success: true, ticketId: 'ticket_payment' });
+});
+
+test('processSquareOrderUpdate verifies Square signature against the raw request body', async () => {
+  process.env.SQUARE_WEBHOOK_SIGNATURE_KEY = 'webhook-secret';
+  process.env.SQUARE_WEBHOOK_URL = 'https://lmnl.art/api/square-webhook';
+
+  const rawBody = '{\n  "type": "order.updated",\n  "data": {\n    "object": {\n      "order_updated": {\n        "order_id": "order_raw"\n      }\n    }\n  }\n}';
+  const signature = crypto
+    .createHmac('sha256', process.env.SQUARE_WEBHOOK_SIGNATURE_KEY)
+    .update(`${process.env.SQUARE_WEBHOOK_URL}${rawBody}`)
+    .digest('base64');
+
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_raw' } } },
+    },
+    {
+      'x-square-hmacsha256-signature': signature,
+    },
+    {
+      rawBody,
+      findTicketBySquareOrderId: async () => ({ id: 'ticket_raw' }),
+    }
+  );
+
+  assert.deepEqual(result, { replay: true, ticketId: 'ticket_raw' });
+  delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+  delete process.env.SQUARE_WEBHOOK_URL;
+});
+
+test('processSquareOrderUpdate accepts the actual request URL when it differs only from configured webhook URL', async () => {
+  process.env.SQUARE_WEBHOOK_SIGNATURE_KEY = 'webhook-secret';
+  process.env.SQUARE_WEBHOOK_URL = 'https://www.lmnl.art/api/square-webhook/';
+
+  const rawBody = '{"type":"order.updated","data":{"object":{"order_updated":{"order_id":"order_request_url"}}}}';
+  const requestUrl = 'https://lmnl.art/api/square-webhook';
+  const signature = crypto
+    .createHmac('sha256', process.env.SQUARE_WEBHOOK_SIGNATURE_KEY)
+    .update(`${requestUrl}${rawBody}`)
+    .digest('base64');
+
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_request_url' } } },
+    },
+    {
+      'x-square-hmacsha256-signature': signature,
+    },
+    {
+      rawBody,
+      requestUrl,
+      findTicketBySquareOrderId: async () => ({ id: 'ticket_request_url' }),
+    }
+  );
+
+  assert.deepEqual(result, { replay: true, ticketId: 'ticket_request_url' });
+  delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+  delete process.env.SQUARE_WEBHOOK_URL;
 });
 
 test('resolveCustomer falls back to request email when Square provides placeholder recipient email', async () => {

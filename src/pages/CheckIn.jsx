@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import HeaderBar from '../components/HeaderBar';
+import ContentPageShell from '../components/ContentPageShell';
+import SystemPanel from '../components/SystemPanel';
 import { apiGet, apiPost } from '../lib/api';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './CheckIn.css';
@@ -11,6 +12,41 @@ function formatTimestamp(value) {
   }
 
   return new Date(value).toLocaleString();
+}
+
+function CheckInSidebar({ event, status, ticket }) {
+  return (
+    <>
+      <SystemPanel title="ACCESS STATUS">
+        <div className="terminal-metric-list">
+          <div className="terminal-metric-row"><span>NODE</span><span>CHECK-IN</span></div>
+          <div className="terminal-metric-row"><span>STATE</span><span>{status.replace('_', ' ')}</span></div>
+          <div className="terminal-metric-row"><span>TOKEN</span><span>{ticket ? 'RESOLVED' : 'PENDING'}</span></div>
+        </div>
+      </SystemPanel>
+
+      <SystemPanel title="EVENT RECORD">
+        <div className="theme-data-list">
+          <div className="theme-data-row">
+            <span className="theme-data-label">Event</span>
+            <span className="theme-data-value">{event?.name || 'LMNL EVENT'}</span>
+          </div>
+          <div className="theme-data-row">
+            <span className="theme-data-label">Date</span>
+            <span className="theme-data-value">{formatEventDate(event?.event_date) || 'TBD'}</span>
+          </div>
+          <div className="theme-data-row">
+            <span className="theme-data-label">Time</span>
+            <span className="theme-data-value">{formatEventTime(event?.event_time) || 'TBD'}</span>
+          </div>
+          <div className="theme-data-row">
+            <span className="theme-data-label">Venue</span>
+            <span className="theme-data-value">{event?.location_name || 'TBA'}</span>
+          </div>
+        </div>
+      </SystemPanel>
+    </>
+  );
 }
 
 export default function CheckIn() {
@@ -83,16 +119,19 @@ export default function CheckIn() {
   const canConfirm = status === 'valid' && !submitting;
 
   return (
-    <div className="page-container checkin-page">
-      <HeaderBar />
-      <div className="page-content checkin-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#004ffa' }} />
-          <h1 className="page-title">CHECK-IN</h1>
-        </div>
-
-        <div className="checkin-body">
-          <div className="checkin-card">
+    <ContentPageShell
+      title="CHECK-IN"
+      color="#004ffa"
+      introLabel="ACCESS / WRISTBAND ISSUANCE"
+      introTitle="CHECK-IN"
+      introCopy="VERIFY TOKEN, REVIEW EVENT RECORD, AND CONFIRM ENTRY"
+      rightSidebar={<CheckInSidebar event={event} status={status} ticket={ticket} />}
+      contentClassName="checkin-content page-stack"
+    >
+      <div className="checkin-body">
+        <section className="checkin-card">
+          <div className="checkin-card__header">
+            <p className="page-block-label">Access Verification Terminal</p>
             <div className={`checkin-status checkin-status-${status}`}>
               {loading
                 ? 'Loading ticket...'
@@ -105,62 +144,86 @@ export default function CheckIn() {
                       : 'Valid ticket'}
             </div>
 
-            {loading ? (
-              <p className="checkin-note">Resolving ticket and event details.</p>
-            ) : !hasToken || error ? (
+          </div>
+
+          {loading ? (
+            <p className="checkin-note">Resolving ticket and event details.</p>
+          ) : !hasToken || error ? (
+            <div className="checkin-message-block">
               <p className="checkin-note">{error || 'Invalid ticket link.'}</p>
-            ) : (
-              <>
+              <p className="checkin-note checkin-note--muted">No valid event token was found for this request.</p>
+            </div>
+          ) : (
+            <>
+              <div className="checkin-record-grid">
                 <div className="checkin-section">
-                  <p className="checkin-label">Guest</p>
+                  <p className="checkin-label">Guest Record</p>
                   <p className="checkin-value">{ticket?.customer_name || 'Unknown guest'}</p>
                 </div>
 
                 <div className="checkin-section">
-                  <p className="checkin-label">Event</p>
+                  <p className="checkin-label">Event Node</p>
                   <p className="checkin-value">{event?.name || 'LMNL Event'}</p>
                 </div>
+              </div>
 
-                <div className="checkin-meta-grid">
-                  <div className="checkin-section">
-                    <p className="checkin-label">Date</p>
-                    <p className="checkin-meta-value">{formatEventDate(event?.event_date)}</p>
-                  </div>
-                  <div className="checkin-section">
-                    <p className="checkin-label">Time</p>
-                    <p className="checkin-meta-value">{formatEventTime(event?.event_time)}</p>
-                  </div>
-                </div>
-
+              <div className="checkin-meta-grid">
                 <div className="checkin-section">
-                  <p className="checkin-label">Location</p>
-                  <p className="checkin-meta-value">{event?.location_name || 'TBA'}</p>
+                  <p className="checkin-label">Date</p>
+                  <p className="checkin-meta-value">{formatEventDate(event?.event_date)}</p>
                 </div>
-
                 <div className="checkin-section">
-                  <p className="checkin-label">Status</p>
-                  <p className="checkin-meta-value">
-                    {isCompleted
-                      ? `Completed at ${formatTimestamp(checkInData?.ticket?.used_at)}`
-                      : isAlreadyUsed
-                        ? `Already checked in at ${formatTimestamp(ticket?.used_at)}`
-                        : 'Ready to issue wristband'}
-                  </p>
+                  <p className="checkin-label">Time</p>
+                  <p className="checkin-meta-value">{formatEventTime(event?.event_time)}</p>
                 </div>
+              </div>
 
-                <button
-                  type="button"
-                  className="checkin-primary-button"
-                  onClick={handleConfirm}
-                  disabled={!canConfirm}
-                >
-                  {submitting ? 'ISSUING...' : 'WRISTBAND ISSUED'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+              <div className="checkin-section">
+                <p className="checkin-label">Venue</p>
+                <p className="checkin-meta-value">{event?.location_name || 'TBA'}</p>
+              </div>
+
+              <div className="checkin-section">
+                <p className="checkin-label">Verification Log</p>
+                <p className="checkin-meta-value">
+                  {isCompleted
+                    ? `Completed at ${formatTimestamp(checkInData?.ticket?.used_at)}`
+                    : isAlreadyUsed
+                      ? `Already checked in at ${formatTimestamp(ticket?.used_at)}`
+                      : 'Ready to issue wristband'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="checkin-primary-button"
+                onClick={handleConfirm}
+                disabled={!canConfirm}
+              >
+                {submitting ? 'ISSUING...' : 'CONFIRM WRISTBAND'}
+              </button>
+            </>
+          )}
+        </section>
+
+        <section className="page-panel checkin-protocol">
+          <p className="page-block-label">Protocol</p>
+          {loading ? (
+              <p className="checkin-note">Resolving ticket and event details.</p>
+          ) : !hasToken || error ? (
+            <div className="checkin-signal-list">
+              <p>Invalid tokens should not be admitted.</p>
+              <p>Refresh the source link or request a new access record.</p>
+            </div>
+          ) : (
+            <div className="checkin-signal-list">
+              <p>Confirm identity against guest record before issuing access.</p>
+              <p>Only mark complete once the wristband has been physically assigned.</p>
+              <p>Repeated scans should surface as already checked in.</p>
+            </div>
+          )}
+        </section>
       </div>
-    </div>
+    </ContentPageShell>
   );
 }

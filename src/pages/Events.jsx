@@ -1,6 +1,5 @@
 import { useState, Fragment, useRef, useEffect } from 'react';
-import HeaderBar from '../components/HeaderBar';
-import Footer from '../components/Footer';
+import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
 import { fallbackEventsTimeline, fetchTimelineEvents } from '../lib/siteData';
 import './Events.css';
@@ -22,6 +21,8 @@ export default function Events() {
   const [featuredEvent, setFeaturedEvent] = useState(upcomingEvent);
   const [loading, setLoading] = useState(true);
   const timelineRef = useRef(null);
+  const timelineMetricsRef = useRef({ itemStep: 0, setWidth: 0 });
+  const isRecenteringRef = useRef(false);
 
   usePageColor('#004ffa');
 
@@ -59,25 +60,77 @@ export default function Events() {
 
   const selectedEvent = events.find(e => e.id === selectedId);
 
+  const updateTimelineMetrics = () => {
+    const el = timelineRef.current;
+    if (!el || events.length === 0) return timelineMetricsRef.current;
+
+    const nodes = el.querySelectorAll('.timeline-node-wrapper');
+    if (nodes.length === 0) return timelineMetricsRef.current;
+
+    const firstNode = nodes[0];
+    const secondNode = nodes[1];
+    const nextSetFirstNode = nodes[events.length];
+
+    const itemStep = secondNode
+      ? secondNode.offsetLeft - firstNode.offsetLeft
+      : firstNode.getBoundingClientRect().width;
+    const setWidth = nextSetFirstNode
+      ? nextSetFirstNode.offsetLeft - firstNode.offsetLeft
+      : el.scrollWidth / 3;
+
+    timelineMetricsRef.current = { itemStep, setWidth };
+    return timelineMetricsRef.current;
+  };
+
   useEffect(() => {
     if (events.length > 0 && timelineRef.current) {
       const el = timelineRef.current;
       const timer = setTimeout(() => {
-        el.scrollLeft = el.scrollWidth / 3;
+        const { setWidth } = updateTimelineMetrics();
+        el.scrollLeft = setWidth || el.scrollWidth / 3;
       }, 100);
       return () => clearTimeout(timer);
     }
   }, [events]);
 
+  useEffect(() => {
+    if (events.length === 0) return undefined;
+
+    const handleResize = () => {
+      updateTimelineMetrics();
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [events]);
+
   const handleScroll = () => {
-    if (!timelineRef.current) return;
+    if (!timelineRef.current || isRecenteringRef.current) return;
+
     const el = timelineRef.current;
-    const singleSetWidth = el.scrollWidth / 3;
-    
-    if (el.scrollLeft <= 5) {
-      el.scrollLeft += singleSetWidth;
-    } else if (el.scrollLeft >= singleSetWidth * 2 - 5) {
-      el.scrollLeft -= singleSetWidth;
+    const { itemStep, setWidth } = updateTimelineMetrics();
+    if (!setWidth) return;
+
+    const maxScrollLeft = el.scrollWidth - el.clientWidth;
+    const threshold = Math.max(2, itemStep / 2);
+    let nextScrollLeft = null;
+
+    if (el.scrollLeft <= threshold) {
+      nextScrollLeft = el.scrollLeft + setWidth;
+    } else if (el.scrollLeft >= maxScrollLeft - threshold) {
+      nextScrollLeft = el.scrollLeft - setWidth;
+    }
+
+    if (nextScrollLeft !== null) {
+      isRecenteringRef.current = true;
+      el.scrollLeft = nextScrollLeft;
+      requestAnimationFrame(() => {
+        isRecenteringRef.current = false;
+      });
     }
   };
 
@@ -86,35 +139,34 @@ export default function Events() {
   const scrollTimeline = (direction) => {
     if (timelineRef.current) {
       const el = timelineRef.current;
-      const nodes = el.querySelectorAll('.timeline-node-wrapper');
-      if (nodes.length >= 2) {
-        const rect0 = nodes[0].getBoundingClientRect();
-        const rect1 = nodes[1].getBoundingClientRect();
-        const scrollAmount = Math.abs(rect1.left - rect0.left);
-        
-        el.scrollBy({
-          left: direction === 'left' ? -scrollAmount : scrollAmount,
-          behavior: 'smooth'
-        });
-      } else {
-        el.scrollBy({
-          left: direction === 'left' ? -192 : 192,
-          behavior: 'smooth'
-        });
+      const { itemStep, setWidth } = updateTimelineMetrics();
+      const scrollAmount = itemStep || 192;
+      const maxScrollLeft = el.scrollWidth - el.clientWidth;
+
+      if (setWidth) {
+        if (el.scrollLeft < setWidth) {
+          el.scrollLeft += setWidth;
+        } else if (el.scrollLeft > maxScrollLeft - setWidth) {
+          el.scrollLeft -= setWidth;
+        }
       }
+
+      el.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
     }
   };
 
   return (
-    <div className="page-container">
-      <HeaderBar />
-      <div className="page-content events-content">
-        <div className="page-header">
-          <div className="page-header-rect" style={{ backgroundColor: '#004ffa' }} />
-          <h1 className="page-title events-title">EVENTS</h1>
-        </div>
-
-        <div className="events-layout theme-shell-section">
+    <ContentPageShell
+      title="EVENTS"
+      color="#004ffa"
+      introTitle="EVENTS"
+      introCopy="PROGRAM LOGS, LIVE CALENDAR, AND CULTURAL DEPLOYMENTS"
+      contentClassName="events-content page-stack"
+    >
+      <div className="events-layout">
           {/* Upcoming Event Highlight */}
           <div className="upcoming-event-section">
             <div className="upcoming-glow" />
@@ -140,7 +192,7 @@ export default function Events() {
                 </span>
               </div>
 
-              <div className="upcoming-meta" style={{ marginTop: '-15px', marginBottom: '25px' }}>
+              <div className="upcoming-meta upcoming-meta--secondary">
                 <span className="upcoming-date">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
                     <line x1="12" y1="1" x2="12" y2="23" />
@@ -174,7 +226,7 @@ export default function Events() {
                   VIEW EVENT
                 </a>
               ) : (
-                <div className="upcoming-rsvp-btn" style={{ opacity: 0.5, cursor: 'not-allowed', filter: 'grayscale(100%)' }}>
+                <div className="upcoming-rsvp-btn upcoming-rsvp-btn--disabled">
                   COMING SOON
                 </div>
               )}
@@ -182,9 +234,9 @@ export default function Events() {
           </div>
 
           {loading ? (
-            <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', color: '#004ffa', letterSpacing: '0.1em', fontWeight: '600' }}>RETRIEVING TIMELINE...</p>
+            <PageStatus>RETRIEVING TIMELINE...</PageStatus>
           ) : events.length === 0 ? (
-            <p className="loading-text" style={{ textAlign: 'center', margin: '50px 0', fontFamily: 'Gantari', letterSpacing: '0.1em', fontWeight: '600' }}>NO EVENTS FOUND.</p>
+            <PageEmptyState>NO EVENTS FOUND.</PageEmptyState>
           ) : (
             <>
             <h2 className="timeline-section-title">ALL EVENTS</h2>
@@ -291,10 +343,8 @@ export default function Events() {
               </div>
             )}
             </>
-          )}
-        </div>
+            )}
       </div>
-      <Footer />
-    </div>
+    </ContentPageShell>
   );
 }

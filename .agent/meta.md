@@ -249,7 +249,7 @@ The most important remaining work is now:
 - deciding the right conceptual shape for attendance proof now that auth and profiles are real
 - deciding how checked-in tickets or invite artifacts should resolve to a signed-in LMNL community user
 - deciding the first Phase 2 schema and service boundaries for attendance records and verification provenance
-- deciding the first user-facing attendance history surface inside `/app`
+- refining and browser-verifying the first user-facing attendance history surface inside `/dashboard/:userSlug`
 - deciding when to enable and verify Discord without regressing Google
 - deciding when to enable and verify Apple without regressing Google
 - deciding when to retire the temporary env-based admin allowlist fallback
@@ -266,7 +266,11 @@ The first implementation slice of that MVP now exists in code:
 - [api/_lib/services/attendance.js](../api/_lib/services/attendance.js)
 - [api/_lib/services/community-dashboard.js](../api/_lib/services/community-dashboard.js)
 - [src/pages/AppHome.jsx](../src/pages/AppHome.jsx)
-- [src/pages/AppHome.css](../src/pages/AppHome.css)
+- [src/pages/UserDashboard.jsx](../src/pages/UserDashboard.jsx)
+- [src/pages/UserDashboard.css](../src/pages/UserDashboard.css)
+- [src/lib/communityProfile.js](../src/lib/communityProfile.js)
+- [src/lib/communityAuth.js](../src/lib/communityAuth.js)
+- [src/pages/AppOnboarding.jsx](../src/pages/AppOnboarding.jsx)
 
 That implementation currently provides:
 
@@ -279,19 +283,39 @@ That implementation currently provides:
 - a community dashboard endpoint at `/api/app-dashboard`
 - a community claim endpoint at `/api/attendance-claim`
 - an admin attach endpoint at `/api/admin-attendance-attach`
+- an admin attendance resolution queue so staff can resolve unresolved attendance proof to exact-match LMNL members from the admin console
 - attendance-aware ticket check-in capture:
   - admin ticket check-in still marks the operational ticket as used
   - and now also attempts to record Phase 2 attendance provenance without breaking the check-in flow if the new tables are not present yet
-- a new `/app` dashboard UI that surfaces:
+- a member dashboard route at `/dashboard/:userSlug` that surfaces:
   - latest proof
   - event/point status
   - recent attendance history
   - shared attendance preview
   - pending claimable proof
+- `/app` now acts as a protected handoff into the signed-in member's canonical slugged dashboard route instead of remaining the long-term dashboard URL
+- onboarding now requires a LMNL-owned `profile_slug`, and profile completion now treats that slug as part of a finished community identity
+- community auth redirect preservation now supports `/dashboard/...` destinations across login, callback, and onboarding
+- unresolved attendance proof now appears in both:
+  - the member dashboard claim surface when a matching signed-in community user can claim it
+  - the admin attendance resolution queue when staff need to retroactively attach it
+- the logged-in member dashboard/frontend route flow has passed `npm test` and `npm run build`
+- a real browser pass has now been completed against the full-stack local server at `http://127.0.0.1:3000`, confirming:
+  - `/app/login?next=/dashboard/cory` -> Google -> `/auth/callback` -> `/dashboard/cory` now works on the verified Google path
+  - signed-in access to `/dashboard/not-cory` canonically corrects back to `/dashboard/cory`
+  - the member dashboard renders the empty-state Phase 2 modules correctly when a member has no attendance yet
+  - the member dashboard empty claim state was verified for a live community user with no unresolved proof
+- local runtime caveat discovered during verification:
+  - bare Vite dev at `http://127.0.0.1:4174` does not serve the Vercel `/api/*` routes, so dashboard fetches there fall through to HTML and produce JSON parse errors
+  - meaningful end-to-end Phase 2 browser verification should therefore use the full-stack local server on port `3000`, not the Vite-only server on `4174`
+- Safari-specific login hardening was required during this pass:
+  - community OAuth preflight fallback now also treats Safari's `Load failed` fetch error as a browser-side preflight failure and falls back to the direct provider redirect instead of surfacing a dead-end login error
+- browser verification is still incomplete for one Phase 2 admin edge:
+  - the admin attendance resolution queue currently has `0` unresolved items in local data, so the staff-side attach interaction still needs a later live browser pass with seeded or naturally pending attendance proof
 
 That working direction currently assumes:
 
-- `/app` should become a personal dashboard immediately after verified attendance
+- `/app` should resolve immediately into the member's own slugged dashboard route
 - the first canonical Phase 2 object is a verified attendance record connected to:
   - proof provenance
   - a user-facing attendance artifact

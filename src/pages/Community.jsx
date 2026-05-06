@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import ContentPageShell from '../components/ContentPageShell';
+import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import CommunityMarqueeRow from '../components/community/CommunityMarqueeRow';
 import CommunityStatCard from '../components/community/CommunityStatCard';
 import { usePageColor } from '../hooks/usePageColor';
 import { fetchCommunitySnapshot } from '../lib/siteData';
-import { buildCommunityDirectoryBridge } from '../lib/socialSystem';
 import './Community.css';
 
 function shuffleArray(arr) {
@@ -46,8 +45,65 @@ export default function Community() {
   }, []);
 
   const { marqueeList1, marqueeList2, marqueeList3, totalUnique } = useMemo(() => {
-    const directory = buildCommunityDirectoryBridge({ credits, events });
-    const allMembers = directory.members;
+    const pMap = {};
+    const aMap = {};
+
+    events.forEach(e => {
+      if (e.metadata?.performers) {
+        e.metadata.performers.split(',').forEach(p => {
+          const name = p.trim();
+          if (!name) return;
+          if (!pMap[name]) {
+            pMap[name] = { name, events: new Set(), links: new Set() };
+          }
+          pMap[name].events.add(e.name);
+        });
+      }
+      if (e.metadata?.artists) {
+        e.metadata.artists.split(',').forEach(a => {
+          const name = a.trim();
+          if (!name) return;
+          if (!aMap[name]) {
+            aMap[name] = { name, events: new Set(), links: new Set() };
+          }
+          aMap[name].events.add(e.name);
+        });
+      }
+    });
+
+    credits.forEach(c => {
+      const name = c.name?.trim();
+      if (!name) return;
+
+      if (c.role === 'performer') {
+        if (!pMap[name]) {
+          pMap[name] = { name, events: new Set(), links: new Set() };
+        }
+        if (c.event_name) pMap[name].events.add(c.event_name);
+        if (c.link) pMap[name].links.add(c.link);
+      } else {
+        if (!aMap[name]) {
+          aMap[name] = { name, events: new Set(), links: new Set() };
+        }
+        if (c.event_name) aMap[name].events.add(c.event_name);
+        if (c.link) aMap[name].links.add(c.link);
+      }
+    });
+
+    const finalPerformers = Object.values(pMap).map(p => ({
+      name: p.name,
+      event: Array.from(p.events).join(', ') || 'LMNL',
+      link: Array.from(p.links)[0] || null
+    }));
+
+    const finalArtists = Object.values(aMap).map(a => ({
+      name: a.name,
+      event: Array.from(a.events).join(', ') || 'LMNL',
+      link: Array.from(a.links)[0] || null
+    }));
+
+    const allMembers = [...finalPerformers, ...finalArtists];
+    const uniqueCount = new Set([...Object.keys(pMap), ...Object.keys(aMap)]).size;
 
     const getMarqueeList = (list) => {
       if (list.length === 0) return [];
@@ -62,7 +118,7 @@ export default function Community() {
       marqueeList1: getMarqueeList(shuffleArray(allMembers)),
       marqueeList2: getMarqueeList(shuffleArray(allMembers)),
       marqueeList3: getMarqueeList(shuffleArray(allMembers)),
-      totalUnique: directory.totalUnique
+      totalUnique: uniqueCount
     };
   }, [credits, events]);
 
@@ -82,29 +138,32 @@ export default function Community() {
 
 
   return (
-    <ContentPageShell title="COMMUNITY" color="#ff5bb8">
+    <ContentPageShell
+      title="COMMUNITY"
+      color="#ff5bb8"
+      introTitle="COMMUNITY"
+      introCopy="CREATORS, EVENT HISTORY, AND COMMUNITY REACH"
+      contentClassName="community-layout page-stack"
+    >
       <div className="community-layout">
-        <div className="community-split-layout">
-          <div className="community-stats-stack">
+        <div className="community-split-layout theme-split-layout">
+          <div className="community-stats-stack page-stack">
             <CommunityStatCard
               label="past events"
               value={loading ? '---' : String(pastEvents.length).padStart(3, '0')}
-              color="#ff5bb8"
             />
             <CommunityStatCard
               label="creators count"
               value={loading ? '---' : String(totalUnique).padStart(3, '0')}
-              color="#ff5bb8"
             />
             <CommunityStatCard
               label="community reach"
               value={loading ? '---' : `${String(totalCapacity).padStart(3, '0')}+`}
-              color="#ff5bb8"
             />
           </div>
 
           <div className="community-content-column">
-            <div className="community-test-copy">
+            <div className="community-test-copy page-detail-pane">
               <p className="community-copy-primary">
                 LMNL brings together artists, performers, and curators to challenge the boundaries of modern artistic installations. Each event marks another integration point within our decentralized creative network.
               </p>
@@ -141,8 +200,8 @@ export default function Community() {
 
         </div>
 
-        {loading && <p className="loading-text" style={{ color: '#ff5bb8' }}>RETRIEVING DIRECTORY...</p>}
-        {!loading && marqueeList1.length === 0 && <p className="empty-msg">No community directory loaded yet.</p>}
+        {loading && <PageStatus>RETRIEVING DIRECTORY...</PageStatus>}
+        {!loading && marqueeList1.length === 0 && <PageEmptyState>No community directory loaded yet.</PageEmptyState>}
       </div>
     </ContentPageShell>
   );
