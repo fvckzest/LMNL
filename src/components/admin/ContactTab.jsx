@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
+import { PinIcon } from './Icons';
+import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 export default function ContactTab({
   contactInquiries,
@@ -145,31 +146,17 @@ export default function ContactTab({
                             )}
                           </div>
                           <div className="secondary-actions">
-                            {req.status !== 'archived' ? (
-                              <button
-                                className="icon-btn archive-btn"
-                                title="Archive"
-                                onClick={() => updateStatus(req.id, 'archived')}
-                              >
-                                <ArchiveIcon />
-                              </button>
-                            ) : (
-                              <button
-                                className="icon-btn unarchive-btn"
-                                title="Unarchive"
-                                onClick={() => updateStatus(req.id, 'pending')}
-                              >
-                                <UnarchiveIcon />
-                              </button>
-                            )}
-                            <button
-                              className="icon-btn delete-btn"
+                            <ArchiveToggleButton
+                              isArchived={req.status === 'archived'}
+                              archiveTitle="Archive"
+                              unarchiveTitle="Unarchive"
+                              onArchive={() => updateStatus(req.id, 'archived')}
+                              onUnarchive={() => updateStatus(req.id, 'pending')}
+                            />
+                            <DeleteActionButton
                               title="Delete"
                               onClick={() => deleteInquiry(req.id)}
-                              style={{ color: '#991b1b' }}
-                            >
-                              <TrashIcon />
-                            </button>
+                            />
                           </div>
                         </div>
                       </td>

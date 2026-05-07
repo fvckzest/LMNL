@@ -2,6 +2,8 @@ import { apiGet } from './api';
 import { hasSupabaseCredentials, supabase } from './supabase';
 
 const HOME_FALLBACK_LINK = '/space';
+const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
+const siteActivityCache = new Map();
 
 export const fallbackEventsTimeline = [
   {
@@ -193,8 +195,55 @@ export async function fetchOpenProducts() {
   }));
 }
 
+function getSiteActivityCacheKey(limit) {
+  return String(Math.max(Number(limit) || 6, 1));
+}
+
+function readSiteActivityCache(limit) {
+  const entry = siteActivityCache.get(getSiteActivityCacheKey(limit));
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    isFresh: Date.now() - entry.updatedAt < SITE_ACTIVITY_CACHE_TTL_MS,
+  };
+}
+
+function writeSiteActivityCache(limit, activity) {
+  siteActivityCache.set(getSiteActivityCacheKey(limit), {
+    data: activity,
+    updatedAt: Date.now(),
+    promise: null,
+  });
+}
+
+function setSiteActivityCachePromise(limit, promise) {
+  const existing = readSiteActivityCache(limit);
+
+  siteActivityCache.set(getSiteActivityCacheKey(limit), {
+    data: existing?.data || null,
+    updatedAt: existing?.updatedAt || 0,
+    promise,
+  });
+}
+
+function clearSiteActivityCachePromise(limit) {
+  const existing = readSiteActivityCache(limit);
+  if (!existing) return;
+
+  siteActivityCache.set(getSiteActivityCacheKey(limit), {
+    data: existing.data || null,
+    updatedAt: existing.updatedAt || 0,
+    promise: null,
+  });
+}
+
 function parseActivityDate(value) {
   if (!value) return null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -240,6 +289,15 @@ function formatActivityTimeAgo(value) {
   return formatter.format(years, 'year');
 }
 
+function isUpcomingEventActivity(type, value) {
+  if (type !== 'EVENT') return false;
+
+  const date = parseActivityDate(value);
+  if (!date) return false;
+
+  return date.getTime() > Date.now();
+}
+
 function buildActivityItem({
   id,
   type,
@@ -259,15 +317,25 @@ function buildActivityItem({
     meta,
     stamp: formatActivityDate(date),
     timeAgo: formatActivityTimeAgo(date),
+    isUpcoming: isUpcomingEventActivity(type, date),
   };
 }
 
-export async function fetchSiteActivityHistory(limit = 6) {
+async function loadSiteActivityHistory(limit = 6) {
+  try {
+    const activity = await apiGet(`/api/site-activity?limit=${encodeURIComponent(limit)}`);
+    if (Array.isArray(activity)) {
+      return activity;
+    }
+  } catch (error) {
+    console.error('Failed to load server-backed site activity history:', error);
+  }
+
   const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.allSettled([
     safeSupabaseQuery(
       () => supabase
         .from('events')
-        .select('id,name,event_date,created_at,partiful_url,metadata')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(Math.max(limit, 6)),
       []
@@ -311,10 +379,10 @@ export async function fetchSiteActivityHistory(limit = 6) {
       id: `event-${event.id}`,
       type: 'EVENT',
       title: event.name || 'Untitled event',
-      date: event.created_at || event.event_date,
-      href: event.metadata?.event_link || event.partiful_url || '/events',
+      date: event.event_date || event.created_at,
+      href: event.metadata?.event_link || event.partiful_url || event.spotify_id || '/events',
       accent: '#004ffa',
-      meta: 'Added to Events',
+      meta: 'Hosted event',
     })),
     ...posts.map((post) => buildActivityItem({
       id: `post-${post.id}`,
@@ -340,7 +408,7 @@ export async function fetchSiteActivityHistory(limit = 6) {
       title: eventNameById.get(ticket.event_id) || 'Event ticket issued',
       date: ticket.created_at,
       href: '/events',
-      accent: '#00c2ff',
+      accent: '#004ffa',
       meta: 'Ticket purchased',
     })),
   ]
@@ -349,4 +417,40 @@ export async function fetchSiteActivityHistory(limit = 6) {
     .slice(0, limit);
 
   return activity;
+}
+
+export function getCachedSiteActivityHistory(limit = 6) {
+  return readSiteActivityCache(limit)?.data || null;
+}
+
+export async function fetchSiteActivityHistory(limit = 6, options = {}) {
+  const { forceRefresh = false } = options;
+  const cached = readSiteActivityCache(limit);
+
+  if (!forceRefresh && cached?.data && cached.isFresh) {
+    return cached.data;
+  }
+
+  if (cached?.promise) {
+    return cached.promise;
+  }
+
+  const request = loadSiteActivityHistory(limit)
+    .then((activity) => {
+      writeSiteActivityCache(limit, activity);
+      return activity;
+    })
+    .catch((error) => {
+      if (cached?.data) {
+        return cached.data;
+      }
+      throw error;
+    })
+    .finally(() => {
+      clearSiteActivityCachePromise(limit);
+    });
+
+  setSiteActivityCachePromise(limit, request);
+
+  return request;
 }

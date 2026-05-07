@@ -1,4 +1,4 @@
-import { useState, Fragment, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
 import { fallbackEventsTimeline, fetchTimelineEvents } from '../lib/siteData';
@@ -20,9 +20,6 @@ export default function Events() {
   const [selectedId, setSelectedId] = useState(null);
   const [featuredEvent, setFeaturedEvent] = useState(upcomingEvent);
   const [loading, setLoading] = useState(true);
-  const timelineRef = useRef(null);
-  const timelineMetricsRef = useRef({ itemStep: 0, setWidth: 0 });
-  const isRecenteringRef = useRef(false);
 
   usePageColor('#004ffa');
 
@@ -60,104 +57,6 @@ export default function Events() {
 
   const selectedEvent = events.find(e => e.id === selectedId);
 
-  const updateTimelineMetrics = () => {
-    const el = timelineRef.current;
-    if (!el || events.length === 0) return timelineMetricsRef.current;
-
-    const nodes = el.querySelectorAll('.timeline-node-wrapper');
-    if (nodes.length === 0) return timelineMetricsRef.current;
-
-    const firstNode = nodes[0];
-    const secondNode = nodes[1];
-    const nextSetFirstNode = nodes[events.length];
-
-    const itemStep = secondNode
-      ? secondNode.offsetLeft - firstNode.offsetLeft
-      : firstNode.getBoundingClientRect().width;
-    const setWidth = nextSetFirstNode
-      ? nextSetFirstNode.offsetLeft - firstNode.offsetLeft
-      : el.scrollWidth / 3;
-
-    timelineMetricsRef.current = { itemStep, setWidth };
-    return timelineMetricsRef.current;
-  };
-
-  useEffect(() => {
-    if (events.length > 0 && timelineRef.current) {
-      const el = timelineRef.current;
-      const timer = setTimeout(() => {
-        const { setWidth } = updateTimelineMetrics();
-        el.scrollLeft = setWidth || el.scrollWidth / 3;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [events]);
-
-  useEffect(() => {
-    if (events.length === 0) return undefined;
-
-    const handleResize = () => {
-      updateTimelineMetrics();
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [events]);
-
-  const handleScroll = () => {
-    if (!timelineRef.current || isRecenteringRef.current) return;
-
-    const el = timelineRef.current;
-    const { itemStep, setWidth } = updateTimelineMetrics();
-    if (!setWidth) return;
-
-    const maxScrollLeft = el.scrollWidth - el.clientWidth;
-    const threshold = Math.max(2, itemStep / 2);
-    let nextScrollLeft = null;
-
-    if (el.scrollLeft <= threshold) {
-      nextScrollLeft = el.scrollLeft + setWidth;
-    } else if (el.scrollLeft >= maxScrollLeft - threshold) {
-      nextScrollLeft = el.scrollLeft - setWidth;
-    }
-
-    if (nextScrollLeft !== null) {
-      isRecenteringRef.current = true;
-      el.scrollLeft = nextScrollLeft;
-      requestAnimationFrame(() => {
-        isRecenteringRef.current = false;
-      });
-    }
-  };
-
-  const extendedEvents = events.length > 0 ? [...events, ...events, ...events] : [];
-
-  const scrollTimeline = (direction) => {
-    if (timelineRef.current) {
-      const el = timelineRef.current;
-      const { itemStep, setWidth } = updateTimelineMetrics();
-      const scrollAmount = itemStep || 192;
-      const maxScrollLeft = el.scrollWidth - el.clientWidth;
-
-      if (setWidth) {
-        if (el.scrollLeft < setWidth) {
-          el.scrollLeft += setWidth;
-        } else if (el.scrollLeft > maxScrollLeft - setWidth) {
-          el.scrollLeft -= setWidth;
-        }
-      }
-
-      el.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   return (
     <ContentPageShell
       title="EVENTS"
@@ -167,31 +66,48 @@ export default function Events() {
       contentClassName="events-content page-stack"
     >
       <div className="events-layout">
-          {/* Upcoming Event Highlight */}
+        {loading ? (
+          <PageStatus>RETRIEVING EVENTS...</PageStatus>
+        ) : events.length === 0 ? (
+          <PageEmptyState>NO EVENTS FOUND.</PageEmptyState>
+        ) : (
+          <>
           <div className="upcoming-event-section">
             <div className="upcoming-glow" />
             <div className="upcoming-content">
-              <div className="upcoming-tag">UPCOMING EVENT</div>
-              <h2 className="upcoming-title">{featuredEvent.title}</h2>
-              <div className="upcoming-meta">
-                <span className="upcoming-date">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  {featuredEvent.date}
-                </span>
-                <span className="upcoming-location">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  {featuredEvent.location}
-                </span>
+              <div className="upcoming-header-row">
+                <div className="upcoming-header-copy">
+                  <div className="upcoming-tag">UPCOMING EVENT</div>
+                  <h2 className="upcoming-title">{featuredEvent.title}</h2>
+                  <div className="upcoming-meta">
+                    <span className="upcoming-date">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      {featuredEvent.date}
+                    </span>
+                    <span className="upcoming-location">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      {featuredEvent.location}
+                    </span>
+                  </div>
+                </div>
+                {featuredEvent.is_home_notif ? (
+                  <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
+                    VIEW EVENT
+                  </a>
+                ) : (
+                  <div className="upcoming-rsvp-btn upcoming-rsvp-btn--disabled">
+                    COMING SOON
+                  </div>
+                )}
               </div>
-
               <div className="upcoming-meta upcoming-meta--secondary">
                 <span className="upcoming-date">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
@@ -220,64 +136,49 @@ export default function Events() {
                   )}
                 </span>
               </div>
-              <p className="upcoming-description">{featuredEvent.description}</p>
-              {featuredEvent.is_home_notif ? (
-                <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
-                  VIEW EVENT
-                </a>
-              ) : (
-                <div className="upcoming-rsvp-btn upcoming-rsvp-btn--disabled">
-                  COMING SOON
-                </div>
-              )}
             </div>
           </div>
 
-          {loading ? (
-            <PageStatus>RETRIEVING TIMELINE...</PageStatus>
-          ) : events.length === 0 ? (
-            <PageEmptyState>NO EVENTS FOUND.</PageEmptyState>
-          ) : (
-            <>
-            <h2 className="timeline-section-title">ALL EVENTS</h2>
-            <div className="timeline-wrapper">
-              <button className="timeline-arrow left" onClick={() => scrollTimeline('left')} aria-label="Scroll Left">
-                &larr;
-              </button>
-              <div className="events-timeline-container" ref={timelineRef} onScroll={handleScroll}>
-                <div className="events-timeline-horizontal">
-                  {extendedEvents.map((event, index) => (
-                    <Fragment key={`${event.id}-${index}`}>
-                      <div className="timeline-node-wrapper">
-                        <button 
-                          className={`timeline-node ${selectedId === event.id ? 'active' : ''}`}
-                          onClick={() => setSelectedId(event.id)}
-                          aria-label={`Select ${event.title}`}
-                        >
-                          {event.type === 'text' ? (
-                            <h2 className="events-space-title">{event.display}</h2>
-                          ) : (
-                            <img
-                              src={event.display}
-                              alt={event.title}
-                              className="events-img"
-                              decoding="async"
-                              loading="lazy"
-                            />
-                          )}
-                        </button>
-                      </div>
-                      {index < extendedEvents.length - 1 && (
-                        <div className="timeline-inter-node" />
-                      )}
-                    </Fragment>
-                  ))}
-                </div>
+          <div className="events-detail-grid">
+            <section className="events-table-panel" aria-label="All events">
+              <div className="events-table-header">
+                <h2 className="timeline-section-title">ALL EVENTS</h2>
+                <span className="events-table-count">{events.length} LOGS</span>
               </div>
-              <button className="timeline-arrow right" onClick={() => scrollTimeline('right')} aria-label="Scroll Right">
-                &rarr;
-              </button>
-            </div>
+              <div className="events-table-shell">
+                <table className="events-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Event</th>
+                      <th scope="col">Location</th>
+                      <th scope="col" className="events-table-date-heading">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.map((event) => (
+                      <tr
+                        key={event.id}
+                        className={selectedId === event.id ? 'active' : ''}
+                        onClick={() => setSelectedId(event.id)}
+                      >
+                        <td>
+                          <button
+                            type="button"
+                            className="events-table-row-button"
+                            onClick={() => setSelectedId(event.id)}
+                            aria-pressed={selectedId === event.id}
+                          >
+                            <span className="events-table-title">{event.title}</span>
+                          </button>
+                        </td>
+                        <td>{event.location || 'LMNL Space, LA'}</td>
+                        <td className="events-table-date-cell">{event.date || 'TBA'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
             {selectedEvent && (
               <div className="event-detail-card">
@@ -342,8 +243,9 @@ export default function Events() {
                 </div>
               </div>
             )}
-            </>
-            )}
+          </div>
+          </>
+        )}
       </div>
     </ContentPageShell>
   );

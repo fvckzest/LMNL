@@ -32,7 +32,7 @@
 }
 
 .pulse-dot.active {
-  animation: ticket-pulse 1.6s infinite;
+  animation: none;
 }
 
 .ticket-grid {

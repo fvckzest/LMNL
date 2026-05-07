@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import ContentPageShell, { ModuleStrip, PageStat, PageStatGrid, SectionRail } from '../components/ContentPageShell';
+import ContentPageShell, { ModuleStrip, PageStat, PageStatGrid } from '../components/ContentPageShell';
+import SystemPanel from '../components/SystemPanel';
 
 const aboutStats = [
   { label: 'Modes', value: 'Studio / Space / System' },
@@ -80,86 +81,108 @@ export default function About() {
         ))}
       </PageStatGrid>
 
-      <SectionRail
-        label="WHAT WE ARE"
-        title="A studio, a network, and a connective layer."
-        className="about-section"
-      >
-        <div className="page-grid page-grid--two">
-          <div className="page-detail-pane page-detail-pane--accent">
-            <p>
+      <div className="theme-split-layout">
+        <SystemPanel title="MISSION BRIEF">
+          <div className="theme-copy-stack">
+            <h2 className="page-panel-title">Creative Operating System.</h2>
+            <p className="page-copy">
               Across the site, LMNL shows up as more than a brand page. It is an operating
               environment for programming events, connecting a creative community, launching
               products, selling tickets, and supporting collaborators with design,
               production, branding, and marketing.
             </p>
-            <p>
+            <p className="page-copy">
               That combination is what makes the project distinct. LMNL does not separate the
               artwork from the system around it. The identity, the gathering, the rollout, the
               audience, and the tools all matter together.
             </p>
           </div>
-          <div className="page-panel">
+        </SystemPanel>
+
+        <div className="page-panel theme-panel-stack">
+          <div className="theme-panel-header">
             <p className="page-block-label">Built to support</p>
-            <ModuleStrip
-              items={[
-                { label: 'Artists', copy: 'Releases, visuals, performances, installations' },
-                { label: 'Brands', copy: 'Identity, campaigns, activations, direction shifts' },
-                { label: 'Community', copy: 'Shared discovery, contribution, attendance, collaboration' },
-              ]}
-            />
+            <p className="page-muted-copy">
+              Core audiences and collaboration routes inside the LMNL system.
+            </p>
+          </div>
+          <ModuleStrip
+            items={[
+              { label: 'Artists', copy: 'Releases, visuals, performances, installations' },
+              { label: 'Brands', copy: 'Identity, campaigns, activations, direction shifts' },
+              { label: 'Community', copy: 'Shared discovery, contribution, attendance, collaboration' },
+            ]}
+          />
+        </div>
+      </div>
+
+      <SystemPanel title="ECOSYSTEM LOGIC">
+        <div className="theme-panel-stack">
+          <div className="theme-panel-header">
+            <h2 className="page-panel-title">LMNL operates as an ecosystem.</h2>
+            <p className="page-copy">
+              The website itself reflects that structure: public-facing storytelling, event and
+              ticket flows, community participation, services, and storefront moments all living
+              inside one connected system.
+            </p>
+          </div>
+
+          <div className="page-grid page-grid--three">
+            {ecosystemCards.map((card) => (
+              <article key={card.title} className="page-panel">
+                <p className="page-block-label">System Node</p>
+                <h3 className="page-panel-title">{card.title}</h3>
+                <p className="page-copy">{card.copy}</p>
+              </article>
+            ))}
           </div>
         </div>
-      </SectionRail>
+      </SystemPanel>
 
-      <SectionRail
-        label="HOW IT WORKS"
-        title="LMNL operates as an ecosystem."
-        copy="The website itself reflects that structure: public-facing storytelling, event and ticket flows, community participation, services, and storefront moments all living inside one connected system."
-        className="about-section"
-      >
-        <div className="page-grid page-grid--three">
-          {ecosystemCards.map((card) => (
-            <article key={card.title} className="page-detail-pane">
-              <h3 className="page-panel-title">{card.title}</h3>
-              <p className="page-copy">{card.copy}</p>
-            </article>
-          ))}
-        </div>
-      </SectionRail>
+      <SystemPanel title="OPERATING LAYERS">
+        <div className="theme-panel-stack">
+          <div className="theme-panel-header">
+            <h2 className="page-panel-title">Each layer has a job.</h2>
+            <p className="page-copy">
+              LMNL moves between public-facing programming, creative services, experience
+              design, and commerce without separating them into disconnected channels.
+            </p>
+          </div>
 
-      <SectionRail
-        label="OPERATING LAYERS"
-        title="Each layer has a job."
-        className="about-section"
-      >
-        <div className="page-grid page-grid--four">
-          {operatingLayers.map((layer) => (
-            <div key={layer.title} className="page-panel">
-              <p className="page-block-label">{layer.title}</p>
-              <ModuleStrip items={layer.items.map((item) => ({ label: item }))} />
-            </div>
-          ))}
+          <div className="page-grid page-grid--four">
+            {operatingLayers.map((layer) => (
+              <div key={layer.title} className="page-panel">
+                <p className="page-block-label">{layer.title}</p>
+                <ModuleStrip items={layer.items.map((item) => ({ label: item }))} />
+              </div>
+            ))}
+          </div>
         </div>
-      </SectionRail>
+      </SystemPanel>
 
-      <SectionRail
-        label="PLUG IN"
-        title="Choose your entry point."
-        className="about-section"
-      >
-        <div className="page-grid page-grid--three">
-          {pathways.map((pathway) => (
-            <article key={pathway.title} className="page-detail-pane">
-              <h3 className="page-panel-title">{pathway.title}</h3>
-              <p className="page-copy">{pathway.copy}</p>
-              <Link to={pathway.to} className="theme-button">
-                {pathway.label}
-              </Link>
-            </article>
-          ))}
+      <SystemPanel title="ENTRY POINTS">
+        <div className="theme-panel-stack">
+          <div className="theme-panel-header">
+            <h2 className="page-panel-title">Choose your entry point.</h2>
+            <p className="page-copy">
+              Navigate into the current program, the collaboration stack, or the wider network.
+            </p>
+          </div>
+
+          <div className="page-grid page-grid--three">
+            {pathways.map((pathway) => (
+              <article key={pathway.title} className="page-panel">
+                <p className="page-block-label">Route</p>
+                <h3 className="page-panel-title">{pathway.title}</h3>
+                <p className="page-copy">{pathway.copy}</p>
+                <Link to={pathway.to} className="theme-button">
+                  {pathway.label}
+                </Link>
+              </article>
+            ))}
+          </div>
         </div>
-      </SectionRail>
+      </SystemPanel>
     </ContentPageShell>
   );
 }

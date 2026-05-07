@@ -3,6 +3,7 @@ import { withHandler, allowMethods, parseJsonBody, requireValue, sendJson, AppEr
 import { requireAdminUser } from './_lib/auth.js';
 import { requireCommunityUser } from './_lib/auth-community.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
+import handleDiscordInteractions from './discord-interactions.js';
 import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
 import { getVariationInventory } from './_lib/services/inventory.js';
@@ -20,6 +21,7 @@ import { getCommunityDashboard } from './_lib/services/community-dashboard.js';
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
+import { getSiteActivityHistory } from './_lib/services/site-activity.js';
 import {
   countApprovedRequestsByEventName,
   createAccessRequest,
@@ -195,6 +197,14 @@ async function handleEventStats(req, res) {
       approvedCount,
     },
   });
+}
+
+async function handleSiteActivity(req, res) {
+  allowMethods(req, ['GET']);
+  const rawLimit = Number(req.query?.limit);
+  const limit = Number.isFinite(rawLimit) ? rawLimit : 6;
+  const data = await getSiteActivityHistory(limit);
+  return sendJson(res, 200, { success: true, data });
 }
 
 async function handlePayRequest(req, res) {
@@ -854,6 +864,7 @@ const handlers = {
   'admin-attendance-attach': handleAdminAttendanceAttach,
   'admin-attendance-sources': handleAdminAttendanceSources,
   'event-stats': handleEventStats,
+  'site-activity': handleSiteActivity,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,
@@ -877,6 +888,7 @@ const handlers = {
   'service-products': handleServiceProducts,
   'service-inquiries': handleServiceInquiries,
   'square-catalog': handleSquareCatalog,
+  'discord-interactions': handleDiscordInteractions,
   'square-webhook': handleSquareWebhook,
 };
 

@@ -105,9 +105,7 @@
   .admin-stats .admin-btn,
   .section-title-container .admin-btn,
   .section-header-flex .admin-btn,
-  .admin-table-shell .ticket-toggle,
-  .icon-btn,
-  .pin-toggle-btn
+  .admin-table-shell .ticket-toggle
 ) {
   display: inline-flex;
   align-items: center;
@@ -578,8 +576,8 @@
 
 .admin-table-shell .icon-btn:hover {
   color: var(--table-accent);
-  background: color-mix(in srgb, var(--table-accent) 10%, transparent);
-  border-color: var(--table-accent);
+  background: transparent;
+  border-color: transparent;
 }
 
 .admin-table-shell .event-name-link,
@@ -782,7 +780,8 @@
 .secondary-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .icon-btn,
@@ -796,10 +795,66 @@
     transform var(--lmnl-transition-standard);
 }
 
-:is(.icon-btn, .pin-toggle-btn):hover {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+}
+
+.pin-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+}
+
+.icon-btn svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  overflow: visible;
+}
+
+.pin-toggle-btn:hover {
   color: var(--active-tab-color, var(--page-color, #000));
-  border-color: var(--lmnl-color-text);
-  background: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
+}
+
+.icon-btn:hover {
+  color: var(--active-tab-color, var(--page-color, #000));
+  background: transparent;
+  border-color: transparent;
+}
+
+.table-action-btn {
+  color: var(--lmnl-color-text-subtle);
+}
+
+.table-action-btn--danger,
+.delete-btn {
+  color: #991b1b;
+}
+
+.table-action-btn--muted {
+  color: #444;
 }
 
 .archive-btn:hover {
@@ -841,8 +896,6 @@
 
 .pin-toggle-btn.pinned {
   color: var(--active-tab-color, black);
-  border-color: var(--active-tab-color, black);
-  background: color-mix(in srgb, var(--active-tab-color, black) 10%, transparent);
 }
 
 
@@ -1259,7 +1312,7 @@
 
 .delete-btn:hover {
   color: #991b1b !important;
-  background: #fee2e2 !important;
+  background: transparent !important;
 }
 
 @keyframes slideInUp {

@@ -121,7 +121,6 @@ export default function ContentPageShell({
   introLabel,
   introTitle,
   introCopy,
-  rightSidebar,
 }) {
   const contentClasses = ['content-page-shell__content', contentClassName].filter(Boolean).join(' ');
 
@@ -129,10 +128,15 @@ export default function ContentPageShell({
     <TerminalShell
       title={title}
       color={color}
+      metaNote={null}
       introLabel={introLabel}
       introTitle={introTitle}
       introCopy={introCopy}
-      rightSidebar={rightSidebar}
+      rightSidebarFooter={(
+        <p className="home-terminal__system-note">
+          A creative platform for events, artists, artifacts, and cultural systems.
+        </p>
+      )}
       contentClassName={contentClasses}
     >
       {children}

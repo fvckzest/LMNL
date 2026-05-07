@@ -15,7 +15,12 @@
   gap: 18px;
 }
 
-.space-metrics-stack,
+.space-metrics-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
 .space-details-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -20,6 +20,9 @@ import {
 } from './lib/communityProfile';
 import './styles/community-app.css';
 
+const ADMIN_ACCESS_CACHE_TTL_MS = 60 * 1000;
+const adminAccessCache = new Map();
+
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
 const Space = lazyWithRetry(() => import('./pages/Space'));
@@ -55,6 +58,45 @@ function PrsmPage() {
   const neutralColor = useThemeNeutralColor();
 
   return <GenericPage title="PRSM" color={neutralColor} />;
+}
+
+function readAdminAccessCache(accessToken) {
+  const entry = adminAccessCache.get(accessToken);
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    isFresh: Date.now() - entry.updatedAt < ADMIN_ACCESS_CACHE_TTL_MS,
+  };
+}
+
+function writeAdminAccessCache(accessToken, result) {
+  adminAccessCache.set(accessToken, {
+    result,
+    updatedAt: Date.now(),
+    promise: null,
+  });
+}
+
+function setAdminAccessPromise(accessToken, promise) {
+  const existing = readAdminAccessCache(accessToken);
+
+  adminAccessCache.set(accessToken, {
+    result: existing?.result || null,
+    updatedAt: existing?.updatedAt || 0,
+    promise,
+  });
+}
+
+function clearAdminAccessPromise(accessToken) {
+  const existing = readAdminAccessCache(accessToken);
+  if (!existing) return;
+
+  adminAccessCache.set(accessToken, {
+    result: existing.result || null,
+    updatedAt: existing.updatedAt || 0,
+    promise: null,
+  });
 }
 
 function CommunityRouteError({ message, nextPath }) {
@@ -143,6 +185,49 @@ function ProtectedRoute({ children, requireAdmin = false }) {
   useEffect(() => {
     let cancelled = false;
 
+    async function requestAdminVerification(accessToken) {
+      const response = await fetch('/api/admin-session', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      return { response, payload };
+    }
+
+    async function verifyAdminAccessWithCache(accessToken) {
+      const cached = readAdminAccessCache(accessToken);
+
+      if (cached?.result && cached.isFresh) {
+        return cached.result;
+      }
+
+      if (cached?.promise) {
+        return cached.promise;
+      }
+
+      const request = requestAdminVerification(accessToken)
+        .then(({ response, payload }) => {
+          const result = { response, payload };
+          writeAdminAccessCache(accessToken, result);
+          return result;
+        })
+        .catch((error) => {
+          if (cached?.result) {
+            return cached.result;
+          }
+          throw error;
+        })
+        .finally(() => {
+          clearAdminAccessPromise(accessToken);
+        });
+
+      setAdminAccessPromise(accessToken, request);
+      return request;
+    }
+
     async function verifyAdminAccess() {
       if (!requireAdmin) {
         setAdminStatus('authorized');
@@ -159,14 +244,18 @@ function ProtectedRoute({ children, requireAdmin = false }) {
       setAdminStatus('checking');
       setAdminError('');
 
-      const response = await fetch('/api/admin-session', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      let response;
+      let payload = {};
 
-      const payload = await response.json().catch(() => ({}));
+      try {
+        ({ response, payload } = await verifyAdminAccessWithCache(session.access_token));
+      } catch (_error) {
+        if (!cancelled) {
+          setAdminStatus('error');
+          setAdminError('Admin access check could not reach the server. If you are developing locally, make sure the API is running too.');
+        }
+        return;
+      }
 
       if (cancelled) {
         return;
@@ -183,6 +272,11 @@ function ProtectedRoute({ children, requireAdmin = false }) {
       }
 
       setAdminStatus('error');
+      if (response.status === 404) {
+        setAdminError('Admin access check is unavailable right now. If you are developing locally, make sure the API routes are running.');
+        return;
+      }
+
       setAdminError(payload?.error?.message || payload?.message || 'Unable to verify admin access.');
     }
 

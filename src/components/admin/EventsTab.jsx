@@ -1,6 +1,7 @@
  import { Fragment, useMemo, useState } from 'react';
  import { apiPost } from '../../lib/api';
- import { ArchiveIcon, UnarchiveIcon, TrashIcon, LinkIcon, PinIcon } from './Icons';
+ import { LinkIcon, PinIcon } from './Icons';
+ import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const MANAGED_METADATA_KEYS = new Set([
   'event_link',
@@ -195,7 +196,7 @@ const MANAGED_METADATA_KEYS = new Set([
         address: event.address || '',
         description: event.description || '',
         image_url: event.image_url || '',
-        partiful_url: event.spotify_id || '', 
+        partiful_url: event.partiful_url || event.spotify_id || '',
         is_private: event.is_private ?? true,
         status: event.status || 'active',
         square_variation_id: event.square_variation_id || '',
@@ -312,7 +313,7 @@ const MANAGED_METADATA_KEYS = new Set([
       description: eventForm.description || '',
       capacity: eventForm.capacity ? parseInt(eventForm.capacity) : null,
       image_url: eventForm.image_url || '',
-      spotify_id: eventForm.partiful_url || '',
+      partiful_url: eventForm.partiful_url || '',
       is_private: eventForm.is_private,
       status: eventForm.status || 'active',
       square_variation_id: eventForm.square_variation_id || '',
@@ -538,32 +539,18 @@ const MANAGED_METADATA_KEYS = new Set([
                                 <div className="main-actions">
                                   <button className="admin-btn" onClick={() => openEditModal(event)}>EDIT</button>
                                 </div>
-                                <div className="secondary-actions" style={{ display: 'flex', gap: '10px' }}>
-                                  {event.status !== 'archived' ? (
-                                    <button
-                                      className="icon-btn archive-btn"
-                                      title="Archive Event"
-                                      onClick={() => updateEventStatus(event.id, 'archived')}
-                                    >
-                                      <ArchiveIcon />
-                                    </button>
-                                  ) : (
-                                    <button
-                                      className="icon-btn unarchive-btn"
-                                      title="Unarchive Event"
-                                      onClick={() => updateEventStatus(event.id, 'active')}
-                                    >
-                                      <UnarchiveIcon />
-                                    </button>
-                                  )}
-                                  <button
-                                    className="icon-btn delete-btn"
-                                    style={{ color: '#991b1b' }}
+                                <div className="secondary-actions">
+                                  <ArchiveToggleButton
+                                    isArchived={event.status === 'archived'}
+                                    archiveTitle="Archive Event"
+                                    unarchiveTitle="Unarchive Event"
+                                    onArchive={() => updateEventStatus(event.id, 'archived')}
+                                    onUnarchive={() => updateEventStatus(event.id, 'active')}
+                                  />
+                                  <DeleteActionButton
                                     title="Delete Event"
                                     onClick={() => deleteEvent(event.id)}
-                                  >
-                                    <TrashIcon />
-                                  </button>
+                                  />
                                 </div>
                               </div>
                             </td>
@@ -790,34 +777,18 @@ const MANAGED_METADATA_KEYS = new Set([
                       )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                        {req.status !== 'archived' ? (
-                          <button
-                            className="icon-btn archive-btn"
-                            title="Archive Request"
-                            onClick={() => updateStatus(req.id, 'archived', req)}
-                            style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                          >
-                            <ArchiveIcon />
-                          </button>
-                        ) : (
-                          <button
-                            className="icon-btn unarchive-btn"
-                            title="Unarchive Request"
-                            onClick={() => updateStatus(req.id, 'pending', req)}
-                            style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                          >
-                            <UnarchiveIcon />
-                          </button>
-                        )}
-                        <button
-                          className="icon-btn delete-btn"
+                      <div className="secondary-actions">
+                        <ArchiveToggleButton
+                          isArchived={req.status === 'archived'}
+                          archiveTitle="Archive Request"
+                          unarchiveTitle="Unarchive Request"
+                          onArchive={() => updateStatus(req.id, 'archived', req)}
+                          onUnarchive={() => updateStatus(req.id, 'pending', req)}
+                        />
+                        <DeleteActionButton
                           title="Delete Request"
                           onClick={() => deleteRequest(req.id)}
-                          style={{ padding: '5px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#991b1b' }}
-                        >
-                          <TrashIcon />
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>

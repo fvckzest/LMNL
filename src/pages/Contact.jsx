@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ContentPageShell, { SignalList } from '../components/ContentPageShell';
+import ContentPageShell from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
 import { useTheme } from '../components/ThemeProvider';
 import SocialLinks from '../components/SocialLinks';
@@ -76,8 +76,8 @@ export default function Contact() {
       rightSidebar={<ContactSidebar status={status} />}
       contentClassName="page-stack"
     >
-      <div className="contact-layout theme-split-layout">
-        <section className="contact-info-section page-stack">
+      <div className="contact-layout">
+        <section className="contact-info-section">
           <div className="page-panel">
             <p className="page-block-label">Primary Channel</p>
             <a href="mailto:hi@lmnl.art" className="contact-info-value page-link">hi@lmnl.art</a>
@@ -86,16 +86,6 @@ export default function Contact() {
           <div className="page-panel">
             <p className="page-block-label">Social Channels</p>
             <SocialLinks iconSize={24} />
-          </div>
-
-          <div className="page-panel">
-            <p className="page-block-label">Routing Hints</p>
-            <SignalList
-              items={[
-                { label: 'General contact', meta: 'Email and direct questions' },
-                { label: 'Services page', meta: 'Best path for project scoping' },
-              ]}
-            />
           </div>
         </section>
 

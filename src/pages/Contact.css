@@ -1,5 +1,18 @@
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lmnl-layout-gap);
+}
+
 .contact-info-section {
   width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lmnl-layout-gap);
+}
+
+.contact-info-section .page-panel {
+  height: 100%;
 }
 
 .contact-info-value {
@@ -10,10 +23,65 @@
 
 .contact-form-section {
   width: 100%;
+  max-width: none;
+  grid-column: 1 / -1;
+}
+
+.contact-form-section__header {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+
+.contact-form-section .theme-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "name email"
+    "subject message"
+    "turnstile message"
+    "error message"
+    "submit message";
+  gap: 20px 18px;
+  align-items: start;
+}
+
+.contact-form-section .theme-field:nth-of-type(1) {
+  grid-area: name;
+}
+
+.contact-form-section .theme-field:nth-of-type(2) {
+  grid-area: email;
+}
+
+.contact-form-section .theme-field:nth-of-type(3) {
+  grid-area: subject;
+}
+
+.contact-form-section .theme-field:nth-of-type(4) {
+  grid-area: message;
+}
+
+.contact-form-section .turnstile-block {
+  grid-area: turnstile;
+}
+
+.contact-form-section .page-form-error {
+  grid-area: error;
+}
+
+.contact-form-section .theme-button {
+  grid-area: submit;
+}
+
+.contact-form-section .theme-button {
+  justify-self: start;
+  align-self: end;
 }
 
 .contact-form-section textarea {
   resize: none;
+  min-height: 180px;
 }
 
 .success-title,
@@ -24,4 +92,22 @@
 .reset-btn {
   align-self: flex-start;
   --theme-button-font: var(--lmnl-font-mono);
+}
+
+@media (max-width: 900px) {
+  .contact-info-section,
+  .contact-form-section .theme-form {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-form-section .theme-form {
+    grid-template-areas:
+      "name"
+      "email"
+      "subject"
+      "message"
+      "turnstile"
+      "error"
+      "submit";
+  }
 }

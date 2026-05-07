@@ -1,4 +1,4 @@
-import { getAdminSupabase } from './clients.js';
+import { getAdminSupabase, getUserScopedSupabase } from './clients.js';
 import { getAdminAuthorizationConfig } from './env.js';
 import { AppError } from './http.js';
 
@@ -107,8 +107,12 @@ export async function requireAdminUser(req, deps = {}) {
     });
   }
 
+  const authorizationSupabase = deps.authorizationSupabase
+    || deps.supabase
+    || getUserScopedSupabase(accessToken);
+
   await assertAdminAccess(data.user, {
-    supabase,
+    supabase: authorizationSupabase,
     config: deps.config,
   });
 

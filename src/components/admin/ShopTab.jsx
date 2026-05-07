@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiPost } from '../../lib/api';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
+import { PinIcon } from './Icons';
+import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const PERSISTENT_END_DATE = '2099-12-31T23:59:00.000Z';
 
@@ -342,34 +343,18 @@ function isPersistentEndDate(value) {
                             <button className="admin-btn" onClick={() => openEditModal(po)}>EDIT</button>
                           </div>
                         </div>
-                        <div className="secondary-actions" style={{ display: 'flex', gap: '10px', marginLeft: '10px' }}>
-                          {po.status !== 'archived' ? (
-                            <button
-                              className="icon-btn archive-btn"
-                              title="Archive Drop"
-                              onClick={() => updatePreorderStatus(po.id, 'archived')}
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '5px' }}
-                            >
-                              <ArchiveIcon />
-                            </button>
-                          ) : (
-                            <button
-                              className="icon-btn unarchive-btn"
-                              title="Unarchive Drop"
-                              onClick={() => updatePreorderStatus(po.id, 'open')}
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '5px' }}
-                            >
-                              <UnarchiveIcon />
-                            </button>
-                          )}
-                          <button
-                            className="icon-btn delete-btn"
-                            style={{ color: '#991b1b', background: 'transparent', border: 'none', cursor: 'pointer', padding: '5px' }}
+                        <div className="secondary-actions" style={{ marginLeft: '10px' }}>
+                          <ArchiveToggleButton
+                            isArchived={po.status === 'archived'}
+                            archiveTitle="Archive Drop"
+                            unarchiveTitle="Unarchive Drop"
+                            onArchive={() => updatePreorderStatus(po.id, 'archived')}
+                            onUnarchive={() => updatePreorderStatus(po.id, 'open')}
+                          />
+                          <DeleteActionButton
                             title="Delete Drop"
                             onClick={() => deletePreorder(po.id)}
-                          >
-                            <TrashIcon />
-                          </button>
+                          />
                         </div>
                       </div>
                     </td>

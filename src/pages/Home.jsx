@@ -73,81 +73,13 @@ export default function Home() {
     <TerminalShell
       title="SYSTEM"
       color={pageColor}
-      introLabel="TERMINAL"
       introTitle="TERMINAL"
       introCopy="SELECT A NODE TO ENTER"
-      rightSidebar={(
-        <>
-          <SystemPanel title="SYSTEM OVERVIEW">
-            <div className="terminal-metric-list">
-              <div className="terminal-metric-row"><span>EVENTS</span><span>12</span></div>
-              <div className="terminal-metric-row"><span>COMMUNITY</span><span>084</span></div>
-              <div className="terminal-metric-row"><span>ARTIFACTS</span><span>019</span></div>
-              <div className="terminal-metric-row"><span>TRANSMISSIONS</span><span>031</span></div>
-            </div>
-          </SystemPanel>
-
-          <SystemPanel title="LATEST TRANSMISSIONS">
-            <div className="terminal-log-table">
-              <div className="terminal-log-table__head">
-                <span />
-                <span>TITLE</span>
-                <span>TYPE</span>
-                <span>DATE</span>
-              </div>
-              <div className="terminal-log-table__row">
-                <span className="terminal-log-table__dot" style={{ backgroundColor: pageColor }} />
-                <span>EVENT NODE LIVE</span>
-                <span>EVENT</span>
-                <span>MAY 04</span>
-              </div>
-              <div className="terminal-log-table__row">
-                <span className="terminal-log-table__dot" style={{ backgroundColor: pageColor }} />
-                <span>NETWORK EXPANSION</span>
-                <span>COMM</span>
-                <span>APR 28</span>
-              </div>
-              <div className="terminal-log-table__row">
-                <span className="terminal-log-table__dot" style={{ backgroundColor: pageColor }} />
-                <span>FIELD NOTES</span>
-                <span>LOG</span>
-                <span>APR 19</span>
-              </div>
-            </div>
-          </SystemPanel>
-
-          <SystemPanel title="SYSTEM TIME">
-            <div className="terminal-signal-list">
-              <span>LOS ANGELES</span>
-              <span>LOCAL CLOCK ACTIVE</span>
-            </div>
-          </SystemPanel>
-
-          <SystemPanel title="NEW SIGNALS">
-            {notificationEvent ? (
-              <Link to={getNotificationLink()} className="home-signal-link">
-                <span className="home-signal-link__dot" />
-                <span>1 NEW INVITE</span>
-              </Link>
-            ) : (
-              <div className="terminal-signal-list">
-                <span>NO NEW SIGNALS</span>
-                <span>STANDBY / MONITORING</span>
-              </div>
-            )}
-          </SystemPanel>
-
-          <SystemPanel title="SYSTEM NOTICE">
-            <div className="terminal-notice-graph" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-          </SystemPanel>
-        </>
+      metaNote={null}
+      rightSidebarFooter={(
+        <p className="home-terminal__system-note">
+          A creative platform for events, artists, artifacts, and cultural systems.
+        </p>
       )}
       contentClassName="home-terminal"
     >

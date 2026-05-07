@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react';
-import { ArchiveIcon, UnarchiveIcon, TrashIcon, PinIcon } from './Icons';
+import { PinIcon } from './Icons';
+import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 import ServiceProductsPanel from './ServiceProductsPanel';
 
  export default function InquiriesTab({
@@ -146,31 +147,17 @@ import ServiceProductsPanel from './ServiceProductsPanel';
                               )}
                             </div>
                             <div className="secondary-actions">
-                              {req.status !== 'archived' ? (
-                                <button
-                                  className="icon-btn archive-btn"
-                                  title="Archive"
-                                  onClick={() => updateServiceStatus(req.id, 'archived')}
-                                >
-                                  <ArchiveIcon />
-                                </button>
-                              ) : (
-                                <button
-                                  className="icon-btn unarchive-btn"
-                                  title="Unarchive"
-                                  onClick={() => updateServiceStatus(req.id, 'pending')}
-                                >
-                                  <UnarchiveIcon />
-                                </button>
-                              )}
-                              <button
-                                className="icon-btn delete-btn"
+                              <ArchiveToggleButton
+                                isArchived={req.status === 'archived'}
+                                archiveTitle="Archive"
+                                unarchiveTitle="Unarchive"
+                                onArchive={() => updateServiceStatus(req.id, 'archived')}
+                                onUnarchive={() => updateServiceStatus(req.id, 'pending')}
+                              />
+                              <DeleteActionButton
                                 title="Delete Inquiry"
                                 onClick={() => deleteServiceInquiry(req.id)}
-                                style={{ color: '#991b1b' }}
-                              >
-                                <TrashIcon />
-                              </button>
+                              />
                             </div>
                           </div>
                         </td>

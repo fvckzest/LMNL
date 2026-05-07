@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react';
-import { TrashIcon, PinIcon } from './Icons';
+import { PinIcon } from './Icons';
+import { DeleteActionButton } from './ActionButtons';
 import { apiPost } from '../../lib/api';
 
 export default function BlogTab({
@@ -214,14 +215,10 @@ export default function BlogTab({
                             </button>
                           </div>
                           <div className="secondary-actions">
-                            <button
-                              className="icon-btn delete-btn"
+                            <DeleteActionButton
                               title="Delete"
                               onClick={() => handleDeletePost(post.id)}
-                              style={{ color: '#991b1b' }}
-                            >
-                              <TrashIcon />
-                            </button>
+                            />
                           </div>
                         </div>
                       </td>

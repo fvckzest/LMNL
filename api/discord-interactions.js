@@ -1,0 +1,63 @@
+import { withHandler, allowMethods, readRawBody, sendJson, AppError } from './_lib/http.js';
+import {
+  getDiscordInteractionConfig,
+  handleDiscordInteraction,
+  verifyDiscordInteractionSignature,
+} from './_lib/services/discord-commands.js';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function handler(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      data: {
+        service: 'discord-interactions',
+        status: 'ready',
+      },
+    });
+  }
+
+  const rawBody = await readRawBody(req);
+  const signature = req.headers['x-signature-ed25519'];
+  const timestamp = req.headers['x-signature-timestamp'];
+  const { publicKey } = getDiscordInteractionConfig();
+
+  const isValid = verifyDiscordInteractionSignature({
+    signature,
+    timestamp,
+    rawBody,
+    publicKey,
+  });
+
+  if (!isValid) {
+    throw new AppError('Invalid Discord interaction signature.', {
+      code: 'DISCORD_SIGNATURE_INVALID',
+      status: 401,
+      expose: true,
+    });
+  }
+
+  let interaction;
+  try {
+    interaction = JSON.parse(rawBody || '{}');
+  } catch (error) {
+    throw new AppError('Invalid Discord interaction payload.', {
+      code: 'DISCORD_PAYLOAD_INVALID',
+      status: 400,
+      expose: true,
+      details: error,
+    });
+  }
+
+  const response = await handleDiscordInteraction(interaction);
+  return sendJson(res, 200, response);
+}
+
+export default withHandler(handler, { context: 'discord-interactions' });

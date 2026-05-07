@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrashIcon } from './Icons';
+import { DeleteActionButton } from './ActionButtons';
 import { apiPost } from '../../lib/api';
 
 const EMPTY_FORM = {
@@ -145,14 +145,10 @@ export default function ServiceProductsPanel({
                         </button>
                       </div>
                       <div className="secondary-actions">
-                        <button
-                          className="icon-btn delete-btn"
+                        <DeleteActionButton
                           title="Delete offering"
                           onClick={() => handleDelete(item.id)}
-                          style={{ color: '#991b1b' }}
-                        >
-                          <TrashIcon />
-                        </button>
+                        />
                       </div>
                     </div>
                   </td>

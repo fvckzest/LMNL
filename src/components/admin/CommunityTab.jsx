@@ -1,7 +1,8 @@
 import { Fragment, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { apiPost } from '../../lib/api';
-import { ArchiveIcon, TrashIcon, UnarchiveIcon, PinIcon } from './Icons';
+import { PinIcon } from './Icons';
+import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 export default function CommunityTab({
   events,
@@ -840,31 +841,17 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
                                 )}
                               </div>
                               <div className="secondary-actions">
-                                {entry.status !== 'archived' ? (
-                                  <button
-                                    className="icon-btn archive-btn"
-                                    title="Archive"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'archived')}
-                                  >
-                                    <ArchiveIcon />
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="icon-btn unarchive-btn"
-                                    title="Unarchive"
-                                    onClick={() => updateArtistInterestStatus(entry.id, 'pending')}
-                                  >
-                                    <UnarchiveIcon />
-                                  </button>
-                                )}
-                                <button
-                                  className="icon-btn delete-btn"
-                                  style={{ color: '#991b1b' }}
+                                <ArchiveToggleButton
+                                  isArchived={entry.status === 'archived'}
+                                  archiveTitle="Archive"
+                                  unarchiveTitle="Unarchive"
+                                  onArchive={() => updateArtistInterestStatus(entry.id, 'archived')}
+                                  onUnarchive={() => updateArtistInterestStatus(entry.id, 'pending')}
+                                />
+                                <DeleteActionButton
                                   title="Delete Artist Interest"
                                   onClick={() => deleteArtistInterest(entry.id)}
-                                >
-                                  <TrashIcon />
-                                </button>
+                                />
                               </div>
                             </div>
                           </td>
@@ -1080,14 +1067,10 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                                       <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
                                     </div>
                                     <div className="secondary-actions">
-                                      <button
-                                        className="icon-btn delete-btn"
-                                        style={{ color: '#991b1b' }}
+                                      <DeleteActionButton
                                         title="Delete Credit"
                                         onClick={() => deleteCredit(credit.id)}
-                                      >
-                                        <TrashIcon />
-                                      </button>
+                                      />
                                     </div>
                                   </div>
                                 </td>
@@ -1247,10 +1230,9 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                             >
                               EDIT
                             </button>
-                            <button 
-                              className="icon-btn delete-btn" 
-                              style={{ color: contact.manualEntryId ? '#991b1b' : '#444' }}
-                              title={contact.manualEntryId ? "Delete Manual Entry" : "Source records cannot be deleted from here"}
+                            <DeleteActionButton
+                              title={contact.manualEntryId ? 'Delete Manual Entry' : 'Source records cannot be deleted from here'}
+                              variant={contact.manualEntryId ? 'danger' : 'muted'}
                               onClick={() => {
                                 if (contact.manualEntryId) {
                                   deleteMailingEntry(contact.manualEntryId);
@@ -1258,9 +1240,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                                   showToast('Only manual entries can be deleted from this view. Source records (tickets/requests) must be managed in their respective tabs.', 'error');
                                 }
                               }}
-                            >
-                              <TrashIcon />
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>

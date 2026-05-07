@@ -11,6 +11,42 @@ export function allowMethods(req, methods) {
   }
 }
 
+export async function readRawBody(req) {
+  if (typeof req.rawBody === 'string') {
+    return req.rawBody;
+  }
+
+  if (typeof req.body === 'string') {
+    req.rawBody = req.body;
+    return req.rawBody;
+  }
+
+  if (req.body && Buffer.isBuffer(req.body)) {
+    req.rawBody = req.body.toString('utf8');
+    return req.rawBody;
+  }
+
+  if (req.body && typeof req.body === 'object') {
+    req.rawBody = JSON.stringify(req.body);
+    return req.rawBody;
+  }
+
+  if (typeof req.on === 'function') {
+    const chunks = [];
+    await new Promise((resolve, reject) => {
+      req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+
+    req.rawBody = Buffer.concat(chunks).toString('utf8');
+    return req.rawBody;
+  }
+
+  req.rawBody = '';
+  return req.rawBody;
+}
+
 export async function parseJsonBody(req) {
   if (req.parsedBody && typeof req.parsedBody === 'object') {
     return req.parsedBody;
@@ -59,15 +95,7 @@ export async function parseJsonBody(req) {
   }
 
   if (typeof req.on === 'function') {
-    const chunks = [];
-    await new Promise((resolve, reject) => {
-      req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-      req.on('end', resolve);
-      req.on('error', reject);
-    });
-
-    const text = Buffer.concat(chunks).toString('utf8');
-    req.rawBody = text;
+    const text = await readRawBody(req);
     if (!text.trim()) {
       req.parsedBody = {};
       return req.parsedBody;

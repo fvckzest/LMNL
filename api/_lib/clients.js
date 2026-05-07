@@ -25,10 +25,23 @@ export function getSquareClient() {
 export function getAdminSupabase() {
   if (!supabaseAdmin) {
     const config = getSupabaseConfig();
-    supabaseAdmin = createClient(config.url, config.serviceRoleKey);
+    supabaseAdmin = createClient(config.url, config.serviceRoleKey || config.anonKey);
   }
 
   return supabaseAdmin;
+}
+
+export function getUserScopedSupabase(accessToken) {
+  const config = getSupabaseConfig();
+  const clientKey = config.anonKey || config.serviceRoleKey;
+
+  return createClient(config.url, clientKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
 }
 
 export function getResendClient() {

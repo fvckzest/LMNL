@@ -31,6 +31,10 @@ export function getBaseConfig() {
     siteUrl: readEnv('SITE_URL') || 'https://lmnl.art',
     squareWebhookUrl: readEnv('SQUARE_WEBHOOK_URL') || 'https://lmnl.art/api/square-webhook',
     squareWebhookSignatureKey: readEnv('SQUARE_WEBHOOK_SIGNATURE_KEY'),
+    discordApplicationId: readEnv('DISCORD_APPLICATION_ID'),
+    discordBotToken: readEnv('DISCORD_BOT_TOKEN'),
+    discordPublicKey: readEnv('DISCORD_PUBLIC_KEY'),
+    discordTicketChannelId: readEnv('DISCORD_TICKET_CHANNEL_ID'),
     nodeEnv: readEnv('NODE_ENV') || 'development',
   };
 }
@@ -76,15 +80,16 @@ export function getSquareConfig() {
 
 export function getSupabaseConfig() {
   requireEnv(['SUPABASE_URL'], 'supabase');
-  const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY') || readEnv('SUPABASE_ANON_KEY');
+  const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = readEnv('SUPABASE_ANON_KEY') || readEnv('VITE_SUPABASE_ANON_KEY');
 
-  if (!serviceRoleKey) {
+  if (!serviceRoleKey && !anonKey) {
     throw new AppError('Supabase service credentials are missing.', {
       code: 'CONFIG_MISSING',
       status: 500,
       details: {
         scope: 'supabase',
-        missing: ['SUPABASE_SERVICE_ROLE_KEY'],
+        missing: ['SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY'],
       },
       expose: true,
     });
@@ -93,6 +98,7 @@ export function getSupabaseConfig() {
   return {
     url: readEnv('SUPABASE_URL'),
     serviceRoleKey,
+    anonKey,
   };
 }
 

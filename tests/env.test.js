@@ -16,10 +16,18 @@ import {
 test('getBaseConfig provides stable defaults', () => {
   delete process.env.SITE_URL;
   delete process.env.SQUARE_WEBHOOK_URL;
+  delete process.env.DISCORD_APPLICATION_ID;
+  delete process.env.DISCORD_BOT_TOKEN;
+  delete process.env.DISCORD_PUBLIC_KEY;
+  delete process.env.DISCORD_TICKET_CHANNEL_ID;
 
   const config = getBaseConfig();
   assert.equal(config.siteUrl, 'https://lmnl.art');
   assert.equal(config.squareWebhookUrl, 'https://lmnl.art/api/square-webhook');
+  assert.equal(config.discordApplicationId, '');
+  assert.equal(config.discordBotToken, '');
+  assert.equal(config.discordPublicKey, '');
+  assert.equal(config.discordTicketChannelId, '');
 });
 
 test('getSquareConfig reads sandbox token', () => {
@@ -46,8 +54,20 @@ test('getSupabaseConfig throws when service credentials are missing', () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   delete process.env.SUPABASE_ANON_KEY;
+  delete process.env.VITE_SUPABASE_ANON_KEY;
 
   assert.throws(() => getSupabaseConfig(), /Supabase service credentials are missing/);
+});
+
+test('getSupabaseConfig can fall back to the public anon key', () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_ANON_KEY;
+  process.env.VITE_SUPABASE_ANON_KEY = 'public-anon-key';
+
+  const config = getSupabaseConfig();
+  assert.equal(config.serviceRoleKey, '');
+  assert.equal(config.anonKey, 'public-anon-key');
 });
 
 test('getAdminAuthorizationConfig reads explicit admin allowlists', () => {

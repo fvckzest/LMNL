@@ -90,6 +90,17 @@ export async function listTickets() {
   return data || [];
 }
 
+export async function countTicketsByEventId(eventId) {
+  const supabase = getAdminSupabase();
+  const { count, error } = await supabase
+    .from('tickets')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId);
+
+  if (error) throw error;
+  return count || 0;
+}
+
 export async function createTicket(payload) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase

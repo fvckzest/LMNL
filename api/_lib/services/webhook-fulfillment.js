@@ -13,6 +13,7 @@ import {
   getRequestCustomerByOrderId,
 } from '../repositories/requests.js';
 import { createTicket, findTicketBySquareOrderId } from '../repositories/tickets.js';
+import { sendDiscordTicketNotification } from './discord.js';
 import { generateTicketPass } from './passkit.js';
 
 async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
@@ -306,6 +307,7 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const loadCustomer = deps.resolveCustomer || resolveCustomer;
   const insertTicket = deps.createTicket || createTicket;
   const sendEmail = deps.sendTicketEmail || sendTicketEmail;
+  const sendDiscordNotification = deps.sendDiscordTicketNotification || sendDiscordTicketNotification;
 
   const existingTicket = await loadTicketByOrderId(squareOrderId);
   if (existingTicket) {
@@ -374,9 +376,15 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   }
 
   try {
-    await sendEmail(ticket, event, customer.customerEmail, customer.customerName);
+    await sendEmail(ticket, event, customer.customerEmail, customer.customerName, deps);
   } catch (error) {
     console.error('[webhook] post-ticket email flow failed', error);
+  }
+
+  try {
+    await sendDiscordNotification(ticket, event, customer.customerName, deps);
+  } catch (error) {
+    console.error('[webhook] Discord ticket notification failed', error);
   }
 
   return { success: true, ticketId: ticket.id };

@@ -211,7 +211,6 @@ export default function Services() {
     <ContentPageShell
       title="SERVICES"
       color="#7b52d6"
-      introLabel="SERVICES / CAPABILITY MATRIX"
       introTitle="SERVICES"
       introCopy="INTEGRATED MODULES FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
       rightSidebar={<ServicesSidebar selectedCount={selectedServices.length} productCount={productRows.length} />}
@@ -219,7 +218,7 @@ export default function Services() {
     >
       <section className="services-capabilities">
         <div className="services-capabilities__layout">
-          <div className="services-capabilities__stack">
+          <div className="services-capabilities__top-row">
             <div className="services-capabilities__grid">
               {PRIMARY_SERVICES.map((service) => {
                 const isSelected = selectedServices.includes(service.id);
@@ -228,7 +227,7 @@ export default function Services() {
                   <button
                     type="button"
                     key={service.id}
-                    className={`services-capability-card theme-button ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
+                    className={`services-capability-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
                     aria-pressed={isActive}
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => showService(service.id)}
@@ -240,26 +239,27 @@ export default function Services() {
               })}
             </div>
 
-            <SystemPanel title="BUNDLE BUILDER">
-              <div className="services-bundle-builder">
-                <div className="services-bundle-builder__meter" aria-hidden="true">
-                  {PRIMARY_SERVICES.map((service, index) => {
-                    const isSelected = index < selectedServices.length;
-                    return (
-                      <div
-                        key={service.id}
-                        className={`services-bundle-builder__node ${isSelected ? 'is-active' : ''}`}
-                      >
-                        <span className="services-bundle-builder__node-dot" />
-                      </div>
-                    );
-                  })}
-                </div>
+            <div className="services-bundle-builder-strip">
+              <p className="services-bundle-builder-strip__copy">
+                combine services to recieve discount.
+              </p>
+              <div className="services-bundle-builder" aria-hidden="true">
+                {PRIMARY_SERVICES.map((service, index) => {
+                  const isSelected = index < selectedServices.length;
+                  return (
+                    <div
+                      key={service.id}
+                      className={`services-bundle-builder__node ${isSelected ? 'is-active' : ''}`}
+                    >
+                      <span className="services-bundle-builder__node-dot" />
+                    </div>
+                  );
+                })}
               </div>
-            </SystemPanel>
+            </div>
           </div>
 
-          <SystemPanel title="SELECTED CAPABILITY">
+          <SystemPanel title="SELECTED CAPABILITY" className="services-capability-detail-panel">
             <div className="services-capability-detail">
               <div className="services-capability-detail__header">
                 <strong>{activeService.title}</strong>

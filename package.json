@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "clear:discord-global-commands": "node scripts/clear-discord-global-commands.mjs",
     "dev": "vite",
     "build": "vite build && node scripts/postbuild.js",
     "lint": "eslint .",
     "preview": "vite preview",
+    "register:discord-commands": "node scripts/register-discord-commands.mjs",
     "test": "node --test tests/**/*.test.js",
     "check:community-oauth": "node scripts/check-community-oauth.mjs"
   },
