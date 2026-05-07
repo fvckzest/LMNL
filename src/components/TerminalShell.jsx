@@ -279,19 +279,7 @@ export default function TerminalShell({
         className="terminal-shell__left theme-app-shell__sidebar theme-app-shell__sidebar--nav"
         aria-hidden={!leftSidebarOpen}
       >
-        <div className="terminal-shell__sidebar-toggle-row terminal-shell__sidebar-toggle-row--left">
-          <button
-            type="button"
-            className="terminal-shell__sidebar-toggle"
-            aria-expanded={leftSidebarOpen}
-            aria-controls="terminal-shell-left-sidebar"
-            aria-label="Collapse navigation sidebar"
-            title="Collapse navigation sidebar"
-            onClick={() => setLeftSidebarOpen(false)}
-          >
-            <SidebarToggleIcon direction="left" collapsed={false} />
-          </button>
-        </div>
+
 
         <Link to="/" className="terminal-brand">
           <LmnlLogoBlack className="terminal-brand__logo" />
@@ -354,8 +342,21 @@ export default function TerminalShell({
               >
                 <SidebarToggleIcon direction="left" collapsed />
               </button>
-            ) : null}
-            <span>CULTURAL OPERATING SYSTEM</span>
+            ) : <button
+              type="button"
+              className="terminal-shell__sidebar-toggle"
+              aria-expanded={false}
+              aria-controls="terminal-shell-left-sidebar"
+              aria-label="Open navigation sidebar"
+              title="Open navigation sidebar"
+              onClick={() => setLeftSidebarOpen(false)}
+            >
+              <SidebarToggleIcon direction="left" collapsed />
+            </button>
+            }
+            {!leftSidebarOpen ? (
+              <img src="/circle.svg" alt="LMNL" width="50px" />
+            ) : <img src="/circle.svg" alt="LMNL" width="50px" />}
           </div>
           <div className="terminal-shell__topbar-right">
             <button
@@ -419,19 +420,7 @@ export default function TerminalShell({
         className="terminal-shell__right theme-app-shell__sidebar theme-app-shell__sidebar--info"
         aria-hidden={!rightSidebarOpen}
       >
-        <div className="terminal-shell__sidebar-toggle-row terminal-shell__sidebar-toggle-row--right">
-          <button
-            type="button"
-            className="terminal-shell__sidebar-toggle"
-            aria-expanded={rightSidebarOpen}
-            aria-controls="terminal-shell-right-sidebar"
-            aria-label="Collapse information sidebar"
-            title="Collapse information sidebar"
-            onClick={() => setRightSidebarOpen(false)}
-          >
-            <SidebarToggleIcon direction="right" collapsed={false} />
-          </button>
-        </div>
+
 
         {rightSidebar || <ActivityFeedCard />}
         {rightSidebarFooter ? <div className="terminal-shell__right-footer">{rightSidebarFooter}</div> : null}

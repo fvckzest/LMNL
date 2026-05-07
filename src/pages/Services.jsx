@@ -9,43 +9,43 @@ import './Services.css';
 const PRIMARY_SERVICES = [
   {
     id: 'design',
-    index: '01.',
+    index: '01',
     title: 'DESIGN',
     category: 'CREATIVE',
     description: 'Visual systems and brand identity development.',
     output: 'IDENTITY / ASSETS / GUIDELINES',
     status: 'ACTIVE',
-    details: ['Creative Direction', 'UI/UX Design', 'Merchandise & Apparel', 'Digital Assets', 'Print & Editorial'],
+    details: ['Digital Assets', 'UI/UX Design', 'Merchandise & Apparel', 'Creative Direction'],
   },
   {
     id: 'branding',
-    index: '02.',
+    index: '03',
     title: 'BRANDING',
     category: 'STRATEGY',
-    description: 'Narrative structure and brand positioning.',
+    description: 'Developing the core identity of your project.',
     output: 'POSITIONING / VOICE / STORY',
     status: 'ACTIVE',
-    details: ['Brand Identity', 'Storytelling', 'Tone of Voice', 'Go-to-Market Strategy', 'Market Research'],
+    details: ['Identity', 'World Building', 'Voice & Messaging'],
   },
   {
     id: 'production',
-    index: '03.',
+    index: '02',
     title: 'PRODUCTION',
     category: 'PRODUCTION',
-    description: 'Photo, video, audio and content execution.',
+    description: 'Capturing your vision and bringing it to life.',
     output: 'MEDIA / CONTENT / CAMPAIGN ASSETS',
     status: 'ACTIVE',
-    details: ['Audio Engineering', 'Video & Content Production', 'Photography', 'Experiential Setups', '3D Assets'],
+    details: ['Videography', 'Photography', 'Website', 'Events'],
   },
   {
     id: 'marketing',
-    index: '04.',
+    index: '04',
     title: 'MARKETING',
     category: 'DISTRIBUTION',
-    description: 'Strategic distribution and community growth.',
+    description: 'Approaching the world with what you make.',
     output: 'CAMPAIGN / COMMUNITY / DISTRIBUTION',
     status: 'ACTIVE',
-    details: ['Campaign Strategy', 'Social Growth', 'Paid Acquisition', 'Community Building', 'Data Analytics'],
+    details: ['Strategy', 'Advertising', 'Community Building', 'Analytics'],
   },
 ];
 
@@ -59,45 +59,11 @@ const PRINCIPLES = [
 
 const DEFAULT_PRODUCT_ROWS = [
   {
-    capability: 'BRANDING',
-    product: 'Brand Identity System',
-    scope: 'Logo suite, typography, color direction, asset kit',
+    capability: '',
+    product: '',
+    scope: '',
   },
-  {
-    capability: 'BRANDING',
-    product: 'Positioning & Messaging',
-    scope: 'Narrative strategy, voice framework, audience alignment',
-  },
-  {
-    capability: 'MARKETING',
-    product: 'Campaign Rollout',
-    scope: 'Launch planning, channel strategy, paid and organic mix',
-  },
-  {
-    capability: 'MARKETING',
-    product: 'Community Growth System',
-    scope: 'Audience development, retention loops, reporting rhythms',
-  },
-  {
-    capability: 'DESIGN',
-    product: 'Website & UI Design',
-    scope: 'Wireframes, interface design, responsive page systems',
-  },
-  {
-    capability: 'DESIGN',
-    product: 'Merch & Print Assets',
-    scope: 'Apparel graphics, editorial layouts, physical collateral',
-  },
-  {
-    capability: 'PRODUCTION',
-    product: 'Photo / Video Production',
-    scope: 'Creative planning, shoot execution, edit delivery',
-  },
-  {
-    capability: 'PRODUCTION',
-    product: 'Content Package',
-    scope: 'Short-form content, campaign cutdowns, launch-ready files',
-  },
+
 ].map((item, index) => ({ ...item, id: `${item.capability}-${index}`, is_active: true }));
 
 function ServicesSidebar({ selectedCount, productCount }) {
@@ -212,7 +178,7 @@ export default function Services() {
       title="SERVICES"
       color="#7b52d6"
       introTitle="SERVICES"
-      introCopy="INTEGRATED MODULES FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
+      introCopy="INTEGRATED TOOLING FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
       rightSidebar={<ServicesSidebar selectedCount={selectedServices.length} productCount={productRows.length} />}
       contentClassName="services-layout page-stack"
     >
@@ -294,13 +260,11 @@ export default function Services() {
         <SystemPanel title="PRODUCT TABLE">
           <div className="services-products__table">
             <div className="services-products__header">
-              <span>CAPABILITY</span>
               <span>PRODUCT</span>
               <span>SCOPE</span>
             </div>
             {productRows.map((row) => (
               <div key={row.id || `${row.capability}-${row.product}`} className="services-products__row">
-                <span>{row.capability}</span>
                 <strong>{row.product}</strong>
                 <span>{row.scope}</span>
               </div>

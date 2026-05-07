@@ -3,32 +3,32 @@ import ContentPageShell, { ModuleStrip, PageStat, PageStatGrid } from '../compon
 import SystemPanel from '../components/SystemPanel';
 
 const aboutStats = [
-  { label: 'Modes', value: 'Studio / Space / System' },
-  { label: 'Built For', value: 'Artists, brands, collaborators' },
-  { label: 'Output', value: 'Events, identities, media, community' },
+  { label: 'Core Focus', value: 'Systems, Community, Creative' },
+  { label: 'Built For', value: 'Artists, Brands, Collaborators' },
+  { label: 'Output', value: 'Events, Services, Connections' },
 ];
 
 const ecosystemCards = [
   {
-    title: 'Creative direction with range',
+    title: 'Creative services with range',
     copy:
-      'LMNL develops visual identity, UI, release artwork, merchandise, campaigns, and production systems that move across digital and live contexts without feeling disconnected.',
+      'LMNL develops visual identity, UI, release artwork, merchandise, campaigns, and production systems that move across digital and live contexts cohesively.',
   },
   {
     title: 'Events as living formats',
     copy:
-      'Through SPACE and other programming, LMNL treats events as more than one-off nights. They become containers for performance, installation, experimentation, invitation, and shared memory.',
+      'Through our event programming, LMNL treats connection as more than one-off nights. They become containers for thematic exploration, shared space, and real connection.',
   },
   {
-    title: 'A network, not just an audience',
+    title: 'A network, not an audience',
     copy:
-      'The community side of LMNL connects artists, performers, curators, and builders into a growing ecosystem where each project can lead to new collaborations, new context, and new energy.',
+      'The LMNL community connects artists, performers, curators, and builders into a network where each project can lead to new connections, contexts, and energy.',
   },
 ];
 
 const operatingLayers = [
   {
-    title: 'Public platform',
+    title: 'Public',
     items: ['Events', 'Community', 'Website', 'Social Channels'],
   },
   {
@@ -36,12 +36,12 @@ const operatingLayers = [
     items: ['Performances', 'Networking', 'Art Installations', 'Reactive Media'],
   },
   {
-    title: 'Creative services',
+    title: 'Services',
     items: ['Design', 'Production', 'Branding', 'Marketing'],
   },
   {
     title: 'Commerce',
-    items: ['Artifact releases', 'Ticketing integrations', 'Merch systems'],
+    items: ['Artifacts', 'Ticketing', 'Processing', 'Fulfilment'],
   },
 ];
 
@@ -81,57 +81,41 @@ export default function About() {
         ))}
       </PageStatGrid>
 
-      <div className="theme-split-layout">
-        <SystemPanel title="MISSION BRIEF">
-          <div className="theme-copy-stack">
-            <h2 className="page-panel-title">Creative Operating System.</h2>
-            <p className="page-copy">
-              Across the site, LMNL shows up as more than a brand page. It is an operating
-              environment for programming events, connecting a creative community, launching
-              products, selling tickets, and supporting collaborators with design,
-              production, branding, and marketing.
-            </p>
-            <p className="page-copy">
-              That combination is what makes the project distinct. LMNL does not separate the
-              artwork from the system around it. The identity, the gathering, the rollout, the
-              audience, and the tools all matter together.
+      <div className="theme-stack">
+        <SystemPanel title="Cultural Operating System">
+          <div className="theme-copy">
+            <p>
+              As an independent creative platform, LMNL builds and supports systems, events, and communities across music, digital and physical spaces.
+              LMNL operates across three core modes — community-driven events, creative and branding services, and integrated systems for launches and products. Each layer connects to the same infrastructure: the website, the ticketing flow, the community index, and the creative capabilities offered by LMNL as a studio and collaborator.
             </p>
           </div>
         </SystemPanel>
-
-        <div className="page-panel theme-panel-stack">
-          <div className="theme-panel-header">
-            <p className="page-block-label">Built to support</p>
-            <p className="page-muted-copy">
-              Core audiences and collaboration routes inside the LMNL system.
-            </p>
+        <SystemPanel title="Built to support">
+          <div className="page-panel">
+            <ModuleStrip
+              items={[
+                { label: 'Artists', copy: 'Releases, visuals, performances, installations' },
+                { label: 'Brands', copy: 'Identity, campaigns, activations, direction shifts' },
+                { label: 'Community', copy: 'Shared discovery, contribution, attendance, collaboration' },
+              ]}
+            />
           </div>
-          <ModuleStrip
-            items={[
-              { label: 'Artists', copy: 'Releases, visuals, performances, installations' },
-              { label: 'Brands', copy: 'Identity, campaigns, activations, direction shifts' },
-              { label: 'Community', copy: 'Shared discovery, contribution, attendance, collaboration' },
-            ]}
-          />
-        </div>
+        </SystemPanel>
       </div>
 
-      <SystemPanel title="ECOSYSTEM LOGIC">
+      <SystemPanel title="How We Work">
         <div className="theme-panel-stack">
           <div className="theme-panel-header">
-            <h2 className="page-panel-title">LMNL operates as an ecosystem.</h2>
+            <h2 className="page-panel-title">LMNL is an ecosystem.</h2>
             <p className="page-copy">
-              The website itself reflects that structure: public-facing storytelling, event and
-              ticket flows, community participation, services, and storefront moments all living
-              inside one connected system.
+              Connectivity is the core essence of LMNL.
             </p>
           </div>
 
           <div className="page-grid page-grid--three">
             {ecosystemCards.map((card) => (
               <article key={card.title} className="page-panel">
-                <p className="page-block-label">System Node</p>
-                <h3 className="page-panel-title">{card.title}</h3>
+                <h3 className="page-section-title">{card.title}</h3>
                 <p className="page-copy">{card.copy}</p>
               </article>
             ))}
@@ -151,9 +135,11 @@ export default function About() {
 
           <div className="page-grid page-grid--four">
             {operatingLayers.map((layer) => (
-              <div key={layer.title} className="page-panel">
-                <p className="page-block-label">{layer.title}</p>
-                <ModuleStrip items={layer.items.map((item) => ({ label: item }))} />
+              <div>
+                <p className="theme-copy">{layer.title}</p>
+                <div key={layer.title} className="page-panel">
+                  <ModuleStrip items={layer.items.map((item) => ({ label: item }))} />
+                </div>
               </div>
             ))}
           </div>
@@ -172,10 +158,9 @@ export default function About() {
           <div className="page-grid page-grid--three">
             {pathways.map((pathway) => (
               <article key={pathway.title} className="page-panel">
-                <p className="page-block-label">Route</p>
                 <h3 className="page-panel-title">{pathway.title}</h3>
                 <p className="page-copy">{pathway.copy}</p>
-                <Link to={pathway.to} className="theme-button">
+                <Link to={pathway.to} className="theme-button theme-button-about">
                   {pathway.label}
                 </Link>
               </article>

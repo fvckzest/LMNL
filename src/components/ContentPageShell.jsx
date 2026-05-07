@@ -84,7 +84,7 @@ export function ModuleStrip({ items, className = '' }) {
     <div className={classes}>
       {items.map((item) => (
         <div key={item.label} className="page-module-strip__item">
-          <div className="page-module-strip__topline">
+          <div>
             <span>{item.label}</span>
             {item.value ? <span>{item.value}</span> : null}
           </div>
