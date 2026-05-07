@@ -11,6 +11,7 @@
   --lmnl-color-text-strong: var(--lmnl-color-text);
   --lmnl-color-text-muted: color-mix(in srgb, var(--lmnl-color-text) 62%, var(--lmnl-color-surface));
   --lmnl-color-text-subtle: color-mix(in srgb, var(--lmnl-color-text) 42%, var(--lmnl-color-surface));
+  --lmnl-color-panel-label: var(--page-color, var(--lmnl-color-text));
   --lmnl-color-border-faint: color-mix(in srgb, var(--lmnl-color-text) 8%, transparent);
   --lmnl-color-border-medium: color-mix(in srgb, var(--lmnl-color-text) 14%, transparent);
   --lmnl-color-border-strong: color-mix(in srgb, var(--lmnl-color-text) 22%, transparent);
@@ -217,7 +218,7 @@
 .page-tag,
 .page-label,
 .page-stat__label {
-  color: var(--page-color, var(--lmnl-color-text));
+  color: var(--lmnl-color-panel-label);
 }
 
 .theme-title-lg,
@@ -536,7 +537,7 @@
   font-size: calc(var(--lmnl-text-mono-xs) * 1.25);
   letter-spacing: var(--lmnl-tracking-ui-wider);
   text-transform: uppercase;
-  color: var(--page-color, var(--lmnl-color-text));
+  color: var(--lmnl-color-panel-label);
 }
 
 .theme-body-copy,
@@ -719,7 +720,7 @@
   font-size: calc(10px * 1.25);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--page-color);
+  color: var(--lmnl-color-panel-label);
 }
 
 .page-stat__value {
@@ -845,6 +846,7 @@
   .login-header h1) {
   font-size: calc(10px * 1.25);
   letter-spacing: 0.18em;
+  color: var(--lmnl-color-panel-label);
 }
 
 :where(.post-meta,
@@ -994,7 +996,7 @@
 :where(.user-dashboard-link-chip span,
   .user-dashboard-kicker,
   .user-dashboard-panel-label) {
-  color: var(--page-color);
+  color: var(--lmnl-color-panel-label);
 }
 
 .user-dashboard-link-chip strong {
@@ -1087,12 +1089,6 @@
     border-color var(--lmnl-transition-standard);
 }
 
-:where(.admin-btn,
-  .ticket-toggle,
-  .event-ticket-toggle):hover {
-  transform: translateY(-1px);
-}
-
 :where(.upcoming-rsvp-btn,
   .card-action-btn,
   .preorder-btn,
@@ -1115,16 +1111,18 @@
   transition:
     border-color var(--lmnl-transition-standard),
     color var(--lmnl-transition-standard),
-    transform var(--lmnl-transition-standard);
+    background-color var(--lmnl-transition-standard),
+    box-shadow var(--lmnl-transition-fast);
 }
 
 :where(.upcoming-rsvp-btn,
   .card-action-btn,
   .preorder-btn,
   .persistent-card-btn):hover:not(:disabled):not(.disabled) {
-  transform: translateY(-1px);
-  border-color: var(--lmnl-color-text);
-  color: var(--page-color);
+  background: var(--page-color);
+  background-clip: content-box;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
 }
 
 /*
@@ -1252,7 +1250,6 @@
   text-align: center;
   cursor: pointer;
   transition:
-    transform var(--lmnl-transition-standard),
     background-color var(--lmnl-transition-standard),
     color var(--lmnl-transition-standard),
     border-color var(--lmnl-transition-standard),
@@ -1272,10 +1269,10 @@
   .checkin-primary-button,
   .admin-tab,
   .email-lab__nav-button):focus-visible:not(:disabled):not(.disabled) {
-  transform: translateY(-1px);
-  border-color: var(--theme-button-hover-border, var(--lmnl-color-text));
-  background: var(--theme-button-hover-bg, var(--theme-button-bg, var(--terminal-panel-bg-soft)));
-  color: var(--theme-button-hover-color, var(--page-color, var(--lmnl-color-text)));
+  background: var(--theme-button-hover-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg-soft))));
+  background-clip: content-box;
+  color: var(--theme-button-hover-color, #fff) !important;
+  -webkit-text-fill-color: var(--theme-button-hover-color, #fff);
 }
 
 :where(.theme-button,
@@ -1301,7 +1298,6 @@
   .email-lab__nav-button).disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  transform: none;
   box-shadow: none;
 }
 
@@ -1312,9 +1308,10 @@
   .admin-tab,
   .email-lab__nav-button).is-active,
 .admin-tab.active {
-  border-color: var(--theme-button-active-border, var(--lmnl-color-text));
-  background: var(--theme-button-active-bg, color-mix(in srgb, var(--page-color, var(--lmnl-color-text)) 10%, transparent));
-  color: var(--theme-button-active-color, var(--page-color, var(--lmnl-color-text)));
+  background: var(--theme-button-active-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg))));
+  background-clip: content-box;
+  color: var(--theme-button-active-color, #fff) !important;
+  -webkit-text-fill-color: var(--theme-button-active-color, #fff);
   box-shadow: var(--theme-button-active-shadow, none);
 }
 
@@ -1487,6 +1484,30 @@ html[data-theme] body :is(h1,
 html[data-theme] body :is(input, textarea, select)::placeholder {
   color: var(--lmnl-color-text) !important;
   opacity: 1;
+}
+
+html[data-theme] body :is(.theme-label,
+  .theme-kicker,
+  .page-block-label,
+  .page-eyebrow,
+  .page-tag,
+  .page-label,
+  .page-stat__label,
+  .page-preview-card__eyebrow,
+  .terminal-shell__eyebrow,
+  .community-stat-card-label,
+  .upcoming-tag,
+  .timeline-section-title,
+  .lineup-title,
+  .media-section-title,
+  .drop-badge,
+  .user-dashboard-kicker,
+  .user-dashboard-panel-label,
+  .post-index,
+  .post-read-more,
+  .blog-back-link) {
+  color: var(--lmnl-color-panel-label) !important;
+  -webkit-text-fill-color: var(--lmnl-color-panel-label);
 }
 
 .theme-panel {

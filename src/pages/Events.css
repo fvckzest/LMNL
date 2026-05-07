@@ -33,7 +33,7 @@
 
 .upcoming-tag,
 .lineup-title,
-.media-section-title { color: var(--page-color); }
+.media-section-title { color: var(--lmnl-color-panel-label); }
 
 .upcoming-title,
 .card-title {
@@ -82,9 +82,13 @@
   flex-shrink: 0;
 }
 
+.upcoming-rsvp-mobile {
+  display: none;
+}
+
 .timeline-section-title {
   margin: 0;
-  color: var(--page-color);
+  color: var(--lmnl-color-panel-label);
 }
 
 .events-detail-grid {
@@ -238,8 +242,16 @@
     align-items: stretch;
   }
 
-  .upcoming-rsvp-btn,
-  .upcoming-rsvp-btn--disabled {
+  .upcoming-rsvp-desktop {
+    display: none;
+  }
+
+  .upcoming-rsvp-mobile {
+    display: flex;
+  }
+
+  .upcoming-rsvp-mobile .upcoming-rsvp-btn,
+  .upcoming-rsvp-mobile .upcoming-rsvp-btn--disabled {
     align-self: flex-start;
   }
 

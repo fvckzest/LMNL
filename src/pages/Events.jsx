@@ -56,6 +56,15 @@ export default function Events() {
   }, []);
 
   const selectedEvent = events.find(e => e.id === selectedId);
+  const featuredEventAction = featuredEvent.is_home_notif ? (
+    <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
+      VIEW EVENT
+    </a>
+  ) : (
+    <div className="upcoming-rsvp-btn upcoming-rsvp-btn--disabled">
+      COMING SOON
+    </div>
+  );
 
   return (
     <ContentPageShell
@@ -98,15 +107,9 @@ export default function Events() {
                     </span>
                   </div>
                 </div>
-                {featuredEvent.is_home_notif ? (
-                  <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
-                    VIEW EVENT
-                  </a>
-                ) : (
-                  <div className="upcoming-rsvp-btn upcoming-rsvp-btn--disabled">
-                    COMING SOON
-                  </div>
-                )}
+                <div className="upcoming-rsvp-desktop">
+                  {featuredEventAction}
+                </div>
               </div>
               <div className="upcoming-meta upcoming-meta--secondary">
                 <span className="upcoming-date">
@@ -135,6 +138,9 @@ export default function Events() {
                     </>
                   )}
                 </span>
+              </div>
+              <div className="upcoming-rsvp-mobile">
+                {featuredEventAction}
               </div>
             </div>
           </div>

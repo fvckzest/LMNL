@@ -1274,16 +1274,14 @@
   --theme-button-size: var(--lmnl-text-mono-xs);
   --theme-button-tracking: var(--lmnl-tracking-ui-wider);
   --theme-button-color: var(--lmnl-color-text-muted);
-  --theme-button-hover-border: var(--lmnl-color-text);
-  --theme-button-hover-color: var(--tab-accent, var(--page-color, var(--lmnl-color-text)));
-  --theme-button-active-border: var(--tab-accent, black);
-  --theme-button-active-bg: color-mix(in srgb, var(--tab-accent, black) 10%, transparent);
-  --theme-button-active-color: var(--tab-accent, black);
+  --theme-button-hover-bg: var(--tab-accent, var(--page-color, black));
+  --theme-button-hover-color: #fff;
+  --theme-button-active-bg: var(--tab-accent, var(--page-color, black));
+  --theme-button-active-color: #fff;
 }
 
 .admin-tab.active {
   color: var(--theme-button-active-color);
-  border-color: var(--theme-button-active-border);
   background: var(--theme-button-active-bg);
 }
 

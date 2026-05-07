@@ -49,7 +49,7 @@
   padding: 6px 8px;
   border: var(--lmnl-border-medium);
   background: var(--terminal-panel-bg);
-  color: var(--page-color);
+  color: var(--lmnl-color-panel-label);
 }
 
 .drop-info,

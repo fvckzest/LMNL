@@ -249,7 +249,7 @@ function ProtectedRoute({ children, requireAdmin = false }) {
 
       try {
         ({ response, payload } = await verifyAdminAccessWithCache(session.access_token));
-      } catch (_error) {
+      } catch {
         if (!cancelled) {
           setAdminStatus('error');
           setAdminError('Admin access check could not reach the server. If you are developing locally, make sure the API is running too.');

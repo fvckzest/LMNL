@@ -119,7 +119,6 @@
   --theme-button-border: var(--lmnl-border-medium);
   --theme-button-bg: color-mix(in srgb, var(--page-color) 6%, transparent);
   --theme-button-color: var(--page-color);
-  --theme-button-hover-bg: color-mix(in srgb, var(--page-color) 11%, transparent);
 }
 
 .checkin-primary-button:disabled {

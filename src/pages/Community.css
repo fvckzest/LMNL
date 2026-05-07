@@ -51,7 +51,7 @@
 
 .community-stat-card-label {
   margin: 0 0 12px;
-  color: var(--page-color);
+  color: var(--lmnl-color-panel-label);
 }
 
 .community-stat-card-content {

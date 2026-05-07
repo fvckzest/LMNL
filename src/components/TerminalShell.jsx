@@ -355,8 +355,8 @@ export default function TerminalShell({
             </button>
             }
             {!leftSidebarOpen ? (
-              <img src="/circle.svg" alt="LMNL" width="50px" />
-            ) : <img src="/circle.svg" alt="LMNL" width="50px" />}
+              <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>
+            ) : <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>}
           </div>
           <div className="terminal-shell__topbar-right">
             <button
@@ -386,9 +386,19 @@ export default function TerminalShell({
                 title="Open information sidebar"
                 onClick={() => setRightSidebarOpen(true)}
               >
-                <SidebarToggleIcon direction="right" collapsed />
+                <SidebarToggleIcon direction="right" collapsed={true} />
               </button>
-            ) : null}
+            ) : <button
+              type="button"
+              className="terminal-shell__sidebar-toggle"
+              aria-expanded={true}
+              aria-controls="terminal-shell-right-sidebar"
+              aria-label="Close information sidebar"
+              title="Close information sidebar"
+              onClick={() => setRightSidebarOpen(false)}
+            >
+              <SidebarToggleIcon direction="right" collapsed={false} />
+            </button>}
           </div>
         </header>
 
@@ -411,7 +421,7 @@ export default function TerminalShell({
             <a href="https://x.com" target="_blank" rel="noreferrer">X</a>
             <a href="https://discord.com" target="_blank" rel="noreferrer">DISCORD</a>
           </div>
-          <Link to="/contact" className="terminal-shell__footer-cta">SIGNAL THE SYSTEM +</Link>
+          <Link to="/contact" className="terminal-shell__footer-cta theme-button">SIGNAL THE SYSTEM +</Link>
         </footer>
       </main>
 
@@ -420,7 +430,6 @@ export default function TerminalShell({
         className="terminal-shell__right theme-app-shell__sidebar theme-app-shell__sidebar--info"
         aria-hidden={!rightSidebarOpen}
       >
-
 
         {rightSidebar || <ActivityFeedCard />}
         {rightSidebarFooter ? <div className="terminal-shell__right-footer">{rightSidebarFooter}</div> : null}
