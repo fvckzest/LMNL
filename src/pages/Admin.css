@@ -559,7 +559,7 @@
 :is(.admin-btn:hover, .admin-btn.active, .admin-btn[aria-pressed='true']) {
   background: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
   color: var(--active-tab-color, var(--page-color, #000));
-  border-color: var(--lmnl-color-text);
+  border-color: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
 }
 
 .admin-table-shell .admin-btn {
@@ -571,7 +571,7 @@
 .admin-table-shell :is(.admin-btn:hover, .admin-btn.active, .admin-btn[aria-pressed='true']) {
   background: color-mix(in srgb, var(--table-accent) 10%, transparent);
   color: var(--table-accent);
-  border-color: var(--table-accent);
+  border-color: color-mix(in srgb, var(--table-accent) 10%, transparent);
 }
 
 .admin-table-shell .icon-btn:hover {

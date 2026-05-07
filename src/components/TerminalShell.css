@@ -52,6 +52,8 @@
 .terminal-shell__center {
   padding: 24px 28px 36px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .terminal-shell__right {
@@ -402,6 +404,7 @@
 .terminal-shell__content {
   padding-top: var(--lmnl-section-gap);
   min-width: 0;
+  flex: 1 0 auto;
 }
 
 .system-panel__header::before {
@@ -612,6 +615,10 @@
 .terminal-shell__footer-cta {
   color: inherit;
   text-decoration: none;
+}
+
+.terminal-shell__footer-cta {
+  --theme-button-hover-bg: #90e937;
 }
 
 .terminal-shell__footer-links a:hover {

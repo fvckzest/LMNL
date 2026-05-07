@@ -1,79 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
-import SystemPanel from '../components/SystemPanel';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import {
-  fetchCommunitySnapshot,
   fetchNotificationEvent,
-  fetchOpenProducts,
-  fetchSiteActivityHistory,
   fetchTimelineEvents,
   getEventLink,
 } from '../lib/siteData';
 import './Events.css';
-
-const PRIMARY_ROUTES = [
-  {
-    id: 'events',
-    label: 'Events',
-    title: 'Program calendar and active live routes.',
-    to: '/events',
-    accent: '#004ffa',
-  },
-  {
-    id: 'services',
-    label: 'Services',
-    title: 'Creative capabilities, inquiry flow, and build support.',
-    to: '/services',
-    accent: '#7b52d6',
-  },
-  {
-    id: 'community',
-    label: 'Community',
-    title: 'Network directory, reach, and historical participation.',
-    to: '/community',
-    accent: '#ff5bb8',
-  },
-  {
-    id: 'shop',
-    label: 'Shop',
-    title: 'Artifacts, preorders, and open release states.',
-    to: '/shop',
-    accent: '#ff0000',
-  },
-];
-
-const SECONDARY_ROUTES = [
-  {
-    id: 'about',
-    label: 'About',
-    title: 'Mission brief and operating layers.',
-    copy: 'Read the system-level overview behind LMNL.',
-    to: '/about',
-    accent: '#ff9300',
-  },
-  {
-    id: 'blog',
-    label: 'Blog',
-    title: 'Transmissions, writing, and recent records.',
-    copy: 'Open the archive of public notes and releases.',
-    to: '/blog',
-    accent: '#ffde00',
-  },
-  {
-    id: 'contact',
-    label: 'Contact',
-    title: 'Reach the team directly.',
-    copy: 'Move from browsing into an active conversation.',
-    to: '/contact',
-    accent: '#90e937',
-  },
-];
-
-function formatCount(value) {
-  return String(value || 0).padStart(2, '0');
-}
 
 function getActiveHomeEvent(notificationEvent, nextEvent) {
   if (notificationEvent) {
@@ -111,116 +45,21 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
   };
 }
 
-function getCommunitySummary(snapshot) {
-  const credits = snapshot?.credits || [];
-  const events = snapshot?.events || [];
-  const uniqueNames = new Set();
-
-  credits.forEach((credit) => {
-    const name = credit.name?.trim();
-    if (name) uniqueNames.add(name);
-  });
-
-  events.forEach((event) => {
-    [event.metadata?.performers, event.metadata?.artists].forEach((group) => {
-      if (!group) return;
-      group
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .forEach((name) => uniqueNames.add(name));
-    });
-  });
-
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  const pastEvents = events.filter((event) => {
-    if (!event.event_date) return false;
-    const eventDate = new Date(`${event.event_date}T00:00:00`);
-    return !Number.isNaN(eventDate.getTime()) && eventDate < now;
-  });
-
-  return {
-    creators: uniqueNames.size,
-    pastEvents: pastEvents.length,
-  };
-}
-
-function RoutePreviewCard({ route }) {
-  return (
-    <article
-      className="page-preview-card page-preview-card--interactive theme-accent-panel"
-      style={{ '--preview-accent': route.accent }}
-    >
-      <div className="page-preview-card__header">
-        <p className="page-preview-card__eyebrow">{route.label}</p>
-        <h3 className="page-preview-card__title">{route.title}</h3>
-      </div>
-
-      <p className="page-preview-card__copy">{route.copy}</p>
-
-      <div className="page-preview-list" aria-label={`${route.label} preview metrics`}>
-        {route.details.map((detail) => (
-          <div key={detail.label} className="page-preview-list__item">
-            <span>{detail.label}</span>
-            <span>{detail.value}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="page-preview-card__footer">
-        <span className="page-preview-card__signal">{route.signal}</span>
-        <Link to={route.to} className="theme-button">
-          Open {route.label}
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function SecondaryRouteCard({ route }) {
-  return (
-    <article
-      className="page-preview-card page-preview-card--compact"
-      style={{ '--preview-accent': route.accent }}
-    >
-      <div className="page-preview-card__header">
-        <p className="page-preview-card__eyebrow">{route.label}</p>
-        <h3 className="page-preview-card__title">{route.title}</h3>
-      </div>
-      <p className="page-preview-card__copy">{route.copy}</p>
-      <div className="page-preview-card__footer">
-        <span className="page-preview-card__signal">Standby route</span>
-        <Link to={route.to} className="theme-button theme-button--ghost">
-          Enter
-        </Link>
-      </div>
-    </article>
-  );
-}
-
 export default function Home() {
   const neutralColor = useThemeNeutralColor();
   const [homeData, setHomeData] = useState({
-    activity: [],
-    community: null,
     events: [],
     notificationEvent: null,
-    products: [],
   });
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadHomeData() {
-      const [notificationResult, eventsResult, communityResult, productsResult, activityResult] =
+      const [notificationResult, eventsResult] =
         await Promise.allSettled([
           fetchNotificationEvent(),
           fetchTimelineEvents(),
-          fetchCommunitySnapshot(),
-          fetchOpenProducts(),
-          fetchSiteActivityHistory(6),
         ]);
 
       if (!isMounted) return;
@@ -228,9 +67,6 @@ export default function Home() {
       setHomeData({
         notificationEvent: notificationResult.status === 'fulfilled' ? notificationResult.value : null,
         events: eventsResult.status === 'fulfilled' ? eventsResult.value : [],
-        community: communityResult.status === 'fulfilled' ? communityResult.value : null,
-        products: productsResult.status === 'fulfilled' ? productsResult.value : [],
-        activity: activityResult.status === 'fulfilled' ? activityResult.value : [],
       });
     }
 
@@ -241,83 +77,11 @@ export default function Home() {
     };
   }, []);
 
-  const communitySummary = useMemo(() => getCommunitySummary(homeData.community), [homeData.community]);
   const nextEvent = homeData.events[0] || null;
-  const latestBlogActivity = homeData.activity.find((item) => item.type === 'BLOG') || null;
-  const latestShopActivity = homeData.activity.find((item) => item.type === 'SHOP') || null;
   const activeHomeEvent = useMemo(
     () => getActiveHomeEvent(homeData.notificationEvent, nextEvent),
     [homeData.notificationEvent, nextEvent],
   );
-
-  const primaryRoutePreviews = useMemo(() => {
-    const preorderCount = homeData.products.filter((product) => product.goal_quantity > 0).length;
-    const readyToShipCount = homeData.products.filter((product) => product.goal_quantity <= 0).length;
-
-    return [
-      {
-        ...PRIMARY_ROUTES[0],
-        copy: nextEvent?.description || 'Browse current programs, upcoming activations, and the full event log.',
-        signal: homeData.notificationEvent ? 'Live signal detected' : 'Calendar preview available',
-        details: [
-          { label: 'Upcoming', value: nextEvent?.title || 'No live title' },
-          { label: 'Entries', value: formatCount(homeData.events.length) },
-          { label: 'Route', value: nextEvent?.date || 'Standby' },
-        ],
-      },
-      {
-        ...PRIMARY_ROUTES[1],
-        copy: 'Preview the core studio offerings before moving into the full services stack.',
-        signal: 'Inquiry layer active',
-        details: [
-          { label: 'Capabilities', value: '04' },
-          { label: 'Mode', value: 'Integrated' },
-          { label: 'Entry', value: 'Open intake' },
-        ],
-      },
-      {
-        ...PRIMARY_ROUTES[2],
-        copy: 'See the network scope at a glance before entering the full community layer.',
-        signal: 'Directory live',
-        details: [
-          { label: 'Creators', value: formatCount(communitySummary.creators) },
-          { label: 'Past events', value: formatCount(communitySummary.pastEvents) },
-          { label: 'Reach', value: 'Expanding' },
-        ],
-      },
-      {
-        ...PRIMARY_ROUTES[3],
-        copy: latestShopActivity?.title || 'Check open drops, artifacts, and product states.',
-        signal: homeData.products.length > 0 ? 'Inventory preview loaded' : 'No open drop loaded',
-        details: [
-          { label: 'Open items', value: formatCount(homeData.products.length) },
-          { label: 'Preorders', value: formatCount(preorderCount) },
-          { label: 'Ready', value: formatCount(readyToShipCount) },
-        ],
-      },
-    ];
-  }, [communitySummary.creators, communitySummary.pastEvents, homeData.events.length, homeData.notificationEvent, homeData.products, latestShopActivity?.title, nextEvent?.date, nextEvent?.description, nextEvent?.title]);
-
-  const systemSignals = [
-    {
-      id: 'live',
-      label: homeData.notificationEvent?.name || 'No featured program is pinned right now.',
-      meta: homeData.notificationEvent ? 'Live event route available' : 'Events route will resolve the current program.',
-      color: '#004ffa',
-    },
-    {
-      id: 'blog',
-      label: latestBlogActivity?.title || 'Blog archive standing by for the next transmission.',
-      meta: latestBlogActivity ? latestBlogActivity.stamp : 'Editorial route ready',
-      color: '#ffde00',
-    },
-    {
-      id: 'shop',
-      label: latestShopActivity?.title || 'Shop route is ready for the next artifact drop.',
-      meta: latestShopActivity ? latestShopActivity.stamp : 'Commerce route ready',
-      color: '#ff0000',
-    },
-  ];
 
   return (
     <ContentPageShell
@@ -382,7 +146,10 @@ export default function Home() {
                   </div>
                 </div>
                 {activeHomeEvent.is_home_notif ? (
-                  <a href={activeHomeEvent.rsvpLink} className="upcoming-rsvp-btn">
+                  <a
+                    href={activeHomeEvent.rsvpLink}
+                    className="upcoming-rsvp-btn upcoming-rsvp-btn--home-accent"
+                  >
                     VIEW EVENT
                   </a>
                 ) : (
@@ -423,41 +190,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      <SystemPanel title="SYSTEM SIGNALS">
-        <div className="page-signal-list">
-          {systemSignals.map((signal) => (
-            <div key={signal.id} className="page-signal-list__item">
-              <span className="page-signal-list__dot" style={{ backgroundColor: signal.color }} />
-              <div className="page-signal-list__content">
-                <span className="page-signal-list__label">{signal.label}</span>
-                <span className="page-signal-list__meta">{signal.meta}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </SystemPanel>
-
-      <div className="page-preview-grid">
-        {primaryRoutePreviews.map((route) => (
-          <RoutePreviewCard key={route.id} route={route} />
-        ))}
-      </div>
-
-      <SystemPanel title="EDITORIAL + SUPPORT">
-        <div className="theme-panel-header">
-          <h2 className="page-panel-title">Secondary routes stay in the terminal, just quieter.</h2>
-          <p className="page-copy">
-            About, blog, and contact remain browseable as support layers instead of getting buried beneath the primary modes.
-          </p>
-        </div>
-
-        <div className="page-preview-grid page-preview-grid--compact">
-          {SECONDARY_ROUTES.map((route) => (
-            <SecondaryRouteCard key={route.id} route={route} />
-          ))}
-        </div>
-      </SystemPanel>
     </ContentPageShell>
   );
 }

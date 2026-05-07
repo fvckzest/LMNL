@@ -10,7 +10,7 @@ import { fetchSpaceEventSnapshot } from '../lib/siteData';
 import './Space.css';
 
 export default function Space() {
-  usePageColor('#a0a0a0');
+  usePageColor('#004ffa');
 
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -103,7 +103,7 @@ export default function Space() {
   return (
     <ContentPageShell
       title={eventData.name || 'SPACE'}
-      color="#a0a0a0"
+      color="#004ffa"
       introTitle={eventData.name || 'SPACE'}
       introCopy="CURRENT PHYSICAL NODE / ACCESS, FUNDING, OCCUPANCY, AND BRIEFING"
       contentClassName="space-content page-stack"

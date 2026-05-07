@@ -1120,7 +1120,7 @@
   .preorder-btn,
   .persistent-card-btn):hover:not(:disabled):not(.disabled) {
   background: var(--page-color);
-  background-clip: content-box;
+  border-color: var(--page-color);
   color: #fff !important;
   -webkit-text-fill-color: #fff;
 }
@@ -1270,7 +1270,7 @@
   .admin-tab,
   .email-lab__nav-button):focus-visible:not(:disabled):not(.disabled) {
   background: var(--theme-button-hover-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg-soft))));
-  background-clip: content-box;
+  border-color: var(--theme-button-hover-border, var(--theme-button-hover-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg-soft)))));
   color: var(--theme-button-hover-color, #fff) !important;
   -webkit-text-fill-color: var(--theme-button-hover-color, #fff);
 }
@@ -1309,7 +1309,7 @@
   .email-lab__nav-button).is-active,
 .admin-tab.active {
   background: var(--theme-button-active-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg))));
-  background-clip: content-box;
+  border-color: var(--theme-button-active-border, var(--theme-button-active-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg)))));
   color: var(--theme-button-active-color, #fff) !important;
   -webkit-text-fill-color: var(--theme-button-active-color, #fff);
   box-shadow: var(--theme-button-active-shadow, none);

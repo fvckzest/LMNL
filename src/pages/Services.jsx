@@ -102,6 +102,7 @@ function ServicesSidebar({ selectedCount, productCount }) {
 export default function Services() {
   const { theme } = useTheme();
   const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [productRows, setProductRows] = useState(DEFAULT_PRODUCT_ROWS);
   const [activeServiceId, setActiveServiceId] = useState(PRIMARY_SERVICES[0].id);
   const [inquirySent, setInquirySent] = useState(false);
@@ -136,6 +137,22 @@ export default function Services() {
   const activeService =
     PRIMARY_SERVICES.find((service) => service.id === activeServiceId) ?? PRIMARY_SERVICES[0];
   const activeServiceSelected = selectedServices.includes(activeService.id);
+  const selectedCount = selectedServices.length + selectedProducts.length;
+  const selectedInquiryItems = [
+    ...selectedServices.map((serviceId) => {
+      const matchedService = PRIMARY_SERVICES.find((service) => service.id === serviceId);
+      return matchedService?.title ?? serviceId;
+    }),
+    ...selectedProducts
+      .map((productId) => {
+        const matchedProduct = productRows.find((row) => row.id === productId);
+        if (!matchedProduct) return null;
+        return matchedProduct.capability
+          ? `${matchedProduct.capability} / ${matchedProduct.product}`
+          : matchedProduct.product;
+      })
+      .filter(Boolean),
+  ];
 
   const showService = (serviceId) => {
     setActiveServiceId(serviceId);
@@ -144,6 +161,12 @@ export default function Services() {
   const toggleServiceSelection = (serviceId) => {
     setSelectedServices((prev) =>
       prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+    );
+  };
+
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
     );
   };
 
@@ -157,12 +180,13 @@ export default function Services() {
         name: formData.name,
         email: formData.email,
         notes: formData.notes,
-        selectedServices,
+        selectedServices: selectedInquiryItems,
         turnstileToken,
       });
       setInquirySent(true);
       setRequestStatus('idle');
       setFormData({ name: '', email: '', notes: '' });
+      setSelectedProducts([]);
       setTurnstileToken('');
       setTurnstileResetSignal((value) => value + 1);
     } catch (error) {
@@ -179,7 +203,7 @@ export default function Services() {
       color="#7b52d6"
       introTitle="SERVICES"
       introCopy="INTEGRATED TOOLING FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
-      rightSidebar={<ServicesSidebar selectedCount={selectedServices.length} productCount={productRows.length} />}
+      rightSidebar={<ServicesSidebar selectedCount={selectedCount} productCount={productRows.length} />}
       contentClassName="services-layout page-stack"
     >
       <section className="services-capabilities">
@@ -262,13 +286,25 @@ export default function Services() {
             <div className="services-products__header">
               <span>PRODUCT</span>
               <span>SCOPE</span>
+              <span aria-hidden="true" />
             </div>
-            {productRows.map((row) => (
-              <div key={row.id || `${row.capability}-${row.product}`} className="services-products__row">
-                <strong>{row.product}</strong>
-                <span>{row.scope}</span>
-              </div>
-            ))}
+            {productRows.map((row) => {
+              const isSelected = selectedProducts.includes(row.id);
+              return (
+                <div key={row.id || `${row.capability}-${row.product}`} className="services-products__row">
+                  <strong>{row.product}</strong>
+                  <span>{row.scope}</span>
+                  <button
+                    type="button"
+                    className={`theme-button services-products__action ${isSelected ? 'is-active' : ''}`}
+                    aria-pressed={isSelected}
+                    onClick={() => toggleProductSelection(row.id)}
+                  >
+                    {isSelected ? 'ADDED' : 'ADD'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </SystemPanel>
       </section>
@@ -285,6 +321,7 @@ export default function Services() {
                 onClick={() => {
                   setInquirySent(false);
                   setSelectedServices([]);
+                  setSelectedProducts([]);
                 }}
               >
                 NEW INQUIRY
@@ -292,6 +329,18 @@ export default function Services() {
             </div>
           ) : (
             <form onSubmit={handleInquirySubmit} className="services-inquiry__form theme-form">
+              {selectedInquiryItems.length > 0 ? (
+                <div className="services-inquiry__selection">
+                  <span className="services-inquiry__selection-label">INQUIRY SELECTION</span>
+                  <div className="services-inquiry__selection-list">
+                    {selectedInquiryItems.map((item) => (
+                      <span key={item} className="services-inquiry__selection-pill">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="services-inquiry__grid theme-form-grid">
                 <input
                   type="text"

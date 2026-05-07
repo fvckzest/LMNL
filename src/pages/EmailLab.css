@@ -81,6 +81,7 @@
 .email-lab__nav-button:focus-visible {
   transform: translateY(-1px);
   background: #f5f5f5;
+  border-color: #f5f5f5;
 }
 
 .email-lab__nav-button.is-active {

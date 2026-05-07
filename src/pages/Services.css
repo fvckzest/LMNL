@@ -358,9 +358,9 @@
 .services-products__header,
 .services-products__row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1fr) minmax(0, 1.6fr);
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 1.6fr) auto;
   gap: 18px;
-  align-items: start;
+  align-items: center;
 }
 
 .services-products__header {
@@ -379,6 +379,60 @@
   color: var(--lmnl-color-text);
   font-family: var(--lmnl-font-sans);
   font-weight: 400;
+}
+
+.services-products__action {
+  justify-self: end;
+  width: auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.services-products__action.is-active {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+}
+
+.services-inquiry__selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: var(--lmnl-border-medium);
+  background: color-mix(in srgb, var(--page-color) 4%, var(--terminal-panel-bg));
+}
+
+.services-inquiry__selection-label {
+  color: var(--lmnl-color-text-muted);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(11px * 1.1);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.services-inquiry__selection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.services-inquiry__selection-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: var(--lmnl-line-width) solid var(--lmnl-color-surface);
+  background: var(--page-color);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(11px * 1.1);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-theme] body .services-inquiry__selection-pill {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .services-detail-strip__product-group > span {
@@ -419,7 +473,7 @@
 
   .services-products__header,
   .services-products__row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1fr) auto;
   }
 }
 
@@ -454,5 +508,9 @@
   .services-products__row,
   .services-inquiry__grid {
     grid-template-columns: 1fr;
+  }
+
+  .services-products__action {
+    justify-self: start;
   }
 }

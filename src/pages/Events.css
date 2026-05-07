@@ -82,6 +82,13 @@
   flex-shrink: 0;
 }
 
+.upcoming-rsvp-btn--home-accent:hover:not(:disabled):not(.disabled),
+.upcoming-rsvp-btn--home-accent:focus-visible:not(:disabled):not(.disabled) {
+  background: #004ffa;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+}
+
 .upcoming-rsvp-mobile {
   display: none;
 }
