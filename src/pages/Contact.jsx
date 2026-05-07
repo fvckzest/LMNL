@@ -59,9 +59,9 @@ export default function Contact() {
 
           <div className="contact-info-group">
             <span className="contact-info-label">LOCATION</span>
-            <span className="contact-info-value">LOS ANGELES, CA</span>
+            <span className="contact-info-value">TACOMA, WA</span>
           </div>
-          
+
           <div className="contact-info-group" style={{ marginTop: 'var(--lmnl-space-8)' }}>
             <p style={{ fontSize: '13px', color: 'var(--lmnl-color-text-muted)', lineHeight: '1.6', maxWidth: '320px' }}>
               For service-specific inquiries, please use our <a href="/services" style={{ color: 'inherit' }}>Services</a> page to build a custom bundle.
