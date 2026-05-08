@@ -169,6 +169,7 @@
   gap: 6px;
   padding: 14px;
   border: var(--lmnl-border-subtle);
+  background: var(--terminal-panel-bg);
   color: inherit;
   text-decoration: none;
   font-family: var(--lmnl-font-mono);
@@ -187,23 +188,21 @@
   max-width: 100%;
   padding: 4px 8px;
   color: inherit;
-  transition:
-    background-color var(--lmnl-transition-standard),
-    color var(--lmnl-transition-standard),
-    box-shadow var(--lmnl-transition-standard);
+  transition: color var(--lmnl-transition-standard);
 }
 
 .page-command-strip__item:hover,
 .page-command-strip__item:focus-visible {
-  color: inherit;
+  background: var(--command-accent, var(--page-color));
+  border-color: var(--command-accent, var(--page-color));
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
 }
 
 .page-command-strip__item:hover span,
 .page-command-strip__item:focus-visible span {
-  background: var(--command-accent, var(--page-color));
   color: #fff !important;
-  -webkit-text-fill-color: #fff;
-  box-shadow: inset 0 0 0 1px var(--command-accent, var(--page-color));
+  -webkit-text-fill-color: #fff !important;
 }
 
 .page-preview-grid {

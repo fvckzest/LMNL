@@ -13,7 +13,6 @@ html {
   height: 100%;
   font-family: var(--lmnl-font-sans);
   background-color: var(--lmnl-color-surface);
-  scrollbar-gutter: stable;
   overflow-x: hidden;
 }
 
@@ -29,25 +28,6 @@ td {
 
 :root {
   color: var(--lmnl-color-text);
-}
-
-/* Custom Scrollbar */
-html {
-  scrollbar-color: var(--page-color, #000000) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--page-color, #000000);
-  border-radius: var(--lmnl-radius-sm);
 }
 
 #root {

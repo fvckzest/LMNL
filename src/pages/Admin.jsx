@@ -12,9 +12,11 @@ import ContactTab from '../components/admin/ContactTab';
 import ShopTab from '../components/admin/ShopTab';
 import CommunityTab from '../components/admin/CommunityTab';
 import BlogTab from '../components/admin/BlogTab';
+import { useThemeNeutralColor } from '../components/ThemeProvider';
 import './Admin.css';
 
 export default function Admin() {
+  const neutralColor = useThemeNeutralColor();
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -27,7 +29,7 @@ export default function Admin() {
   const [serviceProducts, setServiceProducts] = useState([]);
   const [serviceProductsLoading, setServiceProductsLoading] = useState(true);
   const [serviceProductsTableMissing, setServiceProductsTableMissing] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); 
+  const [activeTab, setActiveTab] = useState('all');
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
@@ -477,6 +479,7 @@ export default function Admin() {
       <ContentPageShell
         title="ADMIN"
         color={activeColor}
+        introAccentColor={neutralColor}
         introLabel="CONTROL NODE"
         introTitle="Admin"
         introCopy="Operations surface for events, inquiries, inventory, editorial, and community records."
@@ -488,9 +491,6 @@ export default function Admin() {
           style={{ '--admin-shell-accent': activeColor }}
         >
           <div className="admin-shell-panel__header">
-            <div>
-              <p className="page-label">Section routing</p>
-            </div>
             <div className="admin-toolbar">
               <button
                 type="button"
@@ -540,10 +540,122 @@ export default function Admin() {
           </div>
         </section>
 
-      {/* Pinned Sections (Only visible in 'all' tab) */}
-      {activeTab === 'all' && pinnedSections.length > 0 && (
-        <div className="pinned-sections-container">
-          <EventsTab 
+        {/* Pinned Sections (Only visible in 'all' tab) */}
+        {activeTab === 'all' && pinnedSections.length > 0 && (
+          <div className="pinned-sections-container">
+            <EventsTab
+              events={events}
+              tickets={tickets}
+              eventLoading={eventLoading}
+              ticketsLoading={ticketsLoading}
+              tableMissing={tableMissing}
+              squareItems={squareItems}
+              fetchingCatalog={fetchingCatalog}
+              squareError={squareError}
+              fetchEvents={fetchEvents}
+              fetchTickets={fetchTickets}
+              fetchRequests={fetchRequests}
+              showToast={showToast}
+              triggerConfirm={triggerConfirm}
+              fetchSquareCatalog={fetchSquareCatalog}
+              requests={requests}
+              loading={loading}
+              updateStatus={updateStatus}
+              deleteRequest={deleteRequest}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <InquiriesTab
+              serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
+              servicesLoading={servicesLoading}
+              updateServiceStatus={updateServiceStatus}
+              deleteServiceInquiry={deleteServiceInquiry}
+              serviceProducts={serviceProducts}
+              serviceProductsLoading={serviceProductsLoading}
+              serviceProductsTableMissing={serviceProductsTableMissing}
+              fetchServiceProducts={fetchServiceProducts}
+              showToast={showToast}
+              triggerConfirm={triggerConfirm}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <ContactTab
+              contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
+              loading={servicesLoading}
+              updateStatus={updateServiceStatus}
+              deleteInquiry={deleteServiceInquiry}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <ShopTab
+              squareItems={squareItems}
+              fetchingCatalog={fetchingCatalog}
+              squareError={squareError}
+              fetchSquareCatalog={fetchSquareCatalog}
+              preorders={preorders}
+              preordersLoading={preordersLoading}
+              fetchPreorders={fetchPreorders}
+              showToast={showToast}
+              triggerConfirm={triggerConfirm}
+              tickets={tickets}
+              events={events}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <CommunityTab
+              events={events}
+              communityCredits={communityCredits}
+              communityLoading={communityLoading}
+              communityTableMissing={communityTableMissing}
+              fetchCommunityCredits={fetchCommunityCredits}
+              attendanceQueue={attendanceQueue}
+              attendanceQueueLoading={attendanceQueueLoading}
+              fetchAttendanceQueue={fetchAttendanceQueue}
+              requests={requests}
+              requestsLoading={loading}
+              tickets={tickets}
+              ticketsLoading={ticketsLoading}
+              serviceInquiries={serviceInquiries}
+              servicesLoading={servicesLoading}
+              artistInterest={artistInterest}
+              artistInterestLoading={artistInterestLoading}
+              artistInterestTableMissing={artistInterestTableMissing}
+              fetchArtistInterest={fetchArtistInterest}
+              mailingList={mailingList}
+              mailingListLoading={mailingListLoading}
+              mailingListTableMissing={mailingListTableMissing}
+              fetchMailingList={fetchMailingList}
+              updateArtistInterestStatus={updateArtistInterestStatus}
+              deleteArtistInterest={deleteArtistInterest}
+              showToast={showToast}
+              triggerConfirm={triggerConfirm}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <BlogTab
+              blogPosts={blogPosts}
+              blogLoading={blogLoading}
+              blogTableMissing={blogTableMissing}
+              fetchBlogPosts={fetchBlogPosts}
+              showToast={showToast}
+              triggerConfirm={triggerConfirm}
+              pinnedSections={pinnedSections}
+              onTogglePin={togglePin}
+              renderMode="pinned"
+            />
+            <div className="pinned-divider">
+              <span className="pinned-divider__label">End Of Pinned Sections</span>
+            </div>
+          </div>
+        )}
+
+        {(activeTab === 'events' || activeTab === 'all') && (
+          <EventsTab
             events={events}
             tickets={tickets}
             eventLoading={eventLoading}
@@ -564,9 +676,12 @@ export default function Admin() {
             deleteRequest={deleteRequest}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
-          <InquiriesTab 
+        )}
+
+        {(activeTab === 'inquiries' || activeTab === 'all') && (
+          <InquiriesTab
             serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
             servicesLoading={servicesLoading}
             updateServiceStatus={updateServiceStatus}
@@ -579,18 +694,24 @@ export default function Admin() {
             triggerConfirm={triggerConfirm}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
-          <ContactTab 
+        )}
+
+        {(activeTab === 'contact' || activeTab === 'all') && (
+          <ContactTab
             contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
             loading={servicesLoading}
             updateStatus={updateServiceStatus}
             deleteInquiry={deleteServiceInquiry}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
-          <ShopTab 
+        )}
+
+        {(activeTab === 'shop' || activeTab === 'all') && (
+          <ShopTab
             squareItems={squareItems}
             fetchingCatalog={fetchingCatalog}
             squareError={squareError}
@@ -604,9 +725,12 @@ export default function Admin() {
             events={events}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
-          <CommunityTab 
+        )}
+
+        {(activeTab === 'community' || activeTab === 'all') && (
+          <CommunityTab
             events={events}
             communityCredits={communityCredits}
             communityLoading={communityLoading}
@@ -635,9 +759,12 @@ export default function Admin() {
             triggerConfirm={triggerConfirm}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
-          <BlogTab 
+        )}
+
+        {(activeTab === 'blog' || activeTab === 'all') && (
+          <BlogTab
             blogPosts={blogPosts}
             blogLoading={blogLoading}
             blogTableMissing={blogTableMissing}
@@ -646,134 +773,7 @@ export default function Admin() {
             triggerConfirm={triggerConfirm}
             pinnedSections={pinnedSections}
             onTogglePin={togglePin}
-            renderMode="pinned"
-          />
-          <div className="pinned-divider">
-            <span className="pinned-divider__label">End Of Pinned Sections</span>
-          </div>
-        </div>
-      )}
-
-      {(activeTab === 'events' || activeTab === 'all') && (
-        <EventsTab 
-          events={events}
-          tickets={tickets}
-          eventLoading={eventLoading}
-          ticketsLoading={ticketsLoading}
-          tableMissing={tableMissing}
-          squareItems={squareItems}
-          fetchingCatalog={fetchingCatalog}
-          squareError={squareError}
-          fetchEvents={fetchEvents}
-          fetchTickets={fetchTickets}
-          fetchRequests={fetchRequests}
-          showToast={showToast}
-          triggerConfirm={triggerConfirm}
-          fetchSquareCatalog={fetchSquareCatalog}
-          requests={requests}
-          loading={loading}
-          updateStatus={updateStatus}
-          deleteRequest={deleteRequest}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-
-      {(activeTab === 'inquiries' || activeTab === 'all') && (
-        <InquiriesTab 
-          serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
-          servicesLoading={servicesLoading}
-          updateServiceStatus={updateServiceStatus}
-          deleteServiceInquiry={deleteServiceInquiry}
-          serviceProducts={serviceProducts}
-          serviceProductsLoading={serviceProductsLoading}
-          serviceProductsTableMissing={serviceProductsTableMissing}
-          fetchServiceProducts={fetchServiceProducts}
-          showToast={showToast}
-          triggerConfirm={triggerConfirm}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-
-      {(activeTab === 'contact' || activeTab === 'all') && (
-        <ContactTab 
-          contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
-          loading={servicesLoading}
-          updateStatus={updateServiceStatus}
-          deleteInquiry={deleteServiceInquiry}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-
-      {(activeTab === 'shop' || activeTab === 'all') && (
-        <ShopTab 
-          squareItems={squareItems}
-          fetchingCatalog={fetchingCatalog}
-          squareError={squareError}
-          fetchSquareCatalog={fetchSquareCatalog}
-          preorders={preorders}
-          preordersLoading={preordersLoading}
-          fetchPreorders={fetchPreorders}
-          showToast={showToast}
-          triggerConfirm={triggerConfirm}
-          tickets={tickets}
-          events={events}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-
-      {(activeTab === 'community' || activeTab === 'all') && (
-        <CommunityTab 
-          events={events}
-          communityCredits={communityCredits}
-          communityLoading={communityLoading}
-          communityTableMissing={communityTableMissing}
-          fetchCommunityCredits={fetchCommunityCredits}
-          attendanceQueue={attendanceQueue}
-          attendanceQueueLoading={attendanceQueueLoading}
-          fetchAttendanceQueue={fetchAttendanceQueue}
-          requests={requests}
-          requestsLoading={loading}
-          tickets={tickets}
-          ticketsLoading={ticketsLoading}
-          serviceInquiries={serviceInquiries}
-          servicesLoading={servicesLoading}
-          artistInterest={artistInterest}
-          artistInterestLoading={artistInterestLoading}
-          artistInterestTableMissing={artistInterestTableMissing}
-          fetchArtistInterest={fetchArtistInterest}
-          mailingList={mailingList}
-          mailingListLoading={mailingListLoading}
-          mailingListTableMissing={mailingListTableMissing}
-          fetchMailingList={fetchMailingList}
-          updateArtistInterestStatus={updateArtistInterestStatus}
-          deleteArtistInterest={deleteArtistInterest}
-          showToast={showToast}
-          triggerConfirm={triggerConfirm}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-        />
-      )}
-
-      {(activeTab === 'blog' || activeTab === 'all') && (
-        <BlogTab 
-          blogPosts={blogPosts}
-          blogLoading={blogLoading}
-          blogTableMissing={blogTableMissing}
-          fetchBlogPosts={fetchBlogPosts}
-          showToast={showToast}
-          triggerConfirm={triggerConfirm}
-          pinnedSections={pinnedSections}
-          onTogglePin={togglePin}
-          renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
+            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
           />
         )}
       </ContentPageShell>
@@ -790,13 +790,13 @@ export default function Admin() {
         <div className="admin-confirm-notification">
           <p className="confirm-message">{confirmModal.message}</p>
           <div className="modal-actions">
-            <button 
+            <button
               className="admin-btn cancel"
               onClick={() => setConfirmModal(null)}
             >
               CANCEL
             </button>
-            <button 
+            <button
               className="admin-btn approve"
               onClick={async () => {
                 const callback = confirmModal.onConfirm;

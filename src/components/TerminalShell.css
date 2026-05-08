@@ -158,15 +158,11 @@
   border: 1px solid transparent;
   color: var(--lmnl-color-text-muted);
   text-decoration: none;
-  transition: border-color var(--lmnl-transition-standard), color var(--lmnl-transition-standard), background-color var(--lmnl-transition-standard);
+  transition: color var(--lmnl-transition-standard);
 }
 
 .terminal-nav__item:hover,
 .terminal-nav__item.is-active {
-  border-color: var(--terminal-line-soft);
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--nav-color) 10%, transparent), transparent 60%),
-    var(--terminal-hover-bg);
   color: var(--lmnl-color-text);
 }
 
@@ -195,6 +191,26 @@
 .terminal-nav__index {
   font-size: calc(11px * 1.25);
   letter-spacing: 0.14em;
+}
+
+.terminal-nav__label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  transition:
+    background-color var(--lmnl-transition-standard),
+    color var(--lmnl-transition-standard),
+    box-shadow var(--lmnl-transition-standard);
+}
+
+.terminal-nav__item:hover .terminal-nav__label,
+.terminal-nav__item.is-active .terminal-nav__label {
+  background: var(--nav-color);
+  color: var(--nav-highlight-text, #ffffff) !important;
+  -webkit-text-fill-color: var(--nav-highlight-text, #ffffff) !important;
+  box-shadow: inset 0 0 0 1px var(--nav-color);
 }
 
 .terminal-meta {
@@ -374,7 +390,7 @@
   width: calc(var(--terminal-center-padding-inline) + 14px);
   height: clamp(28px, 4vw, 40px);
   flex-shrink: 0;
-  background: var(--page-color);
+  background: var(--terminal-intro-accent, var(--page-color));
 }
 
 .terminal-shell__title {
@@ -619,6 +635,8 @@
 
 .terminal-shell__footer-cta {
   --theme-button-hover-bg: #90e937;
+  --theme-button-hover-border: #90e937;
+  --theme-button-active-border: #90e937;
 }
 
 .terminal-shell__footer-links a:hover {
@@ -899,8 +917,27 @@
 .home-intent-card:focus-visible,
 .home-destination-card:hover,
 .home-destination-card:focus-visible {
-  border-color: color-mix(in srgb, var(--home-accent) 46%, var(--terminal-line-soft));
+  border-color: var(--home-accent);
+  background: var(--home-accent);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
   transform: translateY(-2px);
+}
+
+.home-intent-card:hover :is(.home-intent-card__descriptor, .home-intent-card__title, .home-intent-card__copy, .home-intent-card__action),
+.home-intent-card:focus-visible :is(.home-intent-card__descriptor, .home-intent-card__title, .home-intent-card__copy, .home-intent-card__action),
+.home-destination-card:hover :is(.home-destination-card__topline, .home-destination-card__title, .home-destination-card__copy, .home-destination-card__action),
+.home-destination-card:focus-visible :is(.home-destination-card__topline, .home-destination-card__title, .home-destination-card__copy, .home-destination-card__action) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.home-destination-card:hover .home-destination-card__signals span,
+.home-destination-card:focus-visible .home-destination-card__signals span {
+  border-color: #ffffff;
+  background: transparent;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .home-intent-card__header,

@@ -116,6 +116,7 @@ export function SignalList({ items, className = '' }) {
 export default function ContentPageShell({
   title,
   color,
+  introAccentColor,
   children,
   contentClassName = '',
   introLabel,
@@ -128,6 +129,7 @@ export default function ContentPageShell({
     <TerminalShell
       title={title}
       color={color}
+      introAccentColor={introAccentColor}
       metaNote={null}
       introLabel={introLabel}
       introTitle={introTitle}

@@ -203,6 +203,7 @@ function ActivityFeedCard() {
 export default function TerminalShell({
   title,
   color,
+  introAccentColor,
   introLabel,
   introTitle,
   introCopy,
@@ -272,7 +273,10 @@ export default function TerminalShell({
       data-right-open={rightSidebarOpen}
       data-mobile={isMobileViewport}
       data-overlay-active={isMobileViewport && (leftSidebarOpen || rightSidebarOpen)}
-      style={{ '--page-color': color }}
+      style={{
+        '--page-color': color,
+        '--terminal-intro-accent': introAccentColor || color,
+      }}
     >
       <aside
         id="terminal-shell-left-sidebar"
@@ -289,7 +293,10 @@ export default function TerminalShell({
           <Link
             to="/"
             className={`terminal-nav__item ${location.pathname === '/' || location.pathname === '/home' ? 'is-active' : ''}`}
-            style={{ '--nav-color': neutralColor }}
+            style={{
+              '--nav-color': neutralColor,
+              '--nav-highlight-text': theme === 'dark' ? '#000000' : '#ffffff',
+            }}
           >
             <span className="terminal-nav__main">
               <span className="terminal-nav__dot" aria-hidden="true" />
@@ -304,7 +311,10 @@ export default function TerminalShell({
                 key={item.to}
                 to={item.to}
                 className={`terminal-nav__item ${isActive ? 'is-active' : ''}`}
-                style={{ '--nav-color': item.color }}
+                style={{
+                  '--nav-color': item.color,
+                  '--nav-highlight-text': theme === 'dark' && item.color === '#ffffff' ? '#000000' : '#ffffff',
+                }}
               >
                 <span className="terminal-nav__main">
                   <span className="terminal-nav__dot" aria-hidden="true" />

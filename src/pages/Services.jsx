@@ -217,12 +217,11 @@ export default function Services() {
                   <button
                     type="button"
                     key={service.id}
-                    className={`services-capability-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''}`}
-                    aria-pressed={isActive}
+                    className={`services-capability-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-current' : ''}`}
+                    aria-pressed={isSelected}
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => showService(service.id)}
                   >
-                    <span className="services-capability-card__index">{service.index}</span>
                     <strong>{service.title}</strong>
                   </button>
                 );
