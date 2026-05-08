@@ -199,17 +199,19 @@ import ServiceProductsPanel from './ServiceProductsPanel';
         )}
       </div>
 
-      <div className="section-title-container" style={{ marginTop: '18px' }}>
-        <h2 className="section-title">PRODUCT TABLE OFFERINGS</h2>
+      <div className="admin-subsection">
+        <div className="section-title-container">
+          <h2 className="section-title">PRODUCT TABLE OFFERINGS</h2>
+        </div>
+        <ServiceProductsPanel
+          serviceProducts={serviceProducts}
+          serviceProductsLoading={serviceProductsLoading}
+          serviceProductsTableMissing={serviceProductsTableMissing}
+          fetchServiceProducts={fetchServiceProducts}
+          showToast={showToast}
+          triggerConfirm={triggerConfirm}
+        />
       </div>
-      <ServiceProductsPanel
-        serviceProducts={serviceProducts}
-        serviceProductsLoading={serviceProductsLoading}
-        serviceProductsTableMissing={serviceProductsTableMissing}
-        fetchServiceProducts={fetchServiceProducts}
-        showToast={showToast}
-        triggerConfirm={triggerConfirm}
-      />
      </section>
   ) : null;
 }

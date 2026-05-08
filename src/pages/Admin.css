@@ -23,19 +23,6 @@
   background: var(--terminal-panel-bg);
 }
 
-.admin-shell-panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: var(--lmnl-line-width) solid var(--admin-shell-accent, var(--terminal-line-medium));
-}
-
-.admin-shell-panel__header > * {
-  min-width: 0;
-}
-
 .admin-shell-panel--routed .page-label {
   color: var(--admin-shell-accent, var(--page-color));
 }
@@ -86,6 +73,15 @@
   gap: 8px;
 }
 
+.admin-toolbar {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.admin-toolbar--hero {
+  flex-wrap: nowrap;
+}
+
 .admin-sidebar-actions {
   flex-direction: column;
   align-items: stretch;
@@ -95,7 +91,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 :is(
@@ -113,8 +109,8 @@
   gap: var(--admin-compact-control-gap);
   min-height: var(--admin-compact-control-min-height);
   padding: var(--admin-compact-control-padding-block) var(--admin-compact-control-padding-inline);
-  border: var(--lmnl-border-subtle);
-  background: var(--terminal-panel-bg);
+  border: var(--admin-control-border, var(--lmnl-border-subtle));
+  background: var(--admin-control-bg, var(--terminal-panel-bg));
   font-size: var(--admin-compact-control-font-size);
   line-height: var(--admin-compact-control-line-height);
   letter-spacing: var(--admin-compact-control-tracking);
@@ -145,6 +141,8 @@
 }
 
 .admin-section {
+  display: grid;
+  gap: 12px;
   margin-bottom: 10px;
   --table-accent: var(--active-tab-color, #000);
   --table-surface: var(--terminal-panel-bg);
@@ -154,11 +152,14 @@
   --table-muted: var(--lmnl-color-text-muted);
   --table-header-text: var(--lmnl-color-text);
   --table-divider: var(--terminal-line-medium);
-  --table-button-border: var(--table-accent);
-  --table-button-text: var(--table-accent);
+  --table-button-border: var(--lmnl-color-text);
+  --table-button-text: var(--lmnl-color-text);
+  --table-button-bg: var(--lmnl-color-surface);
   --table-button-hover-bg: var(--table-accent);
   --table-button-hover-text: #fff;
   --table-link-color: var(--table-accent);
+  --admin-control-border: var(--lmnl-border-heavy);
+  --admin-control-bg: var(--lmnl-color-surface);
   --table-cell-padding-y: 7px;
   --table-cell-padding-x: 10px;
   --table-header-size: calc(10px * 1.25);
@@ -174,6 +175,19 @@
 
 .admin-section:last-child {
   margin-bottom: 0;
+}
+
+.admin-section + .admin-section {
+  margin-top: 24px;
+}
+
+.admin-subsection {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-section > .admin-subsection {
+  margin-top: 12px;
 }
 
 :is(.admin-table-shell, .requests-table-container, .events-table-container) {
@@ -537,14 +551,15 @@
 
 .status-pill.active,
 .status-pill.is-active {
-  background: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
-  color: var(--active-tab-color, var(--page-color, #000));
+  background: var(--lmnl-color-surface);
+  color: var(--lmnl-color-text);
   border-color: var(--lmnl-color-text);
 }
 
 .admin-table-shell .status-pill {
   border-color: var(--table-button-border);
   color: var(--table-button-text);
+  background: var(--table-button-bg);
 }
 
 .action-buttons {
@@ -554,24 +569,33 @@
 
 .admin-btn {
   white-space: nowrap;
+  --theme-button-border: var(--lmnl-border-heavy);
+  --theme-button-bg: var(--lmnl-color-surface);
+  --theme-button-color: var(--lmnl-color-text);
+  --theme-button-hover-bg: var(--table-button-hover-bg, var(--active-tab-color, var(--page-color, #000)));
+  --theme-button-hover-border: var(--table-button-hover-bg, var(--active-tab-color, var(--page-color, #000)));
+  --theme-button-hover-color: var(--table-button-hover-text, #fff);
+  --theme-button-active-bg: var(--table-button-hover-bg, var(--active-tab-color, var(--page-color, #000)));
+  --theme-button-active-border: var(--table-button-hover-bg, var(--active-tab-color, var(--page-color, #000)));
+  --theme-button-active-color: var(--table-button-hover-text, #fff);
 }
 
 :is(.admin-btn:hover, .admin-btn.active, .admin-btn[aria-pressed='true']) {
-  background: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
-  color: var(--active-tab-color, var(--page-color, #000));
-  border-color: color-mix(in srgb, var(--active-tab-color, var(--page-color, #000)) 10%, transparent);
+  background: var(--theme-button-hover-bg);
+  color: var(--theme-button-hover-color);
+  border-color: var(--theme-button-hover-border);
 }
 
 .admin-table-shell .admin-btn {
   border-color: var(--table-button-border);
   color: var(--table-button-text);
-  background: var(--terminal-panel-bg);
+  background: var(--table-button-bg);
 }
 
 .admin-table-shell :is(.admin-btn:hover, .admin-btn.active, .admin-btn[aria-pressed='true']) {
-  background: color-mix(in srgb, var(--table-accent) 10%, transparent);
-  color: var(--table-accent);
-  border-color: color-mix(in srgb, var(--table-accent) 10%, transparent);
+  background: var(--theme-button-hover-bg);
+  color: var(--theme-button-hover-color);
+  border-color: var(--theme-button-hover-border);
 }
 
 .admin-table-shell .icon-btn:hover {
@@ -756,9 +780,9 @@
 }
 
 .admin-btn.active {
-  background: var(--page-color);
-  color: white;
-  border-color: var(--lmnl-color-text);
+  background: var(--theme-button-active-bg);
+  color: var(--theme-button-active-color);
+  border-color: var(--theme-button-active-border);
 }
 
 .actions-cell {
@@ -867,11 +891,25 @@
 
 .section-title {
   font-size: calc(12px * 1.25);
-  margin-bottom: 12px;
-  border-bottom: var(--lmnl-line-width) solid var(--active-tab-color, var(--terminal-line-medium));
-  display: inline-block;
-  padding-bottom: 6px;
-  transition: border-color 0.3s ease;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: var(--lmnl-line-width) solid var(--active-tab-color, var(--terminal-line-medium));
+  background: var(--active-tab-color, var(--terminal-line-medium));
+  color: var(--lmnl-color-white);
+  transition:
+    border-color 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease;
+  -webkit-text-fill-color: var(--lmnl-color-white);
+}
+
+.section-title,
+.section-title * {
+  color: var(--lmnl-color-white) !important;
+  -webkit-text-fill-color: var(--lmnl-color-white) !important;
 }
 
 .section-header-flex .section-title {
@@ -881,11 +919,16 @@
 .section-title-container {
   display: flex;
   align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-bottom: 0;
 }
 
 .pin-toggle-btn {
+  order: 2;
   vertical-align: middle;
-  margin-right: 3px;
+  margin-right: 0;
+  margin-left: 0;
 }
 
 .admin-table-shell :is(.event-ticket-toggle, .artist-interest-toggle, .ticket-detail-toggle) {
@@ -917,12 +960,13 @@
 .admin-btn.wide {
   width: 100%;
   padding: 10px;
-  background: black;
-  color: white;
+  background: var(--theme-button-bg);
+  color: var(--theme-button-color);
+  border-color: var(--theme-button-border);
 }
 
 .admin-btn.wide:hover {
-  background: #333;
+  background: var(--theme-button-hover-bg);
 }
 
 @media (max-width: 1000px) {
@@ -979,7 +1023,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 /* Admin Modal Styles */
@@ -1301,11 +1345,6 @@
     --theme-button-padding: 10px 12px;
     white-space: nowrap;
   }
-
-  .admin-tab.active {
-    color: var(--tab-accent, black);
-    background: color-mix(in srgb, var(--tab-accent, black) 10%, transparent);
-  }
 }
 
 .delete-btn:hover {
@@ -1381,12 +1420,13 @@
 }
 
 .admin-confirm-notification .admin-btn.approve {
-  background: black;
-  color: white;
+  background: var(--theme-button-bg);
+  color: var(--theme-button-color);
+  border-color: var(--theme-button-border);
 }
 
 .admin-confirm-notification .admin-btn.approve:hover {
-  background: #333;
+  background: var(--theme-button-hover-bg);
 }
 
 @media (max-width: 768px) {

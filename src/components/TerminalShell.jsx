@@ -26,12 +26,12 @@ function formatSessionUptime(seconds) {
   return `${hours}:${minutes}:${secs}`;
 }
 
-function SidebarToggleIcon({ direction, collapsed }) {
+function SidebarToggleIcon({ direction, collapsed, size = 16 }) {
   if (direction === 'left' && collapsed) {
     return (
       <svg
-        width="16"
-        height="16"
+        width="32"
+        height="32"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -54,8 +54,8 @@ function SidebarToggleIcon({ direction, collapsed }) {
 
   return (
     <svg
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -207,6 +207,7 @@ export default function TerminalShell({
   introLabel,
   introTitle,
   introCopy,
+  introActions,
   metaNote = 'A creative platform for events, artists, artifacts, and cultural systems.',
   rightSidebar,
   rightSidebarFooter,
@@ -266,6 +267,12 @@ export default function TerminalShell({
     [neutralColor],
   );
 
+  const closeMobilePanels = () => {
+    if (!isMobileViewport) return;
+    setLeftSidebarOpen(false);
+    setRightSidebarOpen(false);
+  };
+
   return (
     <div
       className="terminal-shell theme-app-shell"
@@ -278,12 +285,34 @@ export default function TerminalShell({
         '--terminal-intro-accent': introAccentColor || color,
       }}
     >
+      {isMobileViewport && (leftSidebarOpen || rightSidebarOpen) ? (
+        <button
+          type="button"
+          className="terminal-shell__mobile-overlay"
+          aria-label="Close open panel"
+          onClick={closeMobilePanels}
+        />
+      ) : null}
       <aside
         id="terminal-shell-left-sidebar"
         className="terminal-shell__left theme-app-shell__sidebar theme-app-shell__sidebar--nav"
         aria-hidden={!leftSidebarOpen}
       >
-
+        {isMobileViewport && leftSidebarOpen ? (
+          <div className="terminal-shell__sidebar-toggle-row terminal-shell__sidebar-toggle-row--left">
+            <button
+              type="button"
+              className="terminal-shell__sidebar-toggle terminal-shell__sidebar-toggle--in-panel"
+              aria-expanded={true}
+              aria-controls="terminal-shell-left-sidebar"
+              aria-label="Close navigation sidebar"
+              title="Close navigation sidebar"
+              onClick={() => setLeftSidebarOpen(false)}
+            >
+              <SidebarToggleIcon direction="left" collapsed size={32} />
+            </button>
+          </div>
+        ) : null}
 
         <Link to="/" className="terminal-brand">
           <LmnlLogoBlack className="terminal-brand__logo" />
@@ -340,30 +369,19 @@ export default function TerminalShell({
       <main className="terminal-shell__center theme-app-shell__main">
         <header className="terminal-shell__topbar theme-app-shell__bar">
           <div className="terminal-shell__topbar-left">
-            {!leftSidebarOpen ? (
+            {!isMobileViewport || !leftSidebarOpen ? (
               <button
                 type="button"
                 className="terminal-shell__sidebar-toggle"
                 aria-expanded={false}
                 aria-controls="terminal-shell-left-sidebar"
                 aria-label="Open navigation sidebar"
-                title="Open navigation sidebar"
-                onClick={() => setLeftSidebarOpen(true)}
-              >
-                <SidebarToggleIcon direction="left" collapsed />
-              </button>
-            ) : <button
-              type="button"
-              className="terminal-shell__sidebar-toggle"
-              aria-expanded={false}
-              aria-controls="terminal-shell-left-sidebar"
-              aria-label="Open navigation sidebar"
               title="Open navigation sidebar"
-              onClick={() => setLeftSidebarOpen(false)}
+              onClick={() => setLeftSidebarOpen((value) => !value)}
             >
-              <SidebarToggleIcon direction="left" collapsed />
-            </button>
-            }
+                <SidebarToggleIcon direction="left" collapsed size={32} />
+              </button>
+            ) : null}
             {!leftSidebarOpen ? (
               <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>
             ) : <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>}
@@ -386,29 +404,19 @@ export default function TerminalShell({
                 <ProfileIcon />
               </Link>
             ) : null}
-            {!rightSidebarOpen ? (
+            {!isMobileViewport || !rightSidebarOpen ? (
               <button
                 type="button"
                 className="terminal-shell__sidebar-toggle"
-                aria-expanded={false}
+                aria-expanded={rightSidebarOpen}
                 aria-controls="terminal-shell-right-sidebar"
-                aria-label="Open information sidebar"
-                title="Open information sidebar"
-                onClick={() => setRightSidebarOpen(true)}
-              >
-                <SidebarToggleIcon direction="right" collapsed={true} />
-              </button>
-            ) : <button
-              type="button"
-              className="terminal-shell__sidebar-toggle"
-              aria-expanded={true}
-              aria-controls="terminal-shell-right-sidebar"
-              aria-label="Close information sidebar"
-              title="Close information sidebar"
-              onClick={() => setRightSidebarOpen(false)}
+              aria-label={rightSidebarOpen ? 'Close information sidebar' : 'Open information sidebar'}
+              title={rightSidebarOpen ? 'Close information sidebar' : 'Open information sidebar'}
+              onClick={() => setRightSidebarOpen((value) => !value)}
             >
-              <SidebarToggleIcon direction="right" collapsed={false} />
-            </button>}
+                <SidebarToggleIcon direction="right" collapsed={!rightSidebarOpen} size={32} />
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -417,6 +425,7 @@ export default function TerminalShell({
           <div className="terminal-shell__title-row">
             <span className="terminal-shell__title-dot" aria-hidden="true" />
             <h1 className="terminal-shell__title">{introTitle || title}</h1>
+            {introActions ? <div className="terminal-shell__intro-actions">{introActions}</div> : null}
           </div>
           {introCopy ? <p className="terminal-shell__copy">{introCopy}</p> : null}
         </section>
@@ -440,6 +449,21 @@ export default function TerminalShell({
         className="terminal-shell__right theme-app-shell__sidebar theme-app-shell__sidebar--info"
         aria-hidden={!rightSidebarOpen}
       >
+        {isMobileViewport && rightSidebarOpen ? (
+          <div className="terminal-shell__sidebar-toggle-row terminal-shell__sidebar-toggle-row--right">
+            <button
+              type="button"
+              className="terminal-shell__sidebar-toggle terminal-shell__sidebar-toggle--in-panel"
+              aria-expanded={true}
+              aria-controls="terminal-shell-right-sidebar"
+              aria-label="Close information sidebar"
+              title="Close information sidebar"
+              onClick={() => setRightSidebarOpen(false)}
+            >
+              <SidebarToggleIcon direction="right" collapsed={false} size={32} />
+            </button>
+          </div>
+        ) : null}
 
         {rightSidebar || <ActivityFeedCard />}
         {rightSidebarFooter ? <div className="terminal-shell__right-footer">{rightSidebarFooter}</div> : null}

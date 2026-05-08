@@ -444,6 +444,42 @@ export default function Admin() {
     },
   ]), [contactOnlyInquiries, requests, serviceOnlyInquiries]);
 
+  const introActions = (
+    <div className="admin-toolbar admin-toolbar--hero">
+      <button
+        type="button"
+        className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+        onClick={refreshAllData}
+        disabled={isRefreshing}
+        title="Refresh all data"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={isRefreshing ? 'refresh-spin' : ''}
+        >
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+        <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
+      </button>
+      <button
+        type="button"
+        className="admin-btn logout-btn"
+        onClick={handleSignOut}
+      >
+        LOG OUT
+      </button>
+    </div>
+  );
+
   const rightSidebar = (
     <>
       <SystemPanel title="NODE STATUS">
@@ -451,25 +487,6 @@ export default function Admin() {
       </SystemPanel>
       <SystemPanel title="QUEUE OVERVIEW">
         <ModuleStrip items={sidebarQueues} />
-      </SystemPanel>
-      <SystemPanel title="SESSION ACTIONS">
-        <div className="admin-sidebar-actions">
-          <button
-            type="button"
-            className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-            onClick={refreshAllData}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? 'REFRESHING...' : 'REFRESH DATA'}
-          </button>
-          <button
-            type="button"
-            className="admin-btn logout-btn"
-            onClick={handleSignOut}
-          >
-            LOG OUT
-          </button>
-        </div>
       </SystemPanel>
     </>
   );
@@ -483,6 +500,7 @@ export default function Admin() {
         introLabel="CONTROL NODE"
         introTitle="Admin"
         introCopy="Operations surface for events, inquiries, inventory, editorial, and community records."
+        introActions={introActions}
         rightSidebar={rightSidebar}
         contentClassName="admin-content page-stack"
       >
@@ -490,41 +508,6 @@ export default function Admin() {
           className="admin-shell-panel page-panel admin-shell-panel--routed"
           style={{ '--admin-shell-accent': activeColor }}
         >
-          <div className="admin-shell-panel__header">
-            <div className="admin-toolbar">
-              <button
-                type="button"
-                className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-                onClick={refreshAllData}
-                disabled={isRefreshing}
-                title="Refresh all data"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={isRefreshing ? 'refresh-spin' : ''}
-                >
-                  <path d="M23 4v6h-6" />
-                  <path d="M1 20v-6h6" />
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                </svg>
-                <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
-              </button>
-              <button
-                type="button"
-                className="admin-btn logout-btn"
-                onClick={handleSignOut}
-              >
-                LOG OUT
-              </button>
-            </div>
-          </div>
           <div className="admin-tabs">
             {tabOptions.map((tab) => (
               <button

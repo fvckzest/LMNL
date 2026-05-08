@@ -1,11 +1,18 @@
 export default function CommunityMarqueeRow({ items, rowClassName, rowKey }) {
+  const repeatedItems = [...items, ...items];
+
   return (
     <div className={`marquee-row ${rowClassName}`}>
       <div className="marquee-track">
-        {items.map((item, idx) => (
+        {repeatedItems.map((item, idx) => (
           <div key={`${rowKey}-${idx}`} className="marquee-item">
             {item.link ? (
-              <a href={item.link} target="_blank" rel="noreferrer" className="marquee-name-link">
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noreferrer"
+                className="marquee-name-link marquee-name-link--linked"
+              >
                 {item.name}
               </a>
             ) : (

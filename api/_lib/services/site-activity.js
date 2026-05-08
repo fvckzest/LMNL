@@ -129,9 +129,9 @@ function clearSiteActivityCachePromise(limit) {
   });
 }
 
-async function loadSiteActivityHistory(limit = 6) {
+async function loadSiteActivityHistory(limit = 6, deps = {}) {
   const safeLimit = Math.max(Number(limit) || 6, 1);
-  const supabase = getAdminSupabase();
+  const supabase = deps.supabase || getAdminSupabase();
 
   const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.all([
     supabase
@@ -148,6 +148,7 @@ async function loadSiteActivityHistory(limit = 6) {
     supabase
       .from('merch_preorders')
       .select('id,item_name,category,created_at,status')
+      .eq('status', 'open')
       .order('created_at', { ascending: false })
       .limit(Math.max(safeLimit, 6)),
     supabase
@@ -231,7 +232,7 @@ async function loadSiteActivityHistory(limit = 6) {
     .slice(0, safeLimit);
 }
 
-export async function getSiteActivityHistory(limit = 6) {
+export async function getSiteActivityHistory(limit = 6, deps = {}) {
   const cached = readSiteActivityCache(limit);
 
   if (cached?.data && cached.isFresh) {
@@ -242,7 +243,7 @@ export async function getSiteActivityHistory(limit = 6) {
     return cached.promise;
   }
 
-  const request = loadSiteActivityHistory(limit)
+  const request = loadSiteActivityHistory(limit, deps)
     .then((data) => {
       writeSiteActivityCache(limit, data);
       return data;

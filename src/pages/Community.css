@@ -44,7 +44,6 @@
 .community-stat-card-label,
 .community-stat-card-number,
 .marquee-name,
-.marquee-name-link,
 .marquee-event {
   color: inherit;
 }
@@ -106,15 +105,19 @@
 }
 
 .marquee-row-1 .marquee-track {
-  animation: scroll-left 180s linear infinite;
+  animation: scroll-left 351s linear infinite;
 }
 
 .marquee-row-2 .marquee-track {
-  animation: scroll-right 200s linear infinite;
+  animation: scroll-right 390s linear infinite;
 }
 
 .marquee-row-3 .marquee-track {
-  animation: scroll-left 220s linear infinite;
+  animation: scroll-left 429s linear infinite;
+}
+
+.marquee-row-4 .marquee-track {
+  animation: scroll-right 468s linear infinite;
 }
 
 .marquee-item {
@@ -127,13 +130,34 @@
   text-decoration: none;
 }
 
-.marquee-name-link:hover {
+.marquee-item > .marquee-name-link--linked,
+.marquee-item > .marquee-name-link--linked:link,
+.marquee-item > .marquee-name-link--linked:visited,
+.marquee-item > .marquee-name-link--linked:hover,
+.marquee-item > .marquee-name-link--linked:active,
+.marquee-item > .marquee-name-link--linked:focus-visible {
+  text-decoration: none;
+  color: var(--page-color) !important;
+  -webkit-text-fill-color: var(--page-color) !important;
+}
+
+.marquee-item > .marquee-name-link--linked:hover {
   color: var(--page-color);
+  -webkit-text-fill-color: var(--page-color);
+}
+
+.marquee-name,
+.marquee-name-link {
+  font-size: 1.28em;
 }
 
 .marquee-event {
-  padding: 4px 8px;
-  border: var(--lmnl-border-subtle);
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  color: var(--lmnl-color-text-subtle);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  opacity: 0.8;
+  font-size: 0.92em;
 }
 
 .marquee-divider {

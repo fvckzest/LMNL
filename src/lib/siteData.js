@@ -101,7 +101,7 @@ export function getEventLink(event) {
 
 export async function fetchTimelineEvents() {
   const events = await safeSupabaseQuery(
-    () => supabase.from('events').select('*').order('event_date', { ascending: true }),
+    () => supabase.from('events').select('*').order('event_date', { ascending: false }),
     []
   );
 
@@ -353,6 +353,7 @@ async function loadSiteActivityHistory(limit = 6) {
       () => supabase
         .from('merch_preorders')
         .select('id,item_name,category,created_at,status')
+        .eq('status', 'open')
         .order('created_at', { ascending: false })
         .limit(Math.max(limit, 6)),
       []

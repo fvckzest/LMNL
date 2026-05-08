@@ -87,7 +87,12 @@ export default function Events() {
               <div className="upcoming-header-row">
                 <div className="upcoming-header-copy">
                   <div className="upcoming-tag">UPCOMING EVENT</div>
-                  <h2 className="upcoming-title">{featuredEvent.title}</h2>
+                  <div className="upcoming-title-row">
+                    <h2 className="upcoming-title">{featuredEvent.title}</h2>
+                    <div className="upcoming-rsvp-mobile">
+                      {featuredEventAction}
+                    </div>
+                  </div>
                   <div className="upcoming-meta">
                     <span className="upcoming-date">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
@@ -138,9 +143,6 @@ export default function Events() {
                     </>
                   )}
                 </span>
-              </div>
-              <div className="upcoming-rsvp-mobile">
-                {featuredEventAction}
               </div>
             </div>
           </div>

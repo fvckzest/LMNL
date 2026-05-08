@@ -10,10 +10,17 @@ import './Community.css';
 function shuffleArray(arr) {
   const newArr = [...arr];
   for (let i = newArr.length - 1; i > 0; i--) {
-    const j = (i * 7 + 3) % (i + 1);
+    const j = Math.floor(Math.random() * (i + 1));
     [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
   }
   return newArr;
+}
+
+function rotateArray(arr, offset) {
+  if (arr.length === 0) return [];
+  const normalizedOffset = ((offset % arr.length) + arr.length) % arr.length;
+  if (normalizedOffset === 0) return [...arr];
+  return [...arr.slice(normalizedOffset), ...arr.slice(0, normalizedOffset)];
 }
 
 export default function Community() {
@@ -44,7 +51,7 @@ export default function Community() {
     fetchData();
   }, []);
 
-  const { marqueeList1, marqueeList2, marqueeList3, totalUnique } = useMemo(() => {
+  const { marqueeLists, totalUnique } = useMemo(() => {
     const pMap = {};
     const aMap = {};
 
@@ -114,10 +121,17 @@ export default function Community() {
       return combined;
     };
 
+    const marqueeLists = Array.from({ length: 4 }, (_, index) => {
+      const shuffledMembers = shuffleArray(allMembers);
+      const randomizedStart = shuffledMembers.length > 1
+        ? Math.floor(Math.random() * shuffledMembers.length)
+        : 0;
+
+      return getMarqueeList(rotateArray(shuffledMembers, randomizedStart + index));
+    });
+
     return {
-      marqueeList1: getMarqueeList(shuffleArray(allMembers)),
-      marqueeList2: getMarqueeList(shuffleArray(allMembers)),
-      marqueeList3: getMarqueeList(shuffleArray(allMembers)),
+      marqueeLists,
       totalUnique: uniqueCount
     };
   }, [credits, events]);
@@ -142,7 +156,7 @@ export default function Community() {
       title="COMMUNITY"
       color="#ff5bb8"
       introTitle="COMMUNITY"
-      introCopy="CREATORS, EVENT HISTORY, AND COMMUNITY REACH"
+      introCopy="a rising tide raises all ships"
       contentClassName="community-layout page-stack"
     >
       <div className="community-layout">
@@ -165,18 +179,26 @@ export default function Community() {
           <div className="community-content-column">
             <div className="community-test-copy page-detail-pane">
               <p className="community-copy-primary">
-                LMNL brings together artists, performers, and curators to challenge the boundaries of modern artistic installations. Each event marks another integration point within our decentralized creative network.
+                LMNL makes space for artists, brands, and cultural movements to connect, create, and share. To us, coming together means being able to build something bigger than ourselves.
+              </p>
+              <p className="community-copy-primary">
+                Whether you're an artist looking for collaboration, a brand seeking a platform, or someone who makes culture move, you've found the right place.
               </p>
               <p className="community-copy-secondary">
-                Scroll through the expanding index below to explore the network nodes mapping the LMNL collective ecosystem.
+                Connect with us, join the conversation, and become part of the LMNL community.
               </p>
             </div>
 
-            {!loading && marqueeList1.length > 0 && (
+            {!loading && marqueeLists[0]?.length > 0 && (
               <div className="marquees-wrapper">
-                <CommunityMarqueeRow items={marqueeList1} rowClassName="marquee-row-1" rowKey="m1" />
-                <CommunityMarqueeRow items={marqueeList2} rowClassName="marquee-row-2" rowKey="m2" />
-                <CommunityMarqueeRow items={marqueeList3} rowClassName="marquee-row-3" rowKey="m3" />
+                {marqueeLists.map((items, index) => (
+                  <CommunityMarqueeRow
+                    key={`marquee-row-${index + 1}`}
+                    items={items}
+                    rowClassName={`marquee-row-${index + 1}`}
+                    rowKey={`m${index + 1}`}
+                  />
+                ))}
               </div>
             )}
 
@@ -201,7 +223,7 @@ export default function Community() {
         </div>
 
         {loading && <PageStatus>RETRIEVING DIRECTORY...</PageStatus>}
-        {!loading && marqueeList1.length === 0 && <PageEmptyState>No community directory loaded yet.</PageEmptyState>}
+        {!loading && marqueeLists[0]?.length === 0 && <PageEmptyState>No community directory loaded yet.</PageEmptyState>}
       </div>
     </ContentPageShell>
   );

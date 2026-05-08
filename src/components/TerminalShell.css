@@ -108,8 +108,8 @@
 .terminal-shell__sidebar-toggle-row {
   position: absolute;
   top: 24px;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -289,8 +289,8 @@
 .terminal-shell__sidebar-toggle {
   border: 0;
   background: transparent;
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -301,6 +301,10 @@
 
 .terminal-shell__sidebar-toggle svg {
   display: block;
+}
+
+.terminal-shell__sidebar-toggle--in-panel {
+  color: var(--lmnl-color-text);
 }
 
 .terminal-shell__theme-toggle {
@@ -402,6 +406,15 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-weight: 500;
+}
+
+.terminal-shell__intro-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-left: 24px;
 }
 
 .terminal-shell__copy {
@@ -1128,12 +1141,14 @@
     border-left: var(--lmnl-border-medium);
   }
 
-  .terminal-shell[data-overlay-active='true']::before {
-    content: '';
+  .terminal-shell__mobile-overlay {
     position: fixed;
     inset: 0;
+    border: 0;
+    padding: 0;
     background: rgba(0, 0, 0, 0.24);
     z-index: 10;
+    cursor: pointer;
   }
 
   .terminal-shell__topbar {
@@ -1187,13 +1202,13 @@
   }
 
   .terminal-shell__sidebar-toggle-row--right {
-    left: auto;
-    right: 16px;
+    left: 16px;
+    right: auto;
   }
 
   .terminal-shell__sidebar-toggle-row--left {
-    left: 16px;
-    right: auto;
+    left: auto;
+    right: 16px;
   }
 
   .terminal-nav {
@@ -1214,6 +1229,25 @@
   .home-secondary-grid,
   .home-intent-grid {
     grid-template-columns: 1fr;
+  }
+
+  .terminal-shell__title-row {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .terminal-shell__title-dot {
+    top: 0;
+  }
+
+  .terminal-shell__intro-actions {
+    width: auto;
+    margin-left: auto;
+    padding-left: 0;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 
   .terminal-shell__copy {

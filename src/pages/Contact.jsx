@@ -72,7 +72,7 @@ export default function Contact() {
       title="CONTACT"
       color="#90e937"
       introTitle="CONTACT"
-      introCopy="GENERAL INQUIRIES, SOCIAL LINKS, AND DIRECT MESSAGE ROUTING"
+      introCopy="SIGNAL THE SYSTEM"
       rightSidebar={<ContactSidebar status={status} />}
       contentClassName="page-stack"
     >
@@ -85,14 +85,14 @@ export default function Contact() {
 
           <div className="page-panel">
             <p className="page-block-label">Social Channels</p>
-            <SocialLinks iconSize={24} />
+            <SocialLinks iconSize={22} />
           </div>
         </section>
 
         <section className="contact-form-section page-form-shell theme-panel-stack">
           <div className="contact-form-section__header theme-panel-header">
             <p className="page-block-label">Signal Intake</p>
-            <p className="contact-form-section__copy theme-body-copy">Send a message into the system and route it to the right collaboration path.</p>
+            <p className="contact-form-section__copy theme-body-copy">Send a message into the system and we will get back to you.</p>
           </div>
           {status === 'success' ? (
             <div className="inquiry-success theme-message-stack">
@@ -108,7 +108,7 @@ export default function Contact() {
                   type="text"
                   id="contact-name"
                   className="theme-input"
-                  placeholder="YOUR NAME"
+                  placeholder="Name"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -122,7 +122,7 @@ export default function Contact() {
                   type="email"
                   id="contact-email"
                   className="theme-input"
-                  placeholder="EMAIL@EXAMPLE.COM"
+                  placeholder="example@email.com"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -136,7 +136,7 @@ export default function Contact() {
                   type="text"
                   id="contact-subject"
                   className="theme-input"
-                  placeholder="RE: ..."
+                  placeholder="RE:"
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -149,7 +149,7 @@ export default function Contact() {
                 <textarea
                   id="contact-message"
                   className="theme-input"
-                  placeholder="YOUR MESSAGE..."
+                  placeholder="Your message..."
                   rows="5"
                   required
                   value={formData.message}

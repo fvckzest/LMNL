@@ -542,183 +542,183 @@ export default function CommunityTab({
     return a.eventName.localeCompare(b.eventName);
   });
 
-  return (
-     <>
-      {shouldRender(sectionIds.attendance) && (
-      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
-        <div className="section-header-flex">
-          <div className="section-title-container">
-            <button
-              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.attendance) ? 'pinned' : ''}`}
-              onClick={() => onTogglePin(sectionIds.attendance)}
-              title={pinnedSections.includes(sectionIds.attendance) ? 'Unpin from top' : 'Pin to top'}
-            >
-              <PinIcon filled={pinnedSections.includes(sectionIds.attendance)} />
-            </button>
-            <h2 className="section-title">ATTENDANCE RESOLUTION QUEUE</h2>
-          </div>
-          <div className="action-buttons">
-            <button className="admin-btn" onClick={fetchAttendanceQueue} disabled={attendanceQueueLoading}>
-              {attendanceQueueLoading ? 'LOADING...' : 'REFRESH'}
-            </button>
-          </div>
+  const attendanceSection = shouldRender(sectionIds.attendance) && (
+    <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+      <div className="section-header-flex">
+        <div className="section-title-container">
+          <button
+            className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.attendance) ? 'pinned' : ''}`}
+            onClick={() => onTogglePin(sectionIds.attendance)}
+            title={pinnedSections.includes(sectionIds.attendance) ? 'Unpin from top' : 'Pin to top'}
+          >
+            <PinIcon filled={pinnedSections.includes(sectionIds.attendance)} />
+          </button>
+          <h2 className="section-title">ATTENDANCE RESOLUTION QUEUE</h2>
         </div>
-
-        <div className="admin-stats">
-          <div className="stat-item">
-            <span className="stat-label">UNRESOLVED</span>
-            <span className="stat-value">{attendanceQueue.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">EXACT MATCH READY</span>
-            <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount === 1).length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">NEEDS REVIEW</span>
-            <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount !== 1).length}</span>
-          </div>
+        <div className="action-buttons">
+          <button className="admin-btn" onClick={fetchAttendanceQueue} disabled={attendanceQueueLoading}>
+            {attendanceQueueLoading ? 'LOADING...' : 'REFRESH'}
+          </button>
         </div>
+      </div>
 
-        <div className="events-table-container admin-table-shell">
-          {attendanceQueueLoading ? (
-            <p className="loading-text">RETRIEVING ATTENDANCE PROOF...</p>
-          ) : attendanceQueue.length === 0 ? (
-            <p className="loading-text">NO UNRESOLVED ATTENDANCE PROOF IS WAITING RIGHT NOW.</p>
-          ) : (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>EVENT</th>
-                  <th>CONTACT</th>
-                  <th>PROOF</th>
-                  <th>CANDIDATES</th>
-                  <th>ATTACH</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceQueue.map((source) => {
-                  const isExpanded = Boolean(expandedAttendance[source.id]);
-                  const selectedTier = attendanceTierById[source.id] || source.participationTier || 'attendee';
+      <div className="admin-stats">
+        <div className="stat-item">
+          <span className="stat-label">UNRESOLVED</span>
+          <span className="stat-value">{attendanceQueue.length}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">EXACT MATCH READY</span>
+          <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount === 1).length}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">NEEDS REVIEW</span>
+          <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount !== 1).length}</span>
+        </div>
+      </div>
 
-                  return (
-                    <Fragment key={source.id}>
-                      <tr className={isExpanded ? 'contact-row-expanded' : ''}>
-                        <td className="ticket-detail-toggle-cell">
-                          <button
-                            type="button"
-                            className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
-                            onClick={() => toggleAttendanceExpansion(source.id)}
-                            aria-expanded={isExpanded}
-                            title={isExpanded ? 'Hide details' : 'Show details'}
-                            style={{ '--004ffa': '#ff5bb8' }}
-                          >
-                            <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
-                          </button>
-                        </td>
-                        <td>
-                          <strong>{source.eventName}</strong>
-                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                            {formatDate(source.eventDate)}{source.locationName ? ` • ${source.locationName}` : ''}
-                          </div>
-                        </td>
-                        <td>
-                          <div>{source.contactName || 'Unnamed guest'}</div>
-                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                            {source.contactEmail || 'No contact email'}
-                          </div>
-                        </td>
-                        <td>
-                          <div>{String(source.verificationMethod || '').replace(/_/g, ' ')}</div>
-                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                            {String(source.sourceType || '').replace(/_/g, ' ')}{source.sourceId ? ` • ${source.sourceId}` : ''}
-                          </div>
-                        </td>
-                        <td>
-                          {source.candidateCount === 0
-                            ? 'No exact LMNL match'
-                            : source.candidateCount === 1
-                              ? '1 exact candidate'
-                              : `${source.candidateCount} exact candidates`}
-                        </td>
-                        <td>
-                          <select
-                            value={selectedTier}
-                            onChange={(event) => setAttendanceTierById((prev) => ({
-                              ...prev,
-                              [source.id]: event.target.value
-                            }))}
-                          >
-                            <option value="attendee">ATTENDEE</option>
-                            <option value="performer">PERFORMER</option>
-                          </select>
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr className="contact-metadata-row">
-                          <td></td>
-                          <td colSpan="5">
-                            <div className="contact-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #ff5bb8' }}>
-                              <div style={{ display: 'grid', gap: '14px', paddingLeft: '15px' }}>
-                                <div className="contact-metadata-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                                  <div className="contact-metadata-item">
-                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>VERIFIED</span>
-                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{formatDate(source.verifiedAt)}</span>
-                                  </div>
-                                  <div className="contact-metadata-item">
-                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>STATUS</span>
-                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{source.verificationStatus}</span>
-                                  </div>
-                                  <div className="contact-metadata-item">
-                                    <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>CURRENT TIER</span>
-                                    <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{selectedTier}</span>
-                                  </div>
+      <div className="events-table-container admin-table-shell">
+        {attendanceQueueLoading ? (
+          <p className="loading-text">RETRIEVING ATTENDANCE PROOF...</p>
+        ) : attendanceQueue.length === 0 ? (
+          <p className="loading-text">NO UNRESOLVED ATTENDANCE PROOF IS WAITING RIGHT NOW.</p>
+        ) : (
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>EVENT</th>
+                <th>CONTACT</th>
+                <th>PROOF</th>
+                <th>CANDIDATES</th>
+                <th>ATTACH</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendanceQueue.map((source) => {
+                const isExpanded = Boolean(expandedAttendance[source.id]);
+                const selectedTier = attendanceTierById[source.id] || source.participationTier || 'attendee';
+
+                return (
+                  <Fragment key={source.id}>
+                    <tr className={isExpanded ? 'contact-row-expanded' : ''}>
+                      <td className="ticket-detail-toggle-cell">
+                        <button
+                          type="button"
+                          className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => toggleAttendanceExpansion(source.id)}
+                          aria-expanded={isExpanded}
+                          title={isExpanded ? 'Hide details' : 'Show details'}
+                          style={{ '--004ffa': '#ff5bb8' }}
+                        >
+                          <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
+                        </button>
+                      </td>
+                      <td>
+                        <strong>{source.eventName}</strong>
+                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                          {formatDate(source.eventDate)}{source.locationName ? ` • ${source.locationName}` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        <div>{source.contactName || 'Unnamed guest'}</div>
+                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                          {source.contactEmail || 'No contact email'}
+                        </div>
+                      </td>
+                      <td>
+                        <div>{String(source.verificationMethod || '').replace(/_/g, ' ')}</div>
+                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                          {String(source.sourceType || '').replace(/_/g, ' ')}{source.sourceId ? ` • ${source.sourceId}` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        {source.candidateCount === 0
+                          ? 'No exact LMNL match'
+                          : source.candidateCount === 1
+                            ? '1 exact candidate'
+                            : `${source.candidateCount} exact candidates`}
+                      </td>
+                      <td>
+                        <select
+                          value={selectedTier}
+                          onChange={(event) => setAttendanceTierById((prev) => ({
+                            ...prev,
+                            [source.id]: event.target.value
+                          }))}
+                        >
+                          <option value="attendee">ATTENDEE</option>
+                          <option value="performer">PERFORMER</option>
+                        </select>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="contact-metadata-row">
+                        <td></td>
+                        <td colSpan="5">
+                          <div className="contact-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #ff5bb8' }}>
+                            <div style={{ display: 'grid', gap: '14px', paddingLeft: '15px' }}>
+                              <div className="contact-metadata-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>VERIFIED</span>
+                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{formatDate(source.verifiedAt)}</span>
                                 </div>
-
-                                <div>
-                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '8px' }}>LMNL CANDIDATES</span>
-                                  {source.candidates.length > 0 ? (
-                                    <div style={{ display: 'grid', gap: '8px' }}>
-                                      {source.candidates.map((candidate) => (
-                                        <div key={`${source.id}-${candidate.userId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 12px', border: '1px solid rgba(255, 91, 184, 0.24)' }}>
-                                          <div>
-                                            <div style={{ fontWeight: 700 }}>{candidate.displayName}</div>
-                                            <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                                              {candidate.profileSlug ? `@${candidate.profileSlug}` : 'Profile slug pending'}
-                                            </div>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            className="admin-btn approve"
-                                            disabled={Boolean(attachingSourceId)}
-                                            onClick={() => handleAttachAttendance(source, candidate.userId)}
-                                          >
-                                            {attachingSourceId === source.id ? 'ATTACHING...' : 'ATTACH'}
-                                          </button>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="loading-text" style={{ textAlign: 'left', padding: 0 }}>
-                                      No exact LMNL profile match was found for this email yet. This record still needs manual follow-up or a later member sign-in.
-                                    </p>
-                                  )}
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>STATUS</span>
+                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{source.verificationStatus}</span>
+                                </div>
+                                <div className="contact-metadata-item">
+                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>CURRENT TIER</span>
+                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{selectedTier}</span>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
-      )}
 
+                              <div>
+                                <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '8px' }}>LMNL CANDIDATES</span>
+                                {source.candidates.length > 0 ? (
+                                  <div style={{ display: 'grid', gap: '8px' }}>
+                                    {source.candidates.map((candidate) => (
+                                      <div key={`${source.id}-${candidate.userId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 12px', border: '1px solid rgba(255, 91, 184, 0.24)' }}>
+                                        <div>
+                                          <div style={{ fontWeight: 700 }}>{candidate.displayName}</div>
+                                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+                                            {candidate.profileSlug ? `@${candidate.profileSlug}` : 'Profile slug pending'}
+                                          </div>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          className="admin-btn approve"
+                                          disabled={Boolean(attachingSourceId)}
+                                          onClick={() => handleAttachAttendance(source, candidate.userId)}
+                                        >
+                                          {attachingSourceId === source.id ? 'ATTACHING...' : 'ATTACH'}
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="loading-text" style={{ textAlign: 'left', padding: 0 }}>
+                                    No exact LMNL profile match was found for this email yet. This record still needs manual follow-up or a later member sign-in.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
+  );
+
+  return (
+     <>
       {shouldRender(sectionIds.artist) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
@@ -1286,6 +1286,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
         </div>
       </section>
       )}
+
+      {attendanceSection}
 
       {/* Mailing List Modal */}
       {isMailingListModalOpen && (

@@ -122,6 +122,7 @@ export default function ContentPageShell({
   introLabel,
   introTitle,
   introCopy,
+  introActions,
 }) {
   const contentClasses = ['content-page-shell__content', contentClassName].filter(Boolean).join(' ');
 
@@ -134,6 +135,7 @@ export default function ContentPageShell({
       introLabel={introLabel}
       introTitle={introTitle}
       introCopy={introCopy}
+      introActions={introActions}
       rightSidebarFooter={(
         <p className="home-terminal__system-note">
           A creative platform for events, artists, artifacts, and cultural systems.

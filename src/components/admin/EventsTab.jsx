@@ -650,7 +650,7 @@ const MANAGED_METADATA_KEYS = new Set([
 
       {/* INVITE REQUESTS SECTION */}
       {shouldRender(sectionIds.reqs) && (
-      <section className="admin-section" style={{ '--active-tab-color': '#004ffa', marginTop: '40px' }}>
+      <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
         <div className="section-title-container">
           <button 
             className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.reqs) ? 'pinned' : ''}`}

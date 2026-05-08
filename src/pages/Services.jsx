@@ -137,6 +137,12 @@ export default function Services() {
   const activeService =
     PRIMARY_SERVICES.find((service) => service.id === activeServiceId) ?? PRIMARY_SERVICES[0];
   const activeServiceSelected = selectedServices.includes(activeService.id);
+  const selectedServiceCount = selectedServices.length;
+  const bundleDiscount = selectedServiceCount <= 1
+    ? 0
+    : selectedServiceCount >= PRIMARY_SERVICES.length
+      ? 20
+      : selectedServiceCount * 5;
   const selectedCount = selectedServices.length + selectedProducts.length;
   const selectedInquiryItems = [
     ...selectedServices.map((serviceId) => {
@@ -229,12 +235,16 @@ export default function Services() {
             </div>
 
             <div className="services-bundle-builder-strip">
+              <div className="services-bundle-builder-strip__discount">
+                <span>bundle discount</span>
+                <strong>{bundleDiscount}%</strong>
+              </div>
               <p className="services-bundle-builder-strip__copy">
-                combine services to recieve discount.
+                combine services for discount.
               </p>
               <div className="services-bundle-builder" aria-hidden="true">
-                {PRIMARY_SERVICES.map((service, index) => {
-                  const isSelected = index < selectedServices.length;
+                {PRIMARY_SERVICES.map((service) => {
+                  const isSelected = selectedServices.includes(service.id);
                   return (
                     <div
                       key={service.id}
@@ -263,7 +273,7 @@ export default function Services() {
               </div>
               <p>{activeService.description}</p>
               <div className="services-capability-detail__meta">
-                <span>OUTPUT</span>
+                <strong>OUTPUT</strong>
                 <strong>{activeService.output}</strong>
               </div>
               <div className="services-capability-detail__list">

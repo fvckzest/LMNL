@@ -1228,6 +1228,7 @@
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button) {
   display: inline-flex;
@@ -1261,12 +1262,14 @@
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button):hover:not(:disabled):not(.disabled),
 :where(.theme-button,
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button):focus-visible:not(:disabled):not(.disabled) {
   background: var(--theme-button-hover-bg, var(--page-color, var(--theme-button-bg, var(--terminal-panel-bg-soft))));
@@ -1279,6 +1282,7 @@
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button):focus-visible {
   outline: none;
@@ -1288,12 +1292,14 @@
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button):disabled,
 :where(.theme-button,
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button).disabled {
   opacity: 0.65;
@@ -1305,6 +1311,7 @@
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button).is-active,
 .admin-tab.active {
@@ -1527,6 +1534,7 @@ html[data-theme] body :is(.theme-label,
   .space-button,
   .reset-btn,
   .checkin-primary-button,
+  .admin-btn,
   .admin-tab,
   .email-lab__nav-button) {
   border: var(--theme-button-border, var(--lmnl-border-medium));
