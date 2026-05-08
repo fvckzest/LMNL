@@ -14,7 +14,7 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
     return {
       title: notificationEvent.name,
       date: notificationEvent.event_date,
-      location: notificationEvent.location_name || 'LMNL Space, LA',
+      location: notificationEvent.location_name || 'LMNL',
       price: notificationEvent.price,
       is_private: notificationEvent.is_private,
       is_home_notif: notificationEvent.metadata?.is_home_notif || false,
@@ -26,7 +26,7 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
     return {
       title: nextEvent.title,
       date: nextEvent.date,
-      location: nextEvent.location || 'LMNL Space, LA',
+      location: nextEvent.location || 'LMNL',
       price: nextEvent.price,
       is_private: nextEvent.is_private,
       is_home_notif: nextEvent.is_home_notif || false,
@@ -35,9 +35,9 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
   }
 
   return {
-    title: 'Events remain the active live layer.',
+    title: 'LOADING',
     date: 'TBA',
-    location: 'LMNL Space, LA',
+    location: 'Tacoma WA',
     price: null,
     is_private: false,
     is_home_notif: false,
@@ -93,6 +93,15 @@ export default function Home() {
     >
       <div className="page-hero-grid">
         <div className="page-hero-grid__main">
+          <section className="home-company-box" aria-label="Company introduction">
+            <p className="home-company-box__copy">
+              We are building experiences, creative systems, and digital tools that bring people together and facilitates cultural development.
+            </p>
+            <p className="home-company-box__copy">
+              Visit one of our events, explore our services, and join our community.
+            </p>
+          </section>
+
           <div className="page-panel theme-accent-panel">
             <div className="page-command-strip" aria-label="Terminal shortcuts">
               <Link
@@ -114,7 +123,14 @@ export default function Home() {
                 className="page-command-strip__item"
                 style={{ '--command-accent': '#7b52d6' }}
               >
-                <span>Start build</span>
+                <span>Explore Services</span>
+              </Link>
+              <Link
+                to="/shop"
+                className="page-command-strip__item"
+                style={{ '--command-accent': '#ff0000' }}
+              >
+                <span>View artifacts</span>
               </Link>
             </div>
           </div>

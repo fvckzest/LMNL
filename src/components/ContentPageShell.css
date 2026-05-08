@@ -160,7 +160,7 @@
 
 .page-command-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -328,9 +328,12 @@
   .page-grid--three,
   .page-grid--four,
   .page-stat-grid,
-  .page-preview-grid--compact,
-  .page-command-strip {
+  .page-preview-grid--compact {
     grid-template-columns: 1fr;
+  }
+
+  .page-command-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .page-panel,
