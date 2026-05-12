@@ -1,4 +1,7 @@
+import { loadLocalEnvFiles } from './_load-env.mjs';
 import { getBaseConfig } from '../api/_lib/env.js';
+
+loadLocalEnvFiles();
 
 const { discordApplicationId, discordBotToken } = getBaseConfig();
 

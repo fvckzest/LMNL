@@ -78,6 +78,25 @@ test('buildInquiryDiscordEmbed maps general contact inquiries into an embed payl
   });
 });
 
+test('buildInquiryDiscordEmbed uses the services page purple for service inquiries', () => {
+  const embed = buildInquiryDiscordEmbed({
+    id: 'inq_2',
+    name: 'Maya',
+    email: 'maya@example.com',
+    notes: 'Need support for a launch.',
+    selected_services: ['DESIGN', 'PRODUCTION'],
+    created_at: '2026-05-12T12:30:00.000Z',
+  });
+
+  assert.equal(embed.title, 'New Service Inquiry');
+  assert.equal(embed.color, 0x7b52d6);
+  assert.deepEqual(embed.fields[2], {
+    name: 'Inquiry Type',
+    value: 'Service inquiry',
+    inline: true,
+  });
+});
+
 test('buildArtistInterestDiscordEmbed maps artist interest submissions into an embed payload', () => {
   const embed = buildArtistInterestDiscordEmbed({
     id: 'artist_1',

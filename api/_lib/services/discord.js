@@ -121,17 +121,18 @@ export function buildInquiryDiscordEmbed(inquiry) {
   const selectedServices = Array.isArray(inquiry?.selected_services)
     ? inquiry.selected_services.filter(Boolean)
     : [];
+  const isGeneralContact = selectedServices.includes('general');
 
   return {
     title: truncate(
-      selectedServices.includes('general') ? 'New Contact Intake' : 'New Service Inquiry',
+      isGeneralContact ? 'New Contact Intake' : 'New Service Inquiry',
       DISCORD_EMBED_LIMITS.title,
     ),
-    color: 0x90e937,
+    color: isGeneralContact ? 0x90e937 : 0x7b52d6,
     fields: [
       { name: 'Name', value: inquiry?.name, inline: true },
       { name: 'Email', value: inquiry?.email, inline: true },
-      { name: 'Inquiry Type', value: selectedServices.includes('general') ? 'General contact' : 'Service inquiry', inline: true },
+      { name: 'Inquiry Type', value: isGeneralContact ? 'General contact' : 'Service inquiry', inline: true },
       { name: 'Selected Services', value: selectedServices.length ? selectedServices.join('\n') : '—' },
       { name: 'Notes', value: inquiry?.notes || '—' },
     ].map(sanitizeField).filter(Boolean),
