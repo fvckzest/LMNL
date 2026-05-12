@@ -39,8 +39,8 @@ export default function Turnstile({
   onTokenChange,
   resetSignal = 0,
   theme = 'light',
-  size = 'invisible',
-  appearance = 'interaction-only',
+  size = 'flexible',
+  appearance = 'always',
   execution = 'render',
 }) {
   const containerRef = useRef(null);
@@ -83,15 +83,23 @@ export default function Turnstile({
           },
           'error-callback'() {
             onTokenChangeRef.current('');
-            setError('Security check failed to load.');
+            setError('Security check unavailable right now. Please retry or email hi@lmnl.art.');
           },
           'expired-callback'() {
             onTokenChangeRef.current('');
           },
+          'timeout-callback'() {
+            onTokenChangeRef.current('');
+            setError('Security check timed out. Please retry.');
+          },
+          'unsupported-callback'() {
+            onTokenChangeRef.current('');
+            setError('Security check is unavailable here. Please retry or email hi@lmnl.art.');
+          },
         });
       } catch (err) {
         if (isMounted) {
-          setError(err.message || 'Security check unavailable.');
+          setError(err.message || 'Security check unavailable right now. Please retry or email hi@lmnl.art.');
         }
       }
     }

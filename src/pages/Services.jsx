@@ -107,6 +107,7 @@ export default function Services() {
   const [activeServiceId, setActiveServiceId] = useState(PRIMARY_SERVICES[0].id);
   const [inquirySent, setInquirySent] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle');
+  const [requestError, setRequestError] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
@@ -179,6 +180,7 @@ export default function Services() {
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
     setRequestStatus('loading');
+    setRequestError('');
 
     try {
       await apiPost('/api/service-inquiries', {
@@ -198,6 +200,7 @@ export default function Services() {
     } catch (error) {
       console.error('Error submitting inquiry:', error);
       setRequestStatus('error');
+      setRequestError(error.message || 'Transmission failed. Please try again.');
       setTurnstileToken('');
       setTurnstileResetSignal((value) => value + 1);
     }
@@ -383,8 +386,14 @@ export default function Services() {
                 theme={theme}
               />
 
+              {!turnstileToken ? (
+                <p className="services-inquiry__error">
+                  Complete the security check above to enable submission.
+                </p>
+              ) : null}
+
               {requestStatus === 'error' ? (
-                <p className="services-inquiry__error">Transmission failed. Please try again.</p>
+                <p className="services-inquiry__error">{requestError}</p>
               ) : null}
 
               <button
