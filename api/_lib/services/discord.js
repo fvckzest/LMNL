@@ -3,6 +3,14 @@ import { AppError } from '../errors.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
 import { getVariationInventory } from './inventory.js';
 
+const DISCORD_EMBED_LIMITS = {
+  title: 256,
+  description: 4096,
+  fieldName: 256,
+  fieldValue: 1024,
+  footer: 2048,
+};
+
 function formatRemainingTicketsLabel(remainingTickets) {
   if (typeof remainingTickets !== 'number' || Number.isNaN(remainingTickets)) {
     return 'Tickets left: unavailable';
@@ -34,10 +42,32 @@ export async function getRemainingTicketCount(event, deps = {}) {
   return null;
 }
 
-export async function sendDiscordTicketNotification(ticket, event, customerName, deps = {}) {
+function truncate(value, maxLength) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function cleanFieldValue(value, fallback = '—') {
+  const normalized = truncate(value, DISCORD_EMBED_LIMITS.fieldValue);
+  return normalized || fallback;
+}
+
+function sanitizeField(field) {
+  const name = truncate(field?.name, DISCORD_EMBED_LIMITS.fieldName);
+  if (!name) return null;
+
+  return {
+    name,
+    value: cleanFieldValue(field?.value),
+    inline: field?.inline === true,
+  };
+}
+
+async function postDiscordMessage(channelId, body, deps = {}) {
   const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
   const botToken = config.discordBotToken;
-  const channelId = config.discordTicketChannelId;
 
   if (!botToken || !channelId) {
     return { skipped: true, reason: 'Missing Discord bot configuration.' };
@@ -48,19 +78,14 @@ export async function sendDiscordTicketNotification(ticket, event, customerName,
     return { skipped: true, reason: 'Fetch is unavailable in this runtime.' };
   }
 
-  const remainingTickets = await getRemainingTicketCount(event, deps);
-  const buyerName = String(customerName || ticket?.customer_name || 'Guest').trim() || 'Guest';
-  const eventName = String(event?.name || 'LMNL Event').trim() || 'LMNL Event';
-  const content = `${buyerName} bought a ticket for ${eventName}. ${formatRemainingTicketsLabel(remainingTickets)}.`;
   const apiBaseUrl = String(deps.discordApiBaseUrl || 'https://discord.com/api/v10').replace(/\/$/, '');
-
   const response = await fetchImpl(`${apiBaseUrl}/channels/${encodeURIComponent(channelId)}/messages`, {
     method: 'POST',
     headers: {
       Authorization: `Bot ${botToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -72,9 +97,95 @@ export async function sendDiscordTicketNotification(ticket, event, customerName,
     });
   }
 
+  return { success: true };
+}
+
+export async function sendDiscordTicketNotification(ticket, event, customerName, deps = {}) {
+  const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
+  const channelId = config.discordTicketChannelId;
+
+  const remainingTickets = await getRemainingTicketCount(event, deps);
+  const buyerName = String(customerName || ticket?.customer_name || 'Guest').trim() || 'Guest';
+  const eventName = String(event?.name || 'LMNL Event').trim() || 'LMNL Event';
+  const content = `${buyerName} bought a ticket for ${eventName}. ${formatRemainingTicketsLabel(remainingTickets)}.`;
+  await postDiscordMessage(channelId, { content }, deps);
+
   return {
     success: true,
     content,
     remainingTickets,
+  };
+}
+
+export function buildInquiryDiscordEmbed(inquiry) {
+  const selectedServices = Array.isArray(inquiry?.selected_services)
+    ? inquiry.selected_services.filter(Boolean)
+    : [];
+
+  return {
+    title: truncate(
+      selectedServices.includes('general') ? 'New Contact Intake' : 'New Service Inquiry',
+      DISCORD_EMBED_LIMITS.title,
+    ),
+    color: 0x90e937,
+    fields: [
+      { name: 'Name', value: inquiry?.name, inline: true },
+      { name: 'Email', value: inquiry?.email, inline: true },
+      { name: 'Inquiry Type', value: selectedServices.includes('general') ? 'General contact' : 'Service inquiry', inline: true },
+      { name: 'Selected Services', value: selectedServices.length ? selectedServices.join('\n') : '—' },
+      { name: 'Notes', value: inquiry?.notes || '—' },
+    ].map(sanitizeField).filter(Boolean),
+    footer: {
+      text: truncate(`Inquiry ID: ${inquiry?.id || 'pending'}`, DISCORD_EMBED_LIMITS.footer),
+    },
+    timestamp: inquiry?.created_at || new Date().toISOString(),
+  };
+}
+
+export function buildArtistInterestDiscordEmbed(interest) {
+  return {
+    title: truncate('New Artist Interest Submission', DISCORD_EMBED_LIMITS.title),
+    color: 0xff5bb8,
+    fields: [
+      { name: 'Name', value: interest?.name, inline: true },
+      { name: 'Email', value: interest?.email, inline: true },
+      { name: 'Project', value: interest?.project_name || '—', inline: true },
+      { name: 'Location', value: interest?.location || '—', inline: true },
+      { name: 'Practice', value: interest?.practice },
+      { name: 'Open To', value: interest?.format || '—' },
+      { name: 'Links', value: interest?.links || '—' },
+      { name: 'Notes', value: interest?.notes || '—' },
+    ].map(sanitizeField).filter(Boolean),
+    footer: {
+      text: truncate(`Artist interest ID: ${interest?.id || 'pending'}`, DISCORD_EMBED_LIMITS.footer),
+    },
+    timestamp: interest?.created_at || new Date().toISOString(),
+  };
+}
+
+export async function sendDiscordIntakeNotification(embed, deps = {}) {
+  const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
+  const channelId = config.discordIntakeChannelId;
+
+  if (!channelId) {
+    return { skipped: true, reason: 'Missing Discord intake channel configuration.' };
+  }
+
+  await postDiscordMessage(channelId, {
+    embeds: [{
+      title: truncate(embed?.title, DISCORD_EMBED_LIMITS.title),
+      description: truncate(embed?.description, DISCORD_EMBED_LIMITS.description) || undefined,
+      color: embed?.color,
+      fields: Array.isArray(embed?.fields) ? embed.fields.map(sanitizeField).filter(Boolean) : [],
+      footer: embed?.footer?.text
+        ? { text: truncate(embed.footer.text, DISCORD_EMBED_LIMITS.footer) }
+        : undefined,
+      timestamp: embed?.timestamp || new Date().toISOString(),
+    }],
+  }, deps);
+
+  return {
+    success: true,
+    channelId,
   };
 }

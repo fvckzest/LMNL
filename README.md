@@ -64,6 +64,7 @@ DISCORD_APPLICATION_ID=your_discord_application_id
 DISCORD_BOT_TOKEN=your_discord_bot_token
 DISCORD_PUBLIC_KEY=your_discord_public_key
 DISCORD_TICKET_CHANNEL_ID=your_discord_channel_id
+DISCORD_INTAKE_CHANNEL_ID=your_private_intake_channel_id
 APPLE_PASS_TYPE_IDENTIFIER=pass.art.lmnl
 APPLE_TEAM_ID=your_apple_team_id
 APPLE_PASS_CERTIFICATE=base64_encoded_p12_contents
@@ -78,6 +79,7 @@ For Discord slash commands:
 - Set the Interactions Endpoint URL in the Discord developer portal to `https://your-domain/api/discord-interactions`.
 - Add `DISCORD_APPLICATION_ID`, `DISCORD_BOT_TOKEN`, and `DISCORD_PUBLIC_KEY` to production.
 - Register commands with `npm run register:discord-commands`.
+- Use `/test-intake form:contact`, `/test-intake form:service`, or `/test-intake form:artist` in Discord to preview the current intake embeds privately before testing live form submissions.
 
 ---
 

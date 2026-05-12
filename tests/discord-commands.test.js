@@ -27,7 +27,7 @@ test('verifyDiscordInteractionSignature accepts a valid Ed25519 signature', () =
 test('discord command definitions include the default LMNL slash commands', () => {
   assert.deepEqual(
     discordCommandDefinitions.map((command) => command.name),
-    ['ping', 'help', 'tickets-left', 'ticket'],
+    ['ping', 'help', 'tickets-left', 'ticket', 'test-intake'],
   );
 });
 
@@ -88,4 +88,47 @@ test('handleDiscordInteraction resolves tickets sold for an event title', async 
 
   assert.equal(response.type, 4);
   assert.match(response.data.content, /Launch: 34 tickets sold/);
+});
+
+test('handleDiscordInteraction previews the contact intake embed', async () => {
+  const response = await handleDiscordInteraction({
+    type: 2,
+    data: {
+      name: 'test-intake',
+      options: [{ name: 'form', value: 'contact' }],
+    },
+  });
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, 64);
+  assert.match(response.data.content, /contact form intake embed/i);
+  assert.equal(response.data.embeds[0].title, 'New Contact Intake');
+});
+
+test('handleDiscordInteraction previews the service intake embed', async () => {
+  const response = await handleDiscordInteraction({
+    type: 2,
+    data: {
+      name: 'test-intake',
+      options: [{ name: 'form', value: 'service' }],
+    },
+  });
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.embeds[0].title, 'New Service Inquiry');
+});
+
+test('handleDiscordInteraction previews the artist intake embed', async () => {
+  const response = await handleDiscordInteraction({
+    type: 2,
+    data: {
+      name: 'test-intake',
+      options: [{ name: 'form', value: 'artist' }],
+    },
+  });
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.embeds[0].title, 'New Artist Interest Submission');
 });

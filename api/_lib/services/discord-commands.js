@@ -3,7 +3,11 @@ import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getLatestEventByName } from '../repositories/events.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
-import { getRemainingTicketCount } from './discord.js';
+import {
+  buildArtistInterestDiscordEmbed,
+  buildInquiryDiscordEmbed,
+  getRemainingTicketCount,
+} from './discord.js';
 
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
@@ -44,6 +48,24 @@ export const discordCommandDefinitions = [
       },
     ],
   },
+  {
+    name: 'test-intake',
+    description: 'Preview the Discord embed used for website intake submissions.',
+    type: 1,
+    options: [
+      {
+        type: 3,
+        name: 'form',
+        description: 'Which intake form preview to render.',
+        required: true,
+        choices: [
+          { name: 'contact', value: 'contact' },
+          { name: 'service', value: 'service' },
+          { name: 'artist', value: 'artist' },
+        ],
+      },
+    ],
+  },
 ];
 
 function toPublicKeyObject(publicKeyHex) {
@@ -74,6 +96,17 @@ function createMessageResponse(content) {
     type: 4,
     data: {
       content,
+    },
+  };
+}
+
+function createEmbedResponse(embed, content = 'Previewing the current intake embed.', ephemeral = true) {
+  return {
+    type: 4,
+    data: {
+      content,
+      embeds: [embed],
+      ...(ephemeral ? { flags: 64 } : {}),
     },
   };
 }
@@ -149,6 +182,49 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
 
     const ticketsSold = await loadTicketsSoldCount(event.id);
     return createMessageResponse(`${event.name}: ${ticketsSold} ticket${ticketsSold === 1 ? '' : 's'} sold.`);
+  }
+
+  if (commandName === 'test-intake') {
+    const formType = String(getOptionValue(interaction, 'form') || '').trim().toLowerCase();
+
+    if (formType === 'contact') {
+      return createEmbedResponse(buildInquiryDiscordEmbed({
+        id: 'preview-contact',
+        name: 'Alex Rivera',
+        email: 'alex@example.com',
+        notes: 'SUBJECT: Partnership inquiry\n\nInterested in collaborating on an upcoming activation.',
+        selected_services: ['general'],
+        created_at: '2026-05-12T19:00:00.000Z',
+      }), 'Previewing the contact form intake embed.');
+    }
+
+    if (formType === 'service') {
+      return createEmbedResponse(buildInquiryDiscordEmbed({
+        id: 'preview-service',
+        name: 'Maya Chen',
+        email: 'maya@example.com',
+        notes: 'Looking for creative direction, production support, and rollout planning for a launch.',
+        selected_services: ['DESIGN', 'PRODUCTION', 'MARKETING'],
+        created_at: '2026-05-12T19:00:00.000Z',
+      }), 'Previewing the service inquiry intake embed.');
+    }
+
+    if (formType === 'artist') {
+      return createEmbedResponse(buildArtistInterestDiscordEmbed({
+        id: 'preview-artist',
+        name: 'Nova',
+        email: 'nova@example.com',
+        project_name: 'Signal Bloom',
+        location: 'Los Angeles',
+        practice: 'Live audiovisual performance',
+        format: 'Performance, screening, installation',
+        links: 'https://example.com/portfolio',
+        notes: 'Building a new hybrid set and looking for spaces that support immersive work.',
+        created_at: '2026-05-12T19:00:00.000Z',
+      }), 'Previewing the artist interest intake embed.');
+    }
+
+    return createMessageResponse('Please choose one of: contact, service, or artist.');
   }
 
   return createMessageResponse(`/${commandName} is not wired up yet.`);

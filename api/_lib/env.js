@@ -35,6 +35,7 @@ export function getBaseConfig() {
     discordBotToken: readEnv('DISCORD_BOT_TOKEN'),
     discordPublicKey: readEnv('DISCORD_PUBLIC_KEY'),
     discordTicketChannelId: readEnv('DISCORD_TICKET_CHANNEL_ID'),
+    discordIntakeChannelId: readEnv('DISCORD_INTAKE_CHANNEL_ID'),
     nodeEnv: readEnv('NODE_ENV') || 'development',
   };
 }

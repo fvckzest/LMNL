@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getRemainingTicketCount, sendDiscordTicketNotification } from '../api/_lib/services/discord.js';
+import {
+  buildArtistInterestDiscordEmbed,
+  buildInquiryDiscordEmbed,
+  getRemainingTicketCount,
+  sendDiscordIntakeNotification,
+  sendDiscordTicketNotification,
+} from '../api/_lib/services/discord.js';
 
 test('getRemainingTicketCount prefers Square inventory when variation is present', async () => {
   const remaining = await getRemainingTicketCount(
@@ -50,4 +56,83 @@ test('sendDiscordTicketNotification posts buyer name and remaining tickets throu
   assert.equal(requests[0].options.headers.Authorization, 'Bot bot-token-123');
   assert.match(JSON.parse(requests[0].options.body).content, /Ada bought a ticket for Launch\. 12 tickets left\./);
   assert.equal(result.remainingTickets, 12);
+});
+
+test('buildInquiryDiscordEmbed maps general contact inquiries into an embed payload', () => {
+  const embed = buildInquiryDiscordEmbed({
+    id: 'inq_1',
+    name: 'Alex',
+    email: 'alex@example.com',
+    notes: 'SUBJECT: Partnership\n\nHello there',
+    selected_services: ['general'],
+    created_at: '2026-05-12T12:00:00.000Z',
+  });
+
+  assert.equal(embed.title, 'New Contact Intake');
+  assert.equal(embed.color, 0x90e937);
+  assert.equal(embed.timestamp, '2026-05-12T12:00:00.000Z');
+  assert.deepEqual(embed.fields[2], {
+    name: 'Inquiry Type',
+    value: 'General contact',
+    inline: true,
+  });
+});
+
+test('buildArtistInterestDiscordEmbed maps artist interest submissions into an embed payload', () => {
+  const embed = buildArtistInterestDiscordEmbed({
+    id: 'artist_1',
+    name: 'Nova',
+    email: 'nova@example.com',
+    project_name: 'Signal',
+    location: 'Los Angeles',
+    practice: 'Performance art',
+    format: 'Live installation',
+    links: 'https://example.com',
+    notes: 'Current work in progress.',
+    created_at: '2026-05-12T13:00:00.000Z',
+  });
+
+  assert.equal(embed.title, 'New Artist Interest Submission');
+  assert.equal(embed.color, 0xff5bb8);
+  assert.equal(embed.timestamp, '2026-05-12T13:00:00.000Z');
+  assert.deepEqual(embed.fields[4], {
+    name: 'Practice',
+    value: 'Performance art',
+    inline: false,
+  });
+});
+
+test('sendDiscordIntakeNotification posts embeds through the configured intake channel', async () => {
+  const requests = [];
+
+  const result = await sendDiscordIntakeNotification(
+    {
+      title: 'New Service Inquiry',
+      color: 0x90e937,
+      fields: [
+        { name: 'Name', value: 'Alex', inline: true },
+        { name: 'Email', value: 'alex@example.com', inline: true },
+      ],
+      footer: { text: 'Inquiry ID: inq_1' },
+      timestamp: '2026-05-12T14:00:00.000Z',
+    },
+    {
+      getBaseConfig: () => ({
+        discordBotToken: 'bot-token-123',
+        discordIntakeChannelId: 'channel-999',
+      }),
+      fetchImpl: async (url, options) => {
+        requests.push({ url, options });
+        return { ok: true, status: 200 };
+      },
+    },
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, 'https://discord.com/api/v10/channels/channel-999/messages');
+  const payload = JSON.parse(requests[0].options.body);
+  assert.equal(payload.embeds[0].title, 'New Service Inquiry');
+  assert.equal(payload.embeds[0].fields[0].name, 'Name');
+  assert.equal(payload.embeds[0].footer.text, 'Inquiry ID: inq_1');
 });

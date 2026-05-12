@@ -12,6 +12,11 @@ import { createPaymentForPreorder, getPreorderCheckoutView } from './_lib/servic
 import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services/request-checkout.js';
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
 import {
+  buildArtistInterestDiscordEmbed,
+  buildInquiryDiscordEmbed,
+  sendDiscordIntakeNotification,
+} from './_lib/services/discord.js';
+import {
   attachAttendanceSourceToUser,
   claimAttendanceSourceForUser,
   createManualAttendanceSource,
@@ -561,6 +566,9 @@ async function handleServiceInquiries(req, res) {
     sendInquiryNotification(data).catch(err => {
       console.error('[api] Background inquiry notification failed:', err);
     });
+    sendDiscordIntakeNotification(buildInquiryDiscordEmbed(data)).catch((err) => {
+      console.error('[api] Background Discord inquiry notification failed:', err);
+    });
 
     return sendJson(res, 200, { success: true, data });
   }
@@ -658,6 +666,9 @@ async function handleArtistInterest(req, res) {
     // Send email notification in the background
     sendArtistInterestNotification(data).catch(err => {
       console.error('[api] Background artist interest notification failed:', err);
+    });
+    sendDiscordIntakeNotification(buildArtistInterestDiscordEmbed(data)).catch((err) => {
+      console.error('[api] Background Discord artist interest notification failed:', err);
     });
 
     return sendJson(res, 200, { success: true, data });

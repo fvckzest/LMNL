@@ -95,7 +95,7 @@ export default function Home() {
         <div className="page-hero-grid__main">
           <section className="home-company-box" aria-label="Company introduction">
             <p className="home-company-box__copy">
-              We are building experiences, creative systems, and digital tools that bring people together and facilitates cultural development.
+              We are building experiences, creative systems, and digital tools that brings people together and facilitates cultural development.
             </p>
             <p className="home-company-box__copy">
               Visit one of our events, explore our services, and join our community.
