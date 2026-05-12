@@ -100,7 +100,7 @@ test('handleDiscordInteraction previews the contact intake embed', async () => {
   });
 
   assert.equal(response.type, 4);
-  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.flags, undefined);
   assert.match(response.data.content, /contact form intake embed/i);
   assert.equal(response.data.embeds[0].title, 'New Contact Intake');
 });
@@ -115,7 +115,7 @@ test('handleDiscordInteraction previews the service intake embed', async () => {
   });
 
   assert.equal(response.type, 4);
-  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.flags, undefined);
   assert.equal(response.data.embeds[0].title, 'New Service Inquiry');
 });
 
@@ -129,6 +129,6 @@ test('handleDiscordInteraction previews the artist intake embed', async () => {
   });
 
   assert.equal(response.type, 4);
-  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.flags, undefined);
   assert.equal(response.data.embeds[0].title, 'New Artist Interest Submission');
 });

@@ -100,7 +100,7 @@ function createMessageResponse(content) {
   };
 }
 
-function createEmbedResponse(embed, content = 'Previewing the current intake embed.', ephemeral = true) {
+function createEmbedResponse(embed, content = 'Previewing the current intake embed.', ephemeral = false) {
   return {
     type: 4,
     data: {
