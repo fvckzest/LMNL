@@ -87,6 +87,36 @@ function getRouteKey(req) {
   return pathname.replace(/^\/api\/?/, '');
 }
 
+function withTimeout(promise, timeoutMs, label) {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+async function settleNotificationTasks(tasks, timeoutMs = 5000) {
+  const results = await Promise.allSettled(
+    tasks.map(({ label, task }) => withTimeout(Promise.resolve().then(task), timeoutMs, label)),
+  );
+
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.error(`[api] ${tasks[index].label} failed:`, result.reason);
+    }
+  });
+}
+
 async function handleCheckInventory(req, res) {
   allowMethods(req, ['GET']);
   const variationId = requireValue(req.query?.variationId, 'Variation ID is required');
@@ -562,13 +592,16 @@ async function handleServiceInquiries(req, res) {
 
     if (error) throw error;
 
-    // Send email notification in the background
-    sendInquiryNotification(data).catch(err => {
-      console.error('[api] Background inquiry notification failed:', err);
-    });
-    sendDiscordIntakeNotification(buildInquiryDiscordEmbed(data)).catch((err) => {
-      console.error('[api] Background Discord inquiry notification failed:', err);
-    });
+    await settleNotificationTasks([
+      {
+        label: 'Inquiry email notification',
+        task: () => sendInquiryNotification(data),
+      },
+      {
+        label: 'Discord inquiry notification',
+        task: () => sendDiscordIntakeNotification(buildInquiryDiscordEmbed(data)),
+      },
+    ]);
 
     return sendJson(res, 200, { success: true, data });
   }
@@ -663,13 +696,16 @@ async function handleArtistInterest(req, res) {
 
     if (error) throwMissingArtistInterestTable(error);
 
-    // Send email notification in the background
-    sendArtistInterestNotification(data).catch(err => {
-      console.error('[api] Background artist interest notification failed:', err);
-    });
-    sendDiscordIntakeNotification(buildArtistInterestDiscordEmbed(data)).catch((err) => {
-      console.error('[api] Background Discord artist interest notification failed:', err);
-    });
+    await settleNotificationTasks([
+      {
+        label: 'Artist interest email notification',
+        task: () => sendArtistInterestNotification(data),
+      },
+      {
+        label: 'Discord artist interest notification',
+        task: () => sendDiscordIntakeNotification(buildArtistInterestDiscordEmbed(data)),
+      },
+    ]);
 
     return sendJson(res, 200, { success: true, data });
   }

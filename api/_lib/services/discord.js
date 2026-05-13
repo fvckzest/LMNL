@@ -79,14 +79,37 @@ async function postDiscordMessage(channelId, body, deps = {}) {
   }
 
   const apiBaseUrl = String(deps.discordApiBaseUrl || 'https://discord.com/api/v10').replace(/\/$/, '');
-  const response = await fetchImpl(`${apiBaseUrl}/channels/${encodeURIComponent(channelId)}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bot ${botToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  const timeoutMs = Number.isFinite(Number(deps.discordTimeoutMs)) ? Number(deps.discordTimeoutMs) : 5000;
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+  let response;
+  try {
+    response = await fetchImpl(`${apiBaseUrl}/channels/${encodeURIComponent(channelId)}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      ...(controller ? { signal: controller.signal } : {}),
+    });
+  } catch (error) {
+    if (controller?.signal?.aborted) {
+      throw new AppError('Discord bot message timed out.', {
+        code: 'DISCORD_BOT_MESSAGE_TIMEOUT',
+        status: 504,
+        details: { timeoutMs },
+        expose: true,
+      });
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 
   if (!response.ok) {
     throw new AppError('Discord bot message failed.', {

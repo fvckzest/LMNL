@@ -155,3 +155,26 @@ test('sendDiscordIntakeNotification posts embeds through the configured intake c
   assert.equal(payload.embeds[0].fields[0].name, 'Name');
   assert.equal(payload.embeds[0].footer.text, 'Inquiry ID: inq_1');
 });
+
+test('sendDiscordIntakeNotification times out when Discord does not respond', async () => {
+  await assert.rejects(
+    () => sendDiscordIntakeNotification(
+      {
+        title: 'New Service Inquiry',
+        color: 0x7b52d6,
+        fields: [{ name: 'Name', value: 'Alex', inline: true }],
+      },
+      {
+        getBaseConfig: () => ({
+          discordBotToken: 'bot-token-123',
+          discordIntakeChannelId: 'channel-999',
+        }),
+        discordTimeoutMs: 20,
+        fetchImpl: (_url, { signal }) => new Promise((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+      },
+    ),
+    (error) => error?.code === 'DISCORD_BOT_MESSAGE_TIMEOUT',
+  );
+});
