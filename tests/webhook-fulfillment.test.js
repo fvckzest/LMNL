@@ -103,6 +103,51 @@ test('processSquareOrderUpdate prefers order metadata event ID when catalog vari
   assert.deepEqual(result, { success: true, ticketId: 'ticket_meta' });
 });
 
+test('processSquareOrderUpdate recovers when the request is already fulfilled but the ticket does not exist yet', async () => {
+  const createdTickets = [];
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_recover' } } },
+    },
+    {},
+    {
+      verifySignature: () => {},
+      findTicketBySquareOrderId: async () => null,
+      squareClient: {
+        orders: {
+          get: async () => ({
+            order: {
+              id: 'order_recover',
+              state: 'COMPLETED',
+              metadata: { requestId: 'req_recover' },
+              lineItems: [{ catalogObjectId: 'var_recover' }],
+              tenders: [{ id: 'tender_recover' }],
+            },
+          }),
+        },
+      },
+      fulfillApprovedRequestById: async () => null,
+      fulfillApprovedRequestByOrderId: async () => null,
+      getRequestById: async () => ({
+        id: 'req_recover',
+        status: 'fulfilled',
+      }),
+      getEventBySquareVariationIds: async () => ({ id: 'event_recover', name: 'Recovery' }),
+      resolveCustomer: async () => ({ customerName: 'Ada', customerEmail: 'ada@example.com' }),
+      createTicket: async (payload) => {
+        createdTickets.push(payload);
+        return { id: 'ticket_recover', ...payload };
+      },
+      sendTicketEmail: async () => {},
+    }
+  );
+
+  assert.equal(createdTickets.length, 1);
+  assert.equal(createdTickets[0].square_order_id, 'order_recover');
+  assert.deepEqual(result, { success: true, ticketId: 'ticket_recover' });
+});
+
 test('processSquareOrderUpdate fulfills completed payment.updated events', async () => {
   const createdTickets = [];
   const result = await processSquareOrderUpdate(
@@ -209,6 +254,35 @@ test('processSquareOrderUpdate accepts the actual request URL when it differs on
   );
 
   assert.deepEqual(result, { replay: true, ticketId: 'ticket_request_url' });
+  delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+  delete process.env.SQUARE_WEBHOOK_URL;
+});
+
+test('processSquareOrderUpdate accepts the legacy Square signature header', async () => {
+  process.env.SQUARE_WEBHOOK_SIGNATURE_KEY = 'webhook-secret';
+  process.env.SQUARE_WEBHOOK_URL = 'https://lmnl.art/api/square-webhook';
+
+  const rawBody = '{"type":"order.updated","data":{"object":{"order_updated":{"order_id":"order_legacy_sig"}}}}';
+  const signature = crypto
+    .createHmac('sha256', process.env.SQUARE_WEBHOOK_SIGNATURE_KEY)
+    .update(`${process.env.SQUARE_WEBHOOK_URL}${rawBody}`)
+    .digest('base64');
+
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_legacy_sig' } } },
+    },
+    {
+      'x-square-signature': signature,
+    },
+    {
+      rawBody,
+      findTicketBySquareOrderId: async () => ({ id: 'ticket_legacy_sig' }),
+    }
+  );
+
+  assert.deepEqual(result, { replay: true, ticketId: 'ticket_legacy_sig' });
   delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
   delete process.env.SQUARE_WEBHOOK_URL;
 });

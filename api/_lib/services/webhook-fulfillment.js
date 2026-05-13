@@ -86,9 +86,17 @@ function buildSignatureCandidates(configuredUrl, requestUrl) {
   return [...candidates].filter(Boolean);
 }
 
+function getSignatureFromHeaders(headers = {}) {
+  return headers['x-square-hmacsha256-signature']
+    || headers['X-Square-HmacSha256-Signature']
+    || headers['x-square-signature']
+    || headers['X-Square-Signature']
+    || '';
+}
+
 function verifySignature(payload, headers, options = {}) {
   const { squareWebhookSignatureKey, squareWebhookUrl } = getBaseConfig();
-  const signature = headers['x-square-hmacsha256-signature'];
+  const signature = getSignatureFromHeaders(headers);
   const rawBody = typeof options.rawBody === 'string' && options.rawBody.length
     ? options.rawBody
     : JSON.stringify(payload);
@@ -301,6 +309,7 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const loadTicketByOrderId = deps.findTicketBySquareOrderId || findTicketBySquareOrderId;
   const fulfillById = deps.fulfillApprovedRequestById || fulfillApprovedRequestById;
   const fulfillByOrderId = deps.fulfillApprovedRequestByOrderId || fulfillApprovedRequestByOrderId;
+  const loadRequestById = deps.getRequestById || getRequestById;
   const loadRequestBySquareOrderId = deps.getRequestByOrderId || getRequestByOrderId;
   const loadEventById = deps.getEventById || null;
   const loadEvent = deps.getEventBySquareVariationIds || getEventBySquareVariationIds;
@@ -333,9 +342,21 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   let lockedRequest = null;
   if (order.metadata?.requestId) {
     lockedRequest = await fulfillById(order.metadata.requestId);
+    if (!lockedRequest) {
+      const existingRequest = await loadRequestById(order.metadata.requestId);
+      if (existingRequest?.status === 'approved' || existingRequest?.status === 'fulfilled') {
+        lockedRequest = existingRequest;
+      }
+    }
   }
   if (!lockedRequest) {
     lockedRequest = await fulfillByOrderId(squareOrderId);
+    if (!lockedRequest) {
+      const existingRequest = await loadRequestBySquareOrderId(squareOrderId);
+      if (existingRequest?.status === 'approved' || existingRequest?.status === 'fulfilled') {
+        lockedRequest = existingRequest;
+      }
+    }
   }
   if (!lockedRequest && deps.allowExistingRequestLookup) {
     lockedRequest = await loadRequestBySquareOrderId(squareOrderId);

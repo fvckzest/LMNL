@@ -67,7 +67,8 @@
 .services-capability-card:hover,
 .services-capability-card:focus-visible,
 .services-capability-card.is-current,
-.services-capability-card[aria-current='true'] {
+.services-capability-card[aria-current='true'],
+.services-capability-card.is-selected {
   border-color: var(--page-color);
   background: var(--page-color) !important;
   background-color: var(--page-color) !important;
@@ -85,18 +86,6 @@
 .services-capability-card[aria-current='true'],
 .services-capability-card.is-selected {
   border-color: var(--page-color);
-}
-
-.services-capability-card.is-selected::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 12px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: currentColor;
-  transform: translateY(-50%);
 }
 
 .services-capability-detail,
@@ -128,14 +117,10 @@
 .services-capability-card:hover strong,
 .services-capability-card:focus-visible strong,
 .services-capability-card.is-current strong,
-.services-capability-card[aria-current='true'] strong {
+.services-capability-card[aria-current='true'] strong,
+.services-capability-card.is-selected strong {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-}
-
-.services-capability-card.is-selected strong {
-  color: currentColor;
-  -webkit-text-fill-color: currentColor;
 }
 
 .services-capability-detail {
@@ -169,6 +154,13 @@
   width: auto;
   min-width: 0;
   white-space: nowrap;
+}
+
+.services-capability-detail__action.is-active,
+.services-capability-detail__action.is-active:hover,
+.services-capability-detail__action.is-active:focus-visible {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .services-capability-detail p {
