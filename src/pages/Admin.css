@@ -562,6 +562,15 @@
   background: var(--table-button-bg);
 }
 
+.admin-table-shell .status-pill.contact-source-pill {
+  color: #fff;
+  border-color: #fff;
+}
+
+html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
+  border-color: #000;
+}
+
 .action-buttons {
   display: flex;
   gap: 8px;

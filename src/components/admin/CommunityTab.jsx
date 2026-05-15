@@ -1264,8 +1264,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                                     {contact.sources.map((source) => (
                                       <span
                                         key={`${contact.email}-${source}`}
-                                        className="status-pill active"
-                                        style={{ fontSize: '9px', background: getSourceColor(source), color: '#ffffff', borderRadius: '0px', padding: '2px 6px' }}
+                                        className="status-pill active contact-source-pill"
+                                        style={{ fontSize: '9px', background: getSourceColor(source), borderRadius: '0px', padding: '2px 6px' }}
                                       >
                                         {source.toUpperCase()}
                                       </span>
