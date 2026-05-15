@@ -4,13 +4,20 @@ import path from 'path';
 const distDir = path.resolve(process.cwd(), 'dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
 
-// These are the routes defined in App.jsx
+// Static entry points for client-side routes that should survive direct hits
+// on Vercel without relying on a catch-all SPA rewrite.
 const routes = [
+  { path: 'login', title: 'LMNL | ADMIN LOGIN', image: '/seo/home-seo.png' },
+  { path: 'home', title: 'LMNL | HOME', image: '/seo/home-seo.png' },
   { path: 'events', title: 'LMNL | EVENTS', image: '/seo/events-seo.png' },
   { path: 'services', title: 'LMNL | SERVICES', image: '/seo/services-seo.png' },
   { path: 'community', title: 'LMNL | COMMUNITY', image: '/seo/community-seo.png' },
   { path: 'community/share', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },
   { path: 'share-your-work', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },
+  { path: 'app', title: 'LMNL | APP', image: '/seo/community-seo.png' },
+  { path: 'app/login', title: 'LMNL | APP LOGIN', image: '/seo/community-seo.png' },
+  { path: 'app/onboarding', title: 'LMNL | APP ONBOARDING', image: '/seo/community-seo.png' },
+  { path: 'auth/callback', title: 'LMNL | AUTH', image: '/seo/home-seo.png' },
   { path: 'shop', title: 'LMNL | SHOP', image: '/seo/shop-seo.png' },
   { path: 'about', title: 'LMNL | ABOUT', image: '/seo/about-seo.png' },
   { path: 'blog', title: 'LMNL | BLOG', image: '/seo/blog-seo.png' },
