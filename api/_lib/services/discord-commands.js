@@ -23,6 +23,19 @@ export const discordCommandDefinitions = [
     type: 1,
   },
   {
+    name: 'rate',
+    description: 'Rate someone with a random number.',
+    type: 1,
+    options: [
+      {
+        type: 6,
+        name: 'name',
+        description: 'The person to rate.',
+        required: true,
+      },
+    ],
+  },
+  {
     name: 'tickets-left',
     description: 'Look up remaining tickets for an LMNL event.',
     type: 1,
@@ -91,6 +104,12 @@ function getOptionValue(interaction, optionName) {
   return option?.value;
 }
 
+function getOptionUserMention(interaction, optionName) {
+  const userId = String(getOptionValue(interaction, optionName) || '').trim();
+  if (!userId) return '';
+  return `<@${userId}>`;
+}
+
 function createMessageResponse(content) {
   return {
     type: 4,
@@ -138,6 +157,7 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
   const loadEventByName = deps.getLatestEventByName || getLatestEventByName;
   const loadRemainingTicketCount = deps.getRemainingTicketCount || getRemainingTicketCount;
   const loadTicketsSoldCount = deps.countTicketsByEventId || countTicketsByEventId;
+  const randomImpl = deps.randomImpl || Math.random;
 
   if (commandName === 'ping') {
     return createMessageResponse('Pong. LMNL is online.');
@@ -148,6 +168,17 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
       .map((command) => `/${command.name} - ${command.description}`)
       .join('\n');
     return createMessageResponse(`Available LMNL commands:\n${commandList}`);
+  }
+
+  if (commandName === 'rate') {
+    const mention = getOptionUserMention(interaction, 'name');
+    if (!mention) {
+      return createMessageResponse('Please choose someone to rate.');
+    }
+
+    const randomValue = Number(randomImpl());
+    const score = Math.floor((Number.isFinite(randomValue) ? randomValue : 0) * 101);
+    return createMessageResponse(`${mention} gets a ${score}`);
   }
 
   if (commandName === 'tickets-left') {

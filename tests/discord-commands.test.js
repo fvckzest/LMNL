@@ -27,7 +27,7 @@ test('verifyDiscordInteractionSignature accepts a valid Ed25519 signature', () =
 test('discord command definitions include the default LMNL slash commands', () => {
   assert.deepEqual(
     discordCommandDefinitions.map((command) => command.name),
-    ['ping', 'help', 'tickets-left', 'ticket', 'test-intake'],
+    ['ping', 'help', 'rate', 'tickets-left', 'ticket', 'test-intake'],
   );
 });
 
@@ -48,8 +48,27 @@ test('handleDiscordInteraction lists commands in help', async () => {
   });
 
   assert.match(response.data.content, /\/ping/);
+  assert.match(response.data.content, /\/rate/);
   assert.match(response.data.content, /\/tickets-left/);
   assert.match(response.data.content, /\/ticket/);
+});
+
+test('handleDiscordInteraction rates a tagged user with a random number', async () => {
+  const response = await handleDiscordInteraction(
+    {
+      type: 2,
+      data: {
+        name: 'rate',
+        options: [{ name: 'name', value: '1234567890' }],
+      },
+    },
+    {
+      randomImpl: () => 0.73,
+    },
+  );
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.content, '<@1234567890> gets a 73');
 });
 
 test('handleDiscordInteraction resolves remaining tickets for an event', async () => {
