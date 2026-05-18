@@ -1395,6 +1395,10 @@
   align-items: flex-start;
 }
 
+.turnstile-block.is-verified > :first-child {
+  display: none;
+}
+
 .turnstile-error {
   margin: 0;
   color: #ff0055;

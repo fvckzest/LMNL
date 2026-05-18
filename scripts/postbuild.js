@@ -11,6 +11,7 @@ const routes = [
   { path: 'home', title: 'LMNL | HOME', image: '/seo/home-seo.png' },
   { path: 'events', title: 'LMNL | EVENTS', image: '/seo/events-seo.png' },
   { path: 'services', title: 'LMNL | SERVICES', image: '/seo/services-seo.png' },
+  { path: 'portfolio', title: 'LMNL | PORTFOLIO', image: '/seo/services-seo.png' },
   { path: 'community', title: 'LMNL | COMMUNITY', image: '/seo/community-seo.png' },
   { path: 'community/share', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },
   { path: 'share-your-work', title: 'LMNL | SHARE', image: '/seo/community-seo.png' },

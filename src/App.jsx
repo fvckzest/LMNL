@@ -33,6 +33,7 @@ const Login = lazyWithRetry(() => import('./pages/Login'));
 const Ticket = lazyWithRetry(() => import('./pages/Ticket'));
 const Success = lazyWithRetry(() => import('./pages/Success'));
 const Services = lazyWithRetry(() => import('./pages/Services'));
+const Portfolio = lazyWithRetry(() => import('./pages/Portfolio'));
 const Community = lazyWithRetry(() => import('./pages/Community'));
 const ArtistInterest = lazyWithRetry(() => import('./pages/ArtistInterest'));
 const Shop = lazyWithRetry(() => import('./pages/Shop'));
@@ -524,6 +525,7 @@ function App() {
             )}
 
             <Route path="/services" element={<Services />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/share" element={<ArtistInterest />} />
             <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />

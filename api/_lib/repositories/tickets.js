@@ -90,6 +90,20 @@ export async function listTickets() {
   return data || [];
 }
 
+export async function listRecentTicketsByEventId(eventId, limit = 8) {
+  const supabase = getAdminSupabase();
+  const safeLimit = Math.max(Number(limit) || 8, 1);
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('id,event_id,customer_name,created_at')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function countTicketsByEventId(eventId) {
   const supabase = getAdminSupabase();
   const { count, error } = await supabase

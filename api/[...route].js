@@ -27,6 +27,7 @@ import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_li
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { getSiteActivityHistory } from './_lib/services/site-activity.js';
+import { getSpaceTicketActivity } from './_lib/services/space-activity.js';
 import {
   countApprovedRequestsByEventName,
   createAccessRequest,
@@ -239,6 +240,18 @@ async function handleSiteActivity(req, res) {
   const rawLimit = Number(req.query?.limit);
   const limit = Number.isFinite(rawLimit) ? rawLimit : 6;
   const data = await getSiteActivityHistory(limit);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleSpaceActivity(req, res) {
+  allowMethods(req, ['GET']);
+  const rawLimit = Number(req.query?.limit);
+  const limit = Number.isFinite(rawLimit) ? rawLimit : 8;
+  const data = await getSpaceTicketActivity({
+    eventId: req.query?.eventId || '',
+    eventName: req.query?.eventName || 'SPACE',
+    limit,
+  });
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -912,6 +925,7 @@ const handlers = {
   'admin-attendance-sources': handleAdminAttendanceSources,
   'event-stats': handleEventStats,
   'site-activity': handleSiteActivity,
+  'space-activity': handleSpaceActivity,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,

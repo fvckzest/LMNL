@@ -34,7 +34,7 @@ function loadTurnstileScript() {
   return turnstileScriptPromise;
 }
 
-export default function Turnstile({
+function TurnstileWidget({
   siteKey,
   onTokenChange,
   resetSignal = 0,
@@ -47,6 +47,7 @@ export default function Turnstile({
   const widgetIdRef = useRef(null);
   const onTokenChangeRef = useRef(onTokenChange);
   const [error, setError] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     onTokenChangeRef.current = onTokenChange;
@@ -80,20 +81,25 @@ export default function Turnstile({
           callback(token) {
             onTokenChangeRef.current(token);
             setError('');
+            setIsVerified(true);
           },
           'error-callback'() {
             onTokenChangeRef.current('');
+            setIsVerified(false);
             setError('Security check unavailable right now. Please retry or email hi@lmnl.art.');
           },
           'expired-callback'() {
             onTokenChangeRef.current('');
+            setIsVerified(false);
           },
           'timeout-callback'() {
             onTokenChangeRef.current('');
+            setIsVerified(false);
             setError('Security check timed out. Please retry.');
           },
           'unsupported-callback'() {
             onTokenChangeRef.current('');
+            setIsVerified(false);
             setError('Security check is unavailable here. Please retry or email hi@lmnl.art.');
           },
         });
@@ -120,9 +126,19 @@ export default function Turnstile({
   }
 
   return (
-    <div className="turnstile-block">
+    <div className={`turnstile-block ${isVerified ? 'is-verified' : ''}`}>
       <div ref={containerRef} />
       {error ? <p className="turnstile-error">{error}</p> : null}
     </div>
   );
+}
+
+export default function Turnstile(props) {
+  const { siteKey, resetSignal = 0 } = props;
+
+  if (!siteKey) {
+    return null;
+  }
+
+  return <TurnstileWidget key={`${siteKey}-${resetSignal}`} {...props} />;
 }

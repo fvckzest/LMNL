@@ -1,61 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
 import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
 import { apiGet, apiPost, getTurnstileSiteKey } from '../lib/api';
+import { buildPortfolioPath } from '../lib/portfolio';
+import { PRIMARY_SERVICES, SERVICE_PRINCIPLES } from '../lib/serviceCatalog';
 import './Services.css';
-
-const PRIMARY_SERVICES = [
-  {
-    id: 'design',
-    index: '01',
-    title: 'DESIGN',
-    category: 'CREATIVE',
-    description: 'Visual systems and brand identity development.',
-    output: 'IDENTITY / ASSETS / GUIDELINES',
-    status: 'ACTIVE',
-    details: ['Digital Assets', 'UI/UX Design', 'Merchandise & Apparel', 'Creative Direction'],
-  },
-  {
-    id: 'branding',
-    index: '03',
-    title: 'BRANDING',
-    category: 'STRATEGY',
-    description: 'Developing the core identity of your project.',
-    output: 'POSITIONING / VOICE / STORY',
-    status: 'ACTIVE',
-    details: ['Identity', 'World Building', 'Voice & Messaging'],
-  },
-  {
-    id: 'production',
-    index: '02',
-    title: 'PRODUCTION',
-    category: 'PRODUCTION',
-    description: 'Capturing your vision and bringing it to life.',
-    output: 'MEDIA / CONTENT / CAMPAIGN ASSETS',
-    status: 'ACTIVE',
-    details: ['Videography', 'Photography', 'Website', 'Events'],
-  },
-  {
-    id: 'marketing',
-    index: '04',
-    title: 'MARKETING',
-    category: 'DISTRIBUTION',
-    description: 'Approaching the world with what you make.',
-    output: 'CAMPAIGN / COMMUNITY / DISTRIBUTION',
-    status: 'ACTIVE',
-    details: ['Strategy', 'Advertising', 'Community Building', 'Analytics'],
-  },
-];
-
-const PRINCIPLES = [
-  'CULTURAL INTEGRITY',
-  'SYSTEMIC THINKING',
-  'COMMUNITY FIRST',
-  'CREATIVE EXCELLENCE',
-  'LONG TERM IMPACT',
-];
 
 const DEFAULT_PRODUCT_ROWS = [
   {
@@ -80,7 +32,7 @@ function ServicesSidebar({ selectedCount, productCount }) {
 
       <SystemPanel title="CORE PRINCIPLES">
         <div className="services-principles">
-          {PRINCIPLES.map((item) => (
+          {SERVICE_PRINCIPLES.map((item) => (
             <div key={item} className="services-principles__item">
               <span>{item}</span>
               <span>+</span>
@@ -101,10 +53,11 @@ function ServicesSidebar({ selectedCount, productCount }) {
 
 export default function Services() {
   const { theme } = useTheme();
-  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedDetails, setSelectedDetails] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [productRows, setProductRows] = useState(DEFAULT_PRODUCT_ROWS);
   const [activeServiceId, setActiveServiceId] = useState(PRIMARY_SERVICES[0].id);
+  const [expandedDetailLabel, setExpandedDetailLabel] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
   const [requestStatus, setRequestStatus] = useState('idle');
   const [requestError, setRequestError] = useState('');
@@ -137,37 +90,44 @@ export default function Services() {
 
   const activeService =
     PRIMARY_SERVICES.find((service) => service.id === activeServiceId) ?? PRIMARY_SERVICES[0];
-  const activeServiceSelected = selectedServices.includes(activeService.id);
-  const selectedServiceCount = selectedServices.length;
-  const bundleDiscount = selectedServiceCount <= 1
-    ? 0
-    : selectedServiceCount >= PRIMARY_SERVICES.length
-      ? 20
-      : selectedServiceCount * 5;
-  const selectedCount = selectedServices.length + selectedProducts.length;
+  const sortedServices = [...PRIMARY_SERVICES].sort((a, b) => Number(a.index) - Number(b.index));
+  const activeServiceOfferings = productRows.filter((row) =>
+    String(row.capability || '').trim().toLowerCase() === activeService.title.toLowerCase()
+  );
+  const selectedCount = selectedDetails.length + selectedProducts.length;
   const selectedInquiryItems = [
-    ...selectedServices.map((serviceId) => {
+    ...selectedDetails.map((detailId) => {
+      const [serviceId, detailLabel] = detailId.split('::');
       const matchedService = PRIMARY_SERVICES.find((service) => service.id === serviceId);
-      return matchedService?.title ?? serviceId;
+      const matchedDetail = matchedService?.details.find((detail) => detail.label === detailLabel);
+      return matchedService && matchedDetail
+        ? `${matchedService.title} / ${matchedDetail.label}`
+        : detailLabel;
     }),
-    ...selectedProducts
-      .map((productId) => {
-        const matchedProduct = productRows.find((row) => row.id === productId);
-        if (!matchedProduct) return null;
-        return matchedProduct.capability
-          ? `${matchedProduct.capability} / ${matchedProduct.product}`
-          : matchedProduct.product;
-      })
-      .filter(Boolean),
-  ];
+    ...selectedProducts.map((productId) => {
+      const matchedProduct = productRows.find((row) => row.id === productId);
+      if (!matchedProduct) return null;
+      return matchedProduct.capability
+        ? `${matchedProduct.capability} / ${matchedProduct.product}`
+        : matchedProduct.product;
+    }),
+  ].filter(Boolean);
 
   const showService = (serviceId) => {
     setActiveServiceId(serviceId);
+    setExpandedDetailLabel('');
   };
 
-  const toggleServiceSelection = (serviceId) => {
-    setSelectedServices((prev) =>
-      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+  const toggleDetail = (detailLabel) => {
+    setExpandedDetailLabel((current) => (current === detailLabel ? '' : detailLabel));
+  };
+
+  const toggleDetailSelection = (serviceId, detailLabel) => {
+    const selectionId = `${serviceId}::${detailLabel}`;
+    setSelectedDetails((prev) =>
+      prev.includes(selectionId)
+        ? prev.filter((item) => item !== selectionId)
+        : [...prev, selectionId]
     );
   };
 
@@ -211,7 +171,7 @@ export default function Services() {
       title="SERVICES"
       color="#7b52d6"
       introTitle="SERVICES"
-      introCopy="INTEGRATED TOOLING FOR CULTURAL MOVEMENT AND CREATIVE INFRASTRUCTURE."
+      introCopy="INTEGRATED TOOLING AND CREATIVE INFRASTRUCTURE."
       rightSidebar={<ServicesSidebar selectedCount={selectedCount} productCount={productRows.length} />}
       contentClassName="services-layout page-stack"
     >
@@ -219,15 +179,14 @@ export default function Services() {
         <div className="services-capabilities__layout">
           <div className="services-capabilities__top-row">
             <div className="services-capabilities__grid">
-              {PRIMARY_SERVICES.map((service) => {
-                const isSelected = selectedServices.includes(service.id);
+              {sortedServices.map((service) => {
                 const isActive = activeService.id === service.id;
                 return (
                   <button
                     type="button"
                     key={service.id}
-                    className={`services-capability-card ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-current' : ''}`}
-                    aria-pressed={isSelected}
+                    className={`services-capability-card ${isActive ? 'is-current' : ''}`}
+                    aria-pressed={isActive}
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => showService(service.id)}
                   >
@@ -236,43 +195,12 @@ export default function Services() {
                 );
               })}
             </div>
-
-            <div className="services-bundle-builder-strip">
-              <div className="services-bundle-builder-strip__discount">
-                <span>bundle discount</span>
-                <strong>{bundleDiscount}%</strong>
-              </div>
-              <p className="services-bundle-builder-strip__copy">
-                combine services for discount.
-              </p>
-              <div className="services-bundle-builder" aria-hidden="true">
-                {PRIMARY_SERVICES.map((service) => {
-                  const isSelected = selectedServices.includes(service.id);
-                  return (
-                    <div
-                      key={service.id}
-                      className={`services-bundle-builder__node ${isSelected ? 'is-active' : ''}`}
-                    >
-                      <span className="services-bundle-builder__node-dot" />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           <SystemPanel title="SELECTED CAPABILITY" className="services-capability-detail-panel">
             <div className="services-capability-detail">
               <div className="services-capability-detail__header">
                 <strong>{activeService.title}</strong>
-                <button
-                  type="button"
-                  className={`theme-button services-capability-detail__action ${activeServiceSelected ? 'is-active' : ''}`}
-                  aria-pressed={activeServiceSelected}
-                  onClick={() => toggleServiceSelection(activeService.id)}
-                >
-                  {activeServiceSelected ? 'ADDED' : 'ADD'}
-                </button>
               </div>
               <p>{activeService.description}</p>
               <div className="services-capability-detail__meta">
@@ -280,45 +208,58 @@ export default function Services() {
                 <strong>{activeService.output}</strong>
               </div>
               <div className="services-capability-detail__list">
-                {activeService.details.map((detail) => (
-                  <div key={detail} className="services-capability-detail__item">
-                    <span>{detail}</span>
-                    <span>+</span>
-                  </div>
-                ))}
+                {activeService.details.map((detail) => {
+                  const isExpanded = expandedDetailLabel === detail.label;
+                  const detailSelectionId = `${activeService.id}::${detail.label}`;
+                  const isSelected = selectedDetails.includes(detailSelectionId);
+                  return (
+                    <div
+                      key={detail.label}
+                      className={`services-capability-detail__item ${isExpanded ? 'is-expanded' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className="services-capability-detail__trigger"
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleDetail(detail.label)}
+                      >
+                        <span>{detail.label}</span>
+                        <span>{isExpanded ? '−' : '+'}</span>
+                      </button>
+                      {isExpanded ? (
+                        <div className="services-capability-detail__body">
+                          <div className="services-capability-detail__footer">
+                            <span className="services-capability-detail__price">
+                              STARTING AT {detail.startingPrice}
+                            </span>
+                            <button
+                              type="button"
+                              className={`theme-button services-capability-detail__add ${isSelected ? 'is-active' : ''}`}
+                              aria-pressed={isSelected}
+                              onClick={() => toggleDetailSelection(activeService.id, detail.label)}
+                            >
+                              {isSelected ? 'ADDED' : 'ADD'}
+                            </button>
+                          </div>
+                          <Link
+                            to={buildPortfolioPath({
+                              capabilityId: activeService.id,
+                              focusLabel: detail.label,
+                            })}
+                            className="services-capability-detail__portfolio-link"
+                          >
+                            {detail.portfolioLabel || 'VIEW RELATED WORK'}
+                          </Link>
+                          <p className="services-capability-detail__copy">{detail.copy}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </SystemPanel>
         </div>
-      </section>
-
-      <section className="services-products">
-        <SystemPanel title="PRODUCT TABLE">
-          <div className="services-products__table">
-            <div className="services-products__header">
-              <span>PRODUCT</span>
-              <span>SCOPE</span>
-              <span aria-hidden="true" />
-            </div>
-            {productRows.map((row) => {
-              const isSelected = selectedProducts.includes(row.id);
-              return (
-                <div key={row.id || `${row.capability}-${row.product}`} className="services-products__row">
-                  <strong>{row.product}</strong>
-                  <span>{row.scope}</span>
-                  <button
-                    type="button"
-                    className={`theme-button services-products__action ${isSelected ? 'is-active' : ''}`}
-                    aria-pressed={isSelected}
-                    onClick={() => toggleProductSelection(row.id)}
-                  >
-                    {isSelected ? 'ADDED' : 'ADD'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </SystemPanel>
       </section>
 
       <section className="services-inquiry" id="inquiry-form-section">
@@ -326,13 +267,13 @@ export default function Services() {
           {inquirySent ? (
             <div className="services-inquiry__success theme-message-stack">
               <h3 className="theme-title-md">TRANSMISSION RECEIVED.</h3>
-              <p className="theme-body-copy">A creative lead will reach out within 24 hours.</p>
+              <p className="theme-body-copy">We will reach out soon.</p>
               <button
                 type="button"
                 className="theme-button"
                 onClick={() => {
                   setInquirySent(false);
-                  setSelectedServices([]);
+                  setSelectedDetails([]);
                   setSelectedProducts([]);
                 }}
               >

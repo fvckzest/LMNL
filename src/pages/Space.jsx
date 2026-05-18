@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
+import SpaceActivityList from '../components/space/SpaceActivityList';
 import SpaceCountdown from '../components/space/SpaceCountdown';
 import SpaceOccupancy from '../components/space/SpaceOccupancy';
 import SpacePriceCard from '../components/space/SpacePriceCard';
 import SpaceSystemPanel from '../components/space/SpaceSystemPanel';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
-import { fetchSpaceEventSnapshot } from '../lib/siteData';
+import { fetchSpaceEventSnapshot, fetchSpaceTicketActivity } from '../lib/siteData';
 import './Space.css';
 
 export default function Space() {
@@ -17,6 +18,8 @@ export default function Space() {
   const [purchaseStatus, setPurchaseStatus] = useState('idle');
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error
   const [formData, setFormData] = useState({ name: '', email: '' });
+  const [activityItems, setActivityItems] = useState([]);
+  const [activityLive, setActivityLive] = useState(false);
   const [eventData, setEventData] = useState({ 
     name: 'SPACE', 
     price: undefined, 
@@ -45,6 +48,40 @@ export default function Space() {
 
     loadEvent();
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadActivity() {
+      try {
+        const response = await fetchSpaceTicketActivity(eventData.id);
+        if (!isMounted) return;
+
+        setActivityItems(response.activity);
+        setActivityLive(true);
+        setEventData((current) => ({
+          ...current,
+          sold_tickets: Number.isFinite(response.soldTickets)
+            ? response.soldTickets
+            : current.sold_tickets,
+        }));
+      } catch (error) {
+        console.error('Failed to load SPACE ticket activity:', error);
+        if (isMounted) {
+          setActivityLive(false);
+        }
+      }
+    }
+
+    loadActivity();
+
+    const intervalId = window.setInterval(loadActivity, 15000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [eventData.id]);
 
   const totalGoal = 3500;
   const soundCovered = 500;
@@ -158,6 +195,8 @@ export default function Space() {
               </div>
             </div>
           </div>
+
+          <SpaceActivityList items={activityItems} isLive={activityLive} />
         </div>
 
         {showRequestForm && (

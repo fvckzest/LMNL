@@ -171,6 +171,24 @@ export async function fetchSpaceEventSnapshot() {
   return nextEvent;
 }
 
+export async function fetchSpaceTicketActivity(eventId, limit = 8) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+
+  if (eventId) {
+    params.set('eventId', eventId);
+  } else {
+    params.set('eventName', 'SPACE');
+  }
+
+  const response = await apiGet(`/api/space-activity?${params.toString()}`);
+  return {
+    soldTickets: Number.isFinite(response?.soldTickets) ? response.soldTickets : null,
+    activity: Array.isArray(response?.activity) ? response.activity : [],
+  };
+}
+
 export async function fetchOpenProducts() {
   const [products, catalogResponse] = await Promise.all([
     safeSupabaseQuery(
