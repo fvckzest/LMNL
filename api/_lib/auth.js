@@ -15,6 +15,10 @@ function isMissingAdminUsersTable(error) {
   return error?.code === 'PGRST205' && String(error.message || '').includes('admin_users');
 }
 
+function isMissingAdminCheckFunction(error) {
+  return error?.code === 'PGRST202' && String(error.message || '').includes('is_admin_user');
+}
+
 function isListedAdmin(user, config) {
   const email = normalizeEmail(user?.email);
   return config.adminUserIds.includes(user?.id) || (email && config.adminUserEmails.includes(email));
@@ -54,11 +58,39 @@ export async function assertAdminAccess(user, deps = {}) {
     });
   }
 
-  const { data, error } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  let data = null;
+  let error = null;
+  let usedTableFallback = false;
+
+  const rpcResponse = await supabase.rpc('is_admin_user', {
+    check_user_id: user.id,
+  });
+
+  if (!rpcResponse.error) {
+    if (rpcResponse.data === true) {
+      return { source: 'function' };
+    }
+  } else if (!isMissingAdminCheckFunction(rpcResponse.error)) {
+    error = rpcResponse.error;
+  }
+
+  if (error) {
+    throw new AppError('Unable to verify admin access.', {
+      code: 'ADMIN_AUTH_CHECK_FAILED',
+      status: 500,
+      details: error,
+      expose: true,
+    });
+  }
+
+  if (rpcResponse.error && isMissingAdminCheckFunction(rpcResponse.error)) {
+    usedTableFallback = true;
+    ({ data, error } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle());
+  }
 
   if (error) {
     if (isMissingAdminUsersTable(error) && config.source === 'auto' && envMatch) {
@@ -86,7 +118,7 @@ export async function assertAdminAccess(user, deps = {}) {
   }
 
   if (data?.user_id) {
-    return { source: 'table' };
+    return { source: usedTableFallback ? 'table_fallback' : 'table' };
   }
 
   if (config.source === 'auto' && envMatch) {

@@ -21,6 +21,10 @@ test('requireAdminUser returns the authenticated user', async () => {
             error: null,
           }),
         },
+        rpc: async () => ({
+          data: true,
+          error: null,
+        }),
         from: () => ({
           select: () => ({
             eq: () => ({
@@ -51,6 +55,10 @@ test('requireAdminUser denies authenticated users who are not allowlisted', asyn
               error: null,
             }),
           },
+          rpc: async () => ({
+            data: false,
+            error: null,
+          }),
           from: () => ({
             select: () => ({
               eq: () => ({
@@ -84,6 +92,13 @@ test('requireAdminUser can fall back to env allowlist when admin_users is not re
             error: null,
           }),
         },
+        rpc: async () => ({
+          data: null,
+          error: {
+            code: 'PGRST202',
+            message: 'Could not find the function public.is_admin_user(check_user_id) in the schema cache',
+          },
+        }),
         from: () => ({
           select: () => ({
             eq: () => ({
@@ -120,6 +135,10 @@ test('requireAdminUser can fall back to env allowlist when user is not yet in ad
             error: null,
           }),
         },
+        rpc: async () => ({
+          data: false,
+          error: null,
+        }),
         from: () => ({
           select: () => ({
             eq: () => ({
@@ -135,6 +154,29 @@ test('requireAdminUser can fall back to env allowlist when user is not yet in ad
   );
 
   assert.equal(user.email, 'admin@lmnl.art');
+});
+
+test('requireAdminUser accepts admins when is_admin_user returns true', async () => {
+  const user = await requireAdminUser(
+    { headers: { authorization: 'Bearer test-token' } },
+    {
+      config: { source: 'table', adminUserIds: [], adminUserEmails: [] },
+      supabase: {
+        auth: {
+          getUser: async () => ({
+            data: { user: { id: 'admin-user', email: 'admin@lmnl.art' } },
+            error: null,
+          }),
+        },
+        rpc: async () => ({
+          data: true,
+          error: null,
+        }),
+      },
+    },
+  );
+
+  assert.equal(user.id, 'admin-user');
 });
 
 test('resolveAuthorizationSupabase uses a user-scoped client when service role credentials are unavailable', () => {
