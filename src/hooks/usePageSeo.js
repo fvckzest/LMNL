@@ -118,7 +118,7 @@ const routeSeo = [
   {
     pattern: '/events',
     metadata: {
-      title: 'LMNL | Events',
+      title: 'LMNL | EVENTS',
       description: 'Browse upcoming LMNL programs, live experiences, and cultural events.',
       image: '/seo/events-seo.png',
     },
@@ -126,7 +126,7 @@ const routeSeo = [
   {
     pattern: '/space',
     metadata: {
-      title: 'LMNL | Space',
+      title: 'LMNL | SPACE',
       description: 'Discover LMNL Space, upcoming gatherings, and creative activations.',
       image: '/seo/space-seo.png',
     },
@@ -134,7 +134,7 @@ const routeSeo = [
   {
     pattern: '/about',
     metadata: {
-      title: 'LMNL | About',
+      title: 'LMNL | ABOUT',
       description: 'Learn about LMNL and the vision behind its art, events, and creative systems.',
       image: '/seo/about-seo.png',
     },
@@ -142,7 +142,7 @@ const routeSeo = [
   {
     pattern: '/services',
     metadata: {
-      title: 'LMNL | Services',
+      title: 'LMNL | SERVICES',
       description: 'See LMNL creative services, consulting, production, and digital systems work.',
       image: '/seo/services-seo.png',
     },
@@ -150,7 +150,7 @@ const routeSeo = [
   {
     pattern: '/portfolio',
     metadata: {
-      title: 'LMNL | Portfolio',
+      title: 'LMNL | PORTFOLIO',
       description: 'View selected LMNL creative work, visual experiments, and client projects.',
       image: '/seo/services-seo.png',
     },
@@ -158,7 +158,7 @@ const routeSeo = [
   {
     pattern: '/community',
     metadata: {
-      title: 'LMNL | Community',
+      title: 'LMNL | COMMUNITY',
       description: 'Join the LMNL community network and stay connected to future drops and events.',
       image: '/seo/community-seo.png',
     },
@@ -166,7 +166,7 @@ const routeSeo = [
   {
     pattern: '/community/share',
     metadata: {
-      title: 'LMNL | Community Share',
+      title: 'LMNL | COMMUNITY SHARE',
       description: 'Share your work with the LMNL community.',
       image: '/seo/community-seo.png',
     },
@@ -174,7 +174,7 @@ const routeSeo = [
   {
     pattern: '/share-your-work',
     metadata: {
-      title: 'LMNL | Community Share',
+      title: 'LMNL | COMMUNITY SHARE',
       description: 'Share your work with the LMNL community.',
       image: '/seo/community-seo.png',
       canonicalPath: '/community/share',
@@ -184,7 +184,7 @@ const routeSeo = [
   {
     pattern: '/shop',
     metadata: {
-      title: 'LMNL | Shop',
+      title: 'LMNL | SHOP',
       description: 'Browse LMNL products, editions, and artifacts.',
       image: '/seo/shop-seo.png',
     },
@@ -192,7 +192,7 @@ const routeSeo = [
   {
     pattern: '/blog',
     metadata: {
-      title: 'LMNL | Blog',
+      title: 'LMNL | BLOG',
       description: 'Read LMNL updates, essays, announcements, and stories.',
       image: '/seo/blog-seo.png',
     },
@@ -200,7 +200,7 @@ const routeSeo = [
   {
     pattern: '/blog/:slug',
     metadata: {
-      title: 'LMNL | Blog',
+      title: 'LMNL | BLOG',
       description: 'Read LMNL updates, essays, announcements, and stories.',
       image: '/seo/blog-seo.png',
     },
@@ -208,7 +208,7 @@ const routeSeo = [
   {
     pattern: '/contact',
     metadata: {
-      title: 'LMNL | Contact',
+      title: 'LMNL | CONTACT',
       description: 'Get in touch with LMNL for collaborations, services, and general inquiries.',
       image: '/seo/contact-seo.png',
     },
@@ -224,7 +224,7 @@ const routeSeo = [
   {
     pattern: '/ticket/:ticketId',
     metadata: {
-      title: 'LMNL | Ticket',
+      title: 'LMNL | TICKET',
       description: 'Secure LMNL event ticket access.',
       image: '/seo/events-seo.png',
       robots: 'noindex, nofollow',
@@ -233,7 +233,7 @@ const routeSeo = [
   {
     pattern: '/success',
     metadata: {
-      title: 'LMNL | Order Confirmation',
+      title: 'LMNL | ORDER CONFIRMATION',
       description: 'Order confirmation and ticket delivery status.',
       image: '/seo/events-seo.png',
       robots: 'noindex, nofollow',
@@ -242,7 +242,7 @@ const routeSeo = [
   {
     pattern: '/login',
     metadata: {
-      title: 'LMNL | Admin Login',
+      title: 'LMNL | ADMIN LOGIN',
       description: 'Secure admin access for LMNL operations and publishing tools.',
       image: '/seo/home-seo.png',
       robots: 'noindex, nofollow',
@@ -261,7 +261,7 @@ const routeSeo = [
   {
     pattern: '/app',
     metadata: {
-      title: 'LMNL | App',
+      title: 'LMNL | APP',
       description: 'Access the LMNL community app and member tools.',
       image: '/seo/community-seo.png',
       robots: 'noindex, nofollow',
@@ -270,7 +270,7 @@ const routeSeo = [
   {
     pattern: '/app/login',
     metadata: {
-      title: 'LMNL | App Login',
+      title: 'LMNL | APP LOGIN',
       description: 'Sign in to the LMNL community app.',
       image: '/seo/community-seo.png',
       robots: 'noindex, nofollow',
@@ -279,7 +279,7 @@ const routeSeo = [
   {
     pattern: '/app/onboarding',
     metadata: {
-      title: 'LMNL | App Onboarding',
+      title: 'LMNL | APP ONBOARDING',
       description: 'Set up your LMNL community profile.',
       image: '/seo/community-seo.png',
       robots: 'noindex, nofollow',
@@ -288,7 +288,7 @@ const routeSeo = [
   {
     pattern: '/auth/callback',
     metadata: {
-      title: 'LMNL | Auth',
+      title: 'LMNL | AUTH',
       description: 'Authentication callback for LMNL account access.',
       image: '/seo/home-seo.png',
       robots: 'noindex, nofollow',
@@ -302,7 +302,7 @@ export function getRouteSeo(pathname, hostname = '') {
   if (isAdminHost) {
     if (pathname === '/' || pathname === '/login') {
       return {
-        title: pathname === '/login' ? 'LMNL | Admin Login' : 'LMNL | Admin',
+        title: pathname === '/login' ? 'LMNL | ADMIN LOGIN' : 'LMNL | ADMIN',
         description: 'Private LMNL admin interface.',
         image: '/seo/home-seo.png',
         path: pathname,
@@ -313,7 +313,7 @@ export function getRouteSeo(pathname, hostname = '') {
 
     if (matchPath({ path: '/check-in/:token', end: true }, pathname)) {
       return {
-        title: 'LMNL | Check-In',
+        title: 'LMNL | CHECK-IN',
         description: 'Private LMNL check-in interface.',
         image: '/seo/events-seo.png',
         path: pathname,
@@ -334,7 +334,7 @@ export function getRouteSeo(pathname, hostname = '') {
 
   if (pathname.startsWith('/community/u/')) {
     return {
-      title: 'LMNL | Community Profile',
+      title: 'LMNL | COMMUNITY PROFILE',
       description: 'View a member profile in the LMNL community.',
       image: '/seo/community-seo.png',
       path: pathname,

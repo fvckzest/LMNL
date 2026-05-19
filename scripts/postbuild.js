@@ -19,7 +19,7 @@ const routes = [
   },
   {
     path: 'login',
-    title: 'LMNL | Admin Login',
+    title: 'LMNL | ADMIN LOGIN',
     description: 'Secure admin access for LMNL operations and publishing tools.',
     image: '/seo/home-seo.png',
     changefreq: 'monthly',
@@ -28,16 +28,17 @@ const routes = [
   },
   {
     path: 'home',
-    title: 'LMNL | Home',
+    title: 'LMNL',
     description: 'Explore LMNL events, services, shop releases, and community experiences.',
     image: '/seo/home-seo.png',
     changefreq: 'weekly',
     priority: '0.9',
     indexable: false,
+    canonicalPath: '/',
   },
   {
     path: 'events',
-    title: 'LMNL | Events',
+    title: 'LMNL | EVENTS',
     description: 'Browse upcoming LMNL programs, live experiences, and cultural events.',
     image: '/seo/events-seo.png',
     changefreq: 'daily',
@@ -46,7 +47,7 @@ const routes = [
   },
   {
     path: 'services',
-    title: 'LMNL | Services',
+    title: 'LMNL | SERVICES',
     description: 'See LMNL creative services, consulting, production, and digital systems work.',
     image: '/seo/services-seo.png',
     changefreq: 'monthly',
@@ -55,7 +56,7 @@ const routes = [
   },
   {
     path: 'portfolio',
-    title: 'LMNL | Portfolio',
+    title: 'LMNL | PORTFOLIO',
     description: 'View selected LMNL creative work, visual experiments, and client projects.',
     image: '/seo/services-seo.png',
     changefreq: 'monthly',
@@ -64,7 +65,7 @@ const routes = [
   },
   {
     path: 'community',
-    title: 'LMNL | Community',
+    title: 'LMNL | COMMUNITY',
     description: 'Join the LMNL community network and stay connected to future drops and events.',
     image: '/seo/community-seo.png',
     changefreq: 'weekly',
@@ -73,7 +74,7 @@ const routes = [
   },
   {
     path: 'community/share',
-    title: 'LMNL | Community Share',
+    title: 'LMNL | COMMUNITY SHARE',
     description: 'Share your work with the LMNL community.',
     image: '/seo/community-seo.png',
     changefreq: 'monthly',
@@ -82,7 +83,7 @@ const routes = [
   },
   {
     path: 'share-your-work',
-    title: 'LMNL | Community Share',
+    title: 'LMNL | COMMUNITY SHARE',
     description: 'Share your work with the LMNL community.',
     image: '/seo/community-seo.png',
     changefreq: 'monthly',
@@ -92,7 +93,7 @@ const routes = [
   },
   {
     path: 'app',
-    title: 'LMNL | App',
+    title: 'LMNL | APP',
     description: 'Access the LMNL community app and member tools.',
     image: '/seo/community-seo.png',
     changefreq: 'weekly',
@@ -101,7 +102,7 @@ const routes = [
   },
   {
     path: 'app/login',
-    title: 'LMNL | App Login',
+    title: 'LMNL | APP LOGIN',
     description: 'Sign in to the LMNL community app.',
     image: '/seo/community-seo.png',
     changefreq: 'monthly',
@@ -110,7 +111,7 @@ const routes = [
   },
   {
     path: 'app/onboarding',
-    title: 'LMNL | App Onboarding',
+    title: 'LMNL | APP ONBOARDING',
     description: 'Set up your LMNL community profile.',
     image: '/seo/community-seo.png',
     changefreq: 'monthly',
@@ -119,7 +120,7 @@ const routes = [
   },
   {
     path: 'auth/callback',
-    title: 'LMNL | Auth',
+    title: 'LMNL | AUTH',
     description: 'Authentication callback for LMNL account access.',
     image: '/seo/home-seo.png',
     changefreq: 'yearly',
@@ -128,7 +129,7 @@ const routes = [
   },
   {
     path: 'shop',
-    title: 'LMNL | Shop',
+    title: 'LMNL | SHOP',
     description: 'Browse LMNL products, editions, and artifacts.',
     image: '/seo/shop-seo.png',
     changefreq: 'weekly',
@@ -137,7 +138,7 @@ const routes = [
   },
   {
     path: 'about',
-    title: 'LMNL | About',
+    title: 'LMNL | ABOUT',
     description: 'Learn about LMNL and the vision behind its art, events, and creative systems.',
     image: '/seo/about-seo.png',
     changefreq: 'monthly',
@@ -146,7 +147,7 @@ const routes = [
   },
   {
     path: 'blog',
-    title: 'LMNL | Blog',
+    title: 'LMNL | BLOG',
     description: 'Read LMNL updates, essays, announcements, and stories.',
     image: '/seo/blog-seo.png',
     changefreq: 'weekly',
@@ -155,7 +156,7 @@ const routes = [
   },
   {
     path: 'contact',
-    title: 'LMNL | Contact',
+    title: 'LMNL | CONTACT',
     description: 'Get in touch with LMNL for collaborations, services, and general inquiries.',
     image: '/seo/contact-seo.png',
     changefreq: 'monthly',
@@ -173,7 +174,7 @@ const routes = [
   },
   {
     path: 'space',
-    title: 'LMNL | Space',
+    title: 'LMNL | SPACE',
     description: 'Discover LMNL Space, upcoming gatherings, and creative activations.',
     image: '/seo/space-seo.png',
     changefreq: 'weekly',
