@@ -7,13 +7,23 @@ import { usePageColor } from '../hooks/usePageColor';
 import { fetchCommunitySnapshot } from '../lib/siteData';
 import './Community.css';
 
-function shuffleArray(arr) {
-  const newArr = [...arr];
-  for (let i = newArr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-  }
-  return newArr;
+function computeStableOrderValue(member, index) {
+  const signature = `${member.name || ''}|${member.event || ''}|${member.link || ''}|${index}`;
+
+  return Array.from(signature).reduce(
+    (total, character, characterIndex) => total + (character.charCodeAt(0) * (characterIndex + 1)),
+    0
+  );
+}
+
+function buildStableMarqueeBase(members) {
+  return [...members]
+    .map((member, index) => ({
+      member,
+      orderValue: computeStableOrderValue(member, index),
+    }))
+    .sort((a, b) => a.orderValue - b.orderValue)
+    .map(({ member }) => member);
 }
 
 function rotateArray(arr, offset) {
@@ -121,13 +131,9 @@ export default function Community() {
       return combined;
     };
 
+    const orderedMembers = buildStableMarqueeBase(allMembers);
     const marqueeLists = Array.from({ length: 4 }, (_, index) => {
-      const shuffledMembers = shuffleArray(allMembers);
-      const randomizedStart = shuffledMembers.length > 1
-        ? Math.floor(Math.random() * shuffledMembers.length)
-        : 0;
-
-      return getMarqueeList(rotateArray(shuffledMembers, randomizedStart + index));
+      return getMarqueeList(rotateArray(orderedMembers, index));
     });
 
     return {

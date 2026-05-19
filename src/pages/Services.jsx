@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
 import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
-import { apiGet, apiPost, getTurnstileSiteKey } from '../lib/api';
+import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import { buildPortfolioPath } from '../lib/portfolio';
 import { PRIMARY_SERVICES } from '../lib/serviceCatalog';
 import './Services.css';
 
-const DEFAULT_PRODUCT_ROWS = [
-  {
-    capability: '',
-    product: '',
-    scope: '',
-  },
-
-].map((item, index) => ({ ...item, id: `${item.capability}-${index}`, is_active: true }));
-
 export default function Services() {
   const { theme } = useTheme();
   const [selectedDetails, setSelectedDetails] = useState([]);
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [productRows, setProductRows] = useState(DEFAULT_PRODUCT_ROWS);
   const [activeServiceId, setActiveServiceId] = useState(PRIMARY_SERVICES[0].id);
   const [expandedDetailLabel, setExpandedDetailLabel] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
@@ -32,35 +21,9 @@ export default function Services() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchServiceProducts() {
-      try {
-        const data = await apiGet('/api/service-products');
-        if (!isMounted) return;
-        setProductRows((data || []).filter((item) => item.is_active !== false));
-      } catch (error) {
-        console.error('Error fetching service products:', error);
-        if (isMounted) {
-          setProductRows(DEFAULT_PRODUCT_ROWS);
-        }
-      }
-    }
-
-    fetchServiceProducts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const activeService =
     PRIMARY_SERVICES.find((service) => service.id === activeServiceId) ?? PRIMARY_SERVICES[0];
   const sortedServices = [...PRIMARY_SERVICES].sort((a, b) => Number(a.index) - Number(b.index));
-  const activeServiceOfferings = productRows.filter((row) =>
-    String(row.capability || '').trim().toLowerCase() === activeService.title.toLowerCase()
-  );
   const selectedInquiryItems = [
     ...selectedDetails.map((detailId) => {
       const [serviceId, detailLabel] = detailId.split('::');
@@ -69,13 +32,6 @@ export default function Services() {
       return matchedService && matchedDetail
         ? `${matchedService.title} / ${matchedDetail.label}`
         : detailLabel;
-    }),
-    ...selectedProducts.map((productId) => {
-      const matchedProduct = productRows.find((row) => row.id === productId);
-      if (!matchedProduct) return null;
-      return matchedProduct.capability
-        ? `${matchedProduct.capability} / ${matchedProduct.product}`
-        : matchedProduct.product;
     }),
   ].filter(Boolean);
 
@@ -97,12 +53,6 @@ export default function Services() {
     );
   };
 
-  const toggleProductSelection = (productId) => {
-    setSelectedProducts((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
-  };
-
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
     setRequestStatus('loading');
@@ -120,7 +70,6 @@ export default function Services() {
       setInquirySent(true);
       setRequestStatus('idle');
       setFormData({ name: '', email: '', notes: '' });
-      setSelectedProducts([]);
       setTurnstileToken('');
       setTurnstileResetSignal((value) => value + 1);
     } catch (error) {
@@ -239,7 +188,6 @@ export default function Services() {
                 onClick={() => {
                   setInquirySent(false);
                   setSelectedDetails([]);
-                  setSelectedProducts([]);
                 }}
               >
                 NEW INQUIRY

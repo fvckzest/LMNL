@@ -1,11 +1,18 @@
 import { apiGet } from './api';
+import { createExpiringPromiseCache } from './expiringPromiseCache';
 import { fetchPublicRows, hasPublicDataCredentials } from './publicData';
 
 const HOME_FALLBACK_LINK = '/space';
 const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
 const PUBLIC_DATA_CACHE_TTL_MS = 60 * 1000;
-const siteActivityCache = new Map();
-const publicDataCache = new Map();
+const SPACE_ACTIVITY_LIMIT = 8;
+const siteActivityCache = createExpiringPromiseCache({
+  ttlMs: SITE_ACTIVITY_CACHE_TTL_MS,
+  keyFn: (limit) => String(Math.max(Number(limit) || 6, 1)),
+});
+const publicDataCache = createExpiringPromiseCache({
+  ttlMs: PUBLIC_DATA_CACHE_TTL_MS,
+});
 const SPACE_EVENT_NAME_ALIASES = new Set([
   'space',
   'lmnl space',
@@ -34,6 +41,21 @@ const COMMUNITY_EVENT_SELECT = [
   'capacity',
   'metadata',
 ].join(',');
+const SPACE_EVENT_SELECT = [
+  'id',
+  'name',
+  'image_url',
+  'event_date',
+  'description',
+  'metadata',
+  'location_name',
+  'price',
+  'is_private',
+  'capacity',
+  'status',
+  'square_variation_id',
+  'event_time',
+].join(',');
 const COMMUNITY_CREDIT_SELECT = [
   'id',
   'name',
@@ -61,7 +83,6 @@ const BLOG_POST_LIST_SELECT = [
   'slug',
   'date',
   'created_at',
-  'status',
   'content',
   'author',
 ].join(',');
@@ -73,98 +94,26 @@ const BLOG_POST_DETAIL_SELECT = [
   'created_at',
   'content',
   'author',
-  'status',
 ].join(',');
 
 async function fetchEventRows() {
-  try {
-    const data = await apiGet('/api/events');
-    if (Array.isArray(data)) {
-      return data;
-    }
-  } catch (error) {
-    console.error('Failed to load events from server API:', error);
+  return fetchPublicEventRows(TIMELINE_EVENT_SELECT);
+}
+
+async function fetchPublicEventRows(select) {
+  if (hasPublicDataCredentials) {
+    return fetchPublicRows('events', {
+      select,
+      order: { column: 'event_date', ascending: false },
+    });
   }
 
-  return fetchPublicRows('events', {
-    select: TIMELINE_EVENT_SELECT,
-    order: { column: 'event_date', ascending: false },
-  });
-}
-
-function readPublicDataCache(key) {
-  const entry = publicDataCache.get(key);
-  if (!entry) return null;
-
-  return {
-    ...entry,
-    isFresh: Date.now() - entry.updatedAt < PUBLIC_DATA_CACHE_TTL_MS,
-  };
-}
-
-function writePublicDataCache(key, data) {
-  publicDataCache.set(key, {
-    data,
-    updatedAt: Date.now(),
-    promise: null,
-  });
-}
-
-function setPublicDataCachePromise(key, promise) {
-  const existing = readPublicDataCache(key);
-
-  publicDataCache.set(key, {
-    data: existing?.data || null,
-    updatedAt: existing?.updatedAt || 0,
-    promise,
-  });
-}
-
-function clearPublicDataCachePromise(key) {
-  const existing = readPublicDataCache(key);
-  if (!existing) return;
-
-  publicDataCache.set(key, {
-    data: existing.data || null,
-    updatedAt: existing.updatedAt || 0,
-    promise: null,
-  });
+  const data = await apiGet('/api/events');
+  return Array.isArray(data) ? data : [];
 }
 
 async function fetchCachedPublicData(key, loader, fallback) {
-  const cached = readPublicDataCache(key);
-
-  if (cached?.data && cached.isFresh) {
-    return cached.data;
-  }
-
-  if (cached?.promise) {
-    return cached.promise;
-  }
-
-  const request = Promise.resolve()
-    .then(loader)
-    .then((data) => {
-      writePublicDataCache(key, data);
-      return data;
-    })
-    .catch((error) => {
-      if (cached?.data) {
-        return cached.data;
-      }
-
-      if (fallback !== undefined) {
-        return fallback;
-      }
-
-      throw error;
-    })
-    .finally(() => {
-      clearPublicDataCachePromise(key);
-    });
-
-  setPublicDataCachePromise(key, request);
-  return request;
+  return publicDataCache.get(key, loader, { fallback });
 }
 
 function normalizeSpaceEventName(value) {
@@ -353,7 +302,11 @@ export async function fetchCommunitySnapshot() {
       () => fetchPublicRows('community_credits', { select: COMMUNITY_CREDIT_SELECT }),
       [],
     ),
-    fetchCachedPublicData('community:events', fetchEventRows, []),
+    fetchCachedPublicData(
+      'community:events',
+      () => fetchPublicEventRows(COMMUNITY_EVENT_SELECT),
+      [],
+    ),
   ]);
 
   return { credits, events };
@@ -362,7 +315,7 @@ export async function fetchCommunitySnapshot() {
 export async function fetchSpaceEventSnapshot() {
   const events = await fetchCachedPublicData(
     'events:space',
-    fetchEventRows,
+    () => fetchPublicEventRows(SPACE_EVENT_SELECT),
     [],
   );
 
@@ -372,21 +325,20 @@ export async function fetchSpaceEventSnapshot() {
     return null;
   }
 
-  const approvedCountPromise = hasPublicDataCredentials
-    ? apiGet(`/api/event-stats?eventName=${encodeURIComponent(event.name)}`)
-      .then((data) => data?.approvedCount || 0)
-      .catch(() => 0)
-    : Promise.resolve(0);
-
   const inventoryPromise = event.square_variation_id
     ? apiGet(`/api/check-inventory?variationId=${event.square_variation_id}`).catch(() => null)
     : Promise.resolve(null);
+  const activityPromise = fetchSpaceTicketActivity(event.id, SPACE_ACTIVITY_LIMIT)
+    .then((data) => ({ ...data, isLive: true }))
+    .catch(() => ({ soldTickets: 0, activity: [], isLive: false }));
 
-  const [approvedCountResult, inventory] = await Promise.all([approvedCountPromise, inventoryPromise]);
+  const [inventory, activity] = await Promise.all([inventoryPromise, activityPromise]);
 
   const nextEvent = {
     ...event,
-    sold_tickets: approvedCountResult || 0,
+    sold_tickets: Number.isFinite(activity?.soldTickets) ? activity.soldTickets : 0,
+    activity: Array.isArray(activity?.activity) ? activity.activity : [],
+    activity_live: activity?.isLive === true,
   };
 
   if (inventory?.available !== undefined) {
@@ -437,49 +389,6 @@ export async function fetchOpenProducts() {
     ...product,
     price: Number(product.price) || 0,
   }));
-}
-
-function getSiteActivityCacheKey(limit) {
-  return String(Math.max(Number(limit) || 6, 1));
-}
-
-function readSiteActivityCache(limit) {
-  const entry = siteActivityCache.get(getSiteActivityCacheKey(limit));
-  if (!entry) return null;
-
-  return {
-    ...entry,
-    isFresh: Date.now() - entry.updatedAt < SITE_ACTIVITY_CACHE_TTL_MS,
-  };
-}
-
-function writeSiteActivityCache(limit, activity) {
-  siteActivityCache.set(getSiteActivityCacheKey(limit), {
-    data: activity,
-    updatedAt: Date.now(),
-    promise: null,
-  });
-}
-
-function setSiteActivityCachePromise(limit, promise) {
-  const existing = readSiteActivityCache(limit);
-
-  siteActivityCache.set(getSiteActivityCacheKey(limit), {
-    data: existing?.data || null,
-    updatedAt: existing?.updatedAt || 0,
-    promise,
-  });
-}
-
-function clearSiteActivityCachePromise(limit) {
-  const existing = readSiteActivityCache(limit);
-  if (!existing) return;
-
-  siteActivityCache.set(getSiteActivityCacheKey(limit), {
-    data: existing.data || null,
-    updatedAt: existing.updatedAt || 0,
-    promise: null,
-  });
 }
 
 function parseActivityDate(value) {
@@ -665,39 +574,12 @@ async function loadSiteActivityHistory(limit = 6) {
 }
 
 export function getCachedSiteActivityHistory(limit = 6) {
-  return readSiteActivityCache(limit)?.data || null;
+  return siteActivityCache.read(limit)?.data || null;
 }
 
 export async function fetchSiteActivityHistory(limit = 6, options = {}) {
   const { forceRefresh = false } = options;
-  const cached = readSiteActivityCache(limit);
-
-  if (!forceRefresh && cached?.data && cached.isFresh) {
-    return cached.data;
-  }
-
-  if (cached?.promise) {
-    return cached.promise;
-  }
-
-  const request = loadSiteActivityHistory(limit)
-    .then((activity) => {
-      writeSiteActivityCache(limit, activity);
-      return activity;
-    })
-    .catch((error) => {
-      if (cached?.data) {
-        return cached.data;
-      }
-      throw error;
-    })
-    .finally(() => {
-      clearSiteActivityCachePromise(limit);
-    });
-
-  setSiteActivityCachePromise(limit, request);
-
-  return request;
+  return siteActivityCache.get(limit, () => loadSiteActivityHistory(limit), { forceRefresh });
 }
 
 export async function fetchPublishedBlogPosts() {

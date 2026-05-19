@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import { apiGet, apiPost } from '../lib/api';
+import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './CheckIn.css';
 
 function formatTimestamp(value) {

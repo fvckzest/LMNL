@@ -20,6 +20,7 @@ export default function Space() {
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [activityItems, setActivityItems] = useState([]);
   const [activityLive, setActivityLive] = useState(false);
+  const [activityBootstrapped, setActivityBootstrapped] = useState(false);
   const [eventData, setEventData] = useState({
     name: '[SPACE]',
     image_url: '',
@@ -51,6 +52,9 @@ export default function Space() {
         const snapshot = await fetchSpaceEventSnapshot();
         if (snapshot) {
           setEventData(snapshot);
+          setActivityItems(Array.isArray(snapshot.activity) ? snapshot.activity : []);
+          setActivityLive(snapshot.activity_live === true);
+          setActivityBootstrapped(Array.isArray(snapshot.activity));
         }
       } catch (error) {
         console.error('Failed to load SPACE event:', error);
@@ -61,6 +65,10 @@ export default function Space() {
   }, []);
 
   useEffect(() => {
+    if (!eventData.id) {
+      return undefined;
+    }
+
     let isMounted = true;
 
     async function loadActivity() {
@@ -84,7 +92,9 @@ export default function Space() {
       }
     }
 
-    loadActivity();
+    if (!activityBootstrapped) {
+      loadActivity();
+    }
 
     const intervalId = window.setInterval(loadActivity, 15000);
 
@@ -92,7 +102,7 @@ export default function Space() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [eventData.id]);
+  }, [activityBootstrapped, eventData.id]);
 
   const totalGoal = 2000;
   const sourcedSoundAmount = 500;

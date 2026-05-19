@@ -9,7 +9,7 @@ function normalizeSpaceEventName(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
-    .replace(/[\[\]()]/g, '')
+    .replace(/[[\]()]/g, '')
     .replace(/\s+/g, ' ');
 }
 

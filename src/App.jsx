@@ -3,7 +3,9 @@ import { Suspense, cloneElement, useMemo, useState, useEffect } from 'react';
 import Home from './pages/Home';
 import ContentPageShell, { ShellLayoutProvider } from './components/ContentPageShell';
 import TerminalShell from './components/TerminalShell';
+import { useSupabaseSession } from './hooks/useSupabaseSession';
 import { lazyWithRetry } from './lib/lazyWithRetry';
+import { createExpiringPromiseCache } from './lib/expiringPromiseCache';
 import { ThemeProvider, useThemeNeutralColor } from './components/ThemeProvider';
 import RouteStatusScreen from './components/RouteStatusScreen';
 import {
@@ -22,7 +24,9 @@ import {
 import './styles/community-app.css';
 
 const ADMIN_ACCESS_CACHE_TTL_MS = 60 * 1000;
-const adminAccessCache = new Map();
+const adminAccessCache = createExpiringPromiseCache({
+  ttlMs: ADMIN_ACCESS_CACHE_TTL_MS,
+});
 
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
@@ -60,45 +64,6 @@ function PrsmPage() {
   const neutralColor = useThemeNeutralColor();
 
   return <GenericPage title="PRSM" color={neutralColor} />;
-}
-
-function readAdminAccessCache(accessToken) {
-  const entry = adminAccessCache.get(accessToken);
-  if (!entry) return null;
-
-  return {
-    ...entry,
-    isFresh: Date.now() - entry.updatedAt < ADMIN_ACCESS_CACHE_TTL_MS,
-  };
-}
-
-function writeAdminAccessCache(accessToken, result) {
-  adminAccessCache.set(accessToken, {
-    result,
-    updatedAt: Date.now(),
-    promise: null,
-  });
-}
-
-function setAdminAccessPromise(accessToken, promise) {
-  const existing = readAdminAccessCache(accessToken);
-
-  adminAccessCache.set(accessToken, {
-    result: existing?.result || null,
-    updatedAt: existing?.updatedAt || 0,
-    promise,
-  });
-}
-
-function clearAdminAccessPromise(accessToken) {
-  const existing = readAdminAccessCache(accessToken);
-  if (!existing) return;
-
-  adminAccessCache.set(accessToken, {
-    result: existing.result || null,
-    updatedAt: existing.updatedAt || 0,
-    promise: null,
-  });
 }
 
 function CommunityRouteError({ message, nextPath }) {
@@ -150,39 +115,10 @@ function CommunityRouteError({ message, nextPath }) {
 }
 
 function ProtectedRoute({ children, requireAdmin = false }) {
-  const [session, setSession] = useState(undefined);
+  const session = useSupabaseSession();
   const [adminStatus, setAdminStatus] = useState(requireAdmin ? 'idle' : 'authorized');
   const [adminError, setAdminError] = useState('');
   const location = useLocation();
-
-  useEffect(() => {
-    let isMounted = true;
-    let unsubscribe = () => {};
-
-    async function initSession() {
-      const { supabase } = await import('./lib/supabase');
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (isMounted) {
-        setSession(session);
-      }
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-        if (isMounted) {
-          setSession(nextSession);
-        }
-      });
-
-      unsubscribe = () => subscription.unsubscribe();
-    }
-
-    initSession();
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -200,34 +136,10 @@ function ProtectedRoute({ children, requireAdmin = false }) {
     }
 
     async function verifyAdminAccessWithCache(accessToken) {
-      const cached = readAdminAccessCache(accessToken);
-
-      if (cached?.result && cached.isFresh) {
-        return cached.result;
-      }
-
-      if (cached?.promise) {
-        return cached.promise;
-      }
-
-      const request = requestAdminVerification(accessToken)
-        .then(({ response, payload }) => {
-          const result = { response, payload };
-          writeAdminAccessCache(accessToken, result);
-          return result;
-        })
-        .catch((error) => {
-          if (cached?.result) {
-            return cached.result;
-          }
-          throw error;
-        })
-        .finally(() => {
-          clearAdminAccessPromise(accessToken);
-        });
-
-      setAdminAccessPromise(accessToken, request);
-      return request;
+      return adminAccessCache.get(accessToken, async () => {
+        const { response, payload } = await requestAdminVerification(accessToken);
+        return { response, payload };
+      });
     }
 
     async function verifyAdminAccess() {
@@ -432,6 +344,26 @@ function PersistentShellLayout() {
   );
 }
 
+function SessionAwareAuthCallback() {
+  const session = useSupabaseSession();
+  return <AuthCallback session={session} />;
+}
+
+function SessionAwareAppLogin() {
+  const session = useSupabaseSession();
+  return <AppLogin session={session} />;
+}
+
+function SessionAwareCommunityRoute({ children, allowIncomplete = false }) {
+  const session = useSupabaseSession();
+
+  return (
+    <CommunityAppRoute session={session} allowIncomplete={allowIncomplete}>
+      {children}
+    </CommunityAppRoute>
+  );
+}
+
 function App() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -439,36 +371,6 @@ function App() {
 
   const showAdmin = isLocal || isAdminSubdomain;
   const showCommunityApp = isLocal || !isAdminSubdomain;
-  const [appSession, setAppSession] = useState(undefined);
-
-  useEffect(() => {
-    let isMounted = true;
-    let unsubscribe = () => {};
-
-    async function initSession() {
-      const { supabase } = await import('./lib/supabase');
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (isMounted) {
-        setAppSession(session);
-      }
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-        if (isMounted) {
-          setAppSession(nextSession);
-        }
-      });
-
-      unsubscribe = () => subscription.unsubscribe();
-    }
-
-    initSession();
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, []);
 
   return (
     <ThemeProvider>
@@ -510,7 +412,7 @@ function App() {
                 </Route>
                 <Route path="/login" element={<Login />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
-                {showCommunityApp ? <Route path="/auth/callback" element={<AuthCallback session={appSession} />} /> : null}
+                {showCommunityApp ? <Route path="/auth/callback" element={<SessionAwareAuthCallback />} /> : null}
               </>
             ) : (
               <>
@@ -520,35 +422,35 @@ function App() {
                 <Route path="/admin" element={<Navigate to="/" />} />
                 <Route path="/login" element={<Navigate to="/" />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
-                <Route path="/auth/callback" element={<AuthCallback session={appSession} />} />
+                <Route path="/auth/callback" element={<SessionAwareAuthCallback />} />
               </>
             )}
 
             {showCommunityApp ? (
               <>
-                <Route path={buildCommunityLoginPath(COMMUNITY_APP_PATH)} element={<AppLogin session={appSession} />} />
+                <Route path={buildCommunityLoginPath(COMMUNITY_APP_PATH)} element={<SessionAwareAppLogin />} />
                 <Route
                   path={COMMUNITY_APP_PATH}
                   element={(
-                    <CommunityAppRoute session={appSession}>
-                      <AppHome session={appSession} />
-                    </CommunityAppRoute>
+                    <SessionAwareCommunityRoute>
+                      <AppHome />
+                    </SessionAwareCommunityRoute>
                   )}
                 />
                 <Route
                   path={`${COMMUNITY_DASHBOARD_BASE_PATH}/:userSlug`}
                   element={(
-                    <CommunityAppRoute session={appSession}>
-                      <UserDashboard session={appSession} />
-                    </CommunityAppRoute>
+                    <SessionAwareCommunityRoute>
+                      <UserDashboard />
+                    </SessionAwareCommunityRoute>
                   )}
                 />
                 <Route
                   path={COMMUNITY_ONBOARDING_PATH}
                   element={(
-                    <CommunityAppRoute session={appSession} allowIncomplete>
-                      <AppOnboarding session={appSession} />
-                    </CommunityAppRoute>
+                    <SessionAwareCommunityRoute allowIncomplete>
+                      <AppOnboarding />
+                    </SessionAwareCommunityRoute>
                   )}
                 />
               </>

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiGet, apiPost } from '../lib/api';
 import ContentPageShell from '../components/ContentPageShell';
@@ -342,53 +342,55 @@ export default function Admin() {
     }
   }
 
-  loadDatasetsRef.current = async (datasetNames, { force = false } = {}) => {
-    const datasetLoaders = {
-      requests: fetchRequests,
-      events: fetchEvents,
-      tickets: fetchTickets,
-      serviceInquiries: fetchServiceInquiries,
-      serviceProducts: fetchServiceProducts,
-      communityCredits: fetchCommunityCredits,
-      attendanceQueue: fetchAttendanceQueue,
-      artistInterest: fetchArtistInterest,
-      mailingList: fetchMailingList,
-      blogPosts: fetchBlogPosts,
-      squareCatalog: fetchSquareCatalog,
-      preorders: fetchPreorders,
+  useEffect(() => {
+    loadDatasetsRef.current = async (datasetNames, { force = false } = {}) => {
+      const datasetLoaders = {
+        requests: fetchRequests,
+        events: fetchEvents,
+        tickets: fetchTickets,
+        serviceInquiries: fetchServiceInquiries,
+        serviceProducts: fetchServiceProducts,
+        communityCredits: fetchCommunityCredits,
+        attendanceQueue: fetchAttendanceQueue,
+        artistInterest: fetchArtistInterest,
+        mailingList: fetchMailingList,
+        blogPosts: fetchBlogPosts,
+        squareCatalog: fetchSquareCatalog,
+        preorders: fetchPreorders,
+      };
+
+      const pendingLoads = datasetNames
+        .filter(Boolean)
+        .filter((name) => {
+          if (!force && loadedDatasetsRef.current.has(name)) {
+            return false;
+          }
+
+          if (inflightDatasetsRef.current.has(name)) {
+            return false;
+          }
+
+          return Boolean(datasetLoaders[name]);
+        });
+
+      if (pendingLoads.length === 0) {
+        return;
+      }
+
+      pendingLoads.forEach((name) => inflightDatasetsRef.current.add(name));
+
+      await Promise.allSettled(
+        pendingLoads.map(async (name) => {
+          try {
+            await datasetLoaders[name]();
+            loadedDatasetsRef.current.add(name);
+          } finally {
+            inflightDatasetsRef.current.delete(name);
+          }
+        })
+      );
     };
-
-    const pendingLoads = datasetNames
-      .filter(Boolean)
-      .filter((name) => {
-        if (!force && loadedDatasetsRef.current.has(name)) {
-          return false;
-        }
-
-        if (inflightDatasetsRef.current.has(name)) {
-          return false;
-        }
-
-        return Boolean(datasetLoaders[name]);
-      });
-
-    if (pendingLoads.length === 0) {
-      return;
-    }
-
-    pendingLoads.forEach((name) => inflightDatasetsRef.current.add(name));
-
-    await Promise.allSettled(
-      pendingLoads.map(async (name) => {
-        try {
-          await datasetLoaders[name]();
-          loadedDatasetsRef.current.add(name);
-        } finally {
-          inflightDatasetsRef.current.delete(name);
-        }
-      })
-    );
-  };
+  });
 
   useEffect(() => {
     loadDatasetsRef.current(getDatasetsForView(activeTab, pinnedSections));

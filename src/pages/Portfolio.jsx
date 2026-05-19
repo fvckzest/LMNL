@@ -11,7 +11,6 @@ import {
   filterPortfolioProjects,
   getCapabilityFocusAreas,
   getCapabilityLabel,
-  getCapabilityMeta,
   getFocusSlug,
 } from '../lib/portfolio';
 import './Portfolio.css';
@@ -66,7 +65,6 @@ export default function Portfolio() {
   const [expandedFocusSlug, setExpandedFocusSlug] = useState('');
   const activeCapability = getActiveCapability(searchParams);
   const activeFocusSlug = searchParams.get('focus') || '';
-  const activeCapabilityMeta = getCapabilityMeta(activeCapability);
   const capabilityFocusAreas = getCapabilityFocusAreas(activeCapability);
   const sortedCapabilities = PORTFOLIO_CAPABILITIES
     .filter((capability) => capability.id !== 'all')

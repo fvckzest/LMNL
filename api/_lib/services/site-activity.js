@@ -136,7 +136,7 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
   const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.all([
     supabase
       .from('events')
-      .select('*')
+      .select('id,name,event_date,created_at,metadata,partiful_url')
       .order('created_at', { ascending: false })
       .limit(Math.max(safeLimit, 6)),
     supabase

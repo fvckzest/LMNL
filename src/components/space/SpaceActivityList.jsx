@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 
 function formatActivityTimeAgo(value, nowTick) {
-  void nowTick;
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Unknown';
 
-  const elapsed = date.getTime() - Date.now();
+  const elapsed = date.getTime() - nowTick;
   const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
   const minutes = Math.round(elapsed / (1000 * 60));
 
@@ -24,11 +22,17 @@ function formatActivityTimeAgo(value, nowTick) {
 }
 
 export default function SpaceActivityList({ items = [], isLive = false }) {
-  const [nowTick, setNowTick] = useState(Date.now());
+  const [nowTick, setNowTick] = useState(0);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
+    const updateNowTick = () => {
       setNowTick(Date.now());
+    };
+
+    updateNowTick();
+
+    const intervalId = window.setInterval(() => {
+      updateNowTick();
     }, 60 * 1000);
 
     return () => window.clearInterval(intervalId);
@@ -50,7 +54,9 @@ export default function SpaceActivityList({ items = [], isLive = false }) {
             <div key={item.id} className="space-activity-item" role="listitem">
               <p className="space-activity-title">{item.customerName}</p>
               <p className="space-activity-meta">ticket purchased</p>
-              <p className="space-activity-time">{formatActivityTimeAgo(item.createdAt, nowTick)}</p>
+              <p className="space-activity-time">
+                {formatActivityTimeAgo(item.createdAt, nowTick || new Date(item.createdAt).getTime())}
+              </p>
             </div>
           ))}
         </div>
