@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requireAdminUser } from '../api/_lib/auth.js';
+import { requireAdminUser, resolveAuthorizationSupabase } from '../api/_lib/auth.js';
 
 test('requireAdminUser throws when no bearer token is present', async () => {
   await assert.rejects(
@@ -135,4 +135,32 @@ test('requireAdminUser can fall back to env allowlist when user is not yet in ad
   );
 
   assert.equal(user.email, 'admin@lmnl.art');
+});
+
+test('resolveAuthorizationSupabase uses a user-scoped client when service role credentials are unavailable', () => {
+  const userScopedSupabase = { type: 'user-scoped' };
+
+  const resolved = resolveAuthorizationSupabase('test-token', {
+    supabaseConfig: {
+      serviceRoleKey: '',
+    },
+    userScopedSupabase,
+  });
+
+  assert.equal(resolved, userScopedSupabase);
+});
+
+test('resolveAuthorizationSupabase prefers the admin client when service role credentials are available', () => {
+  const adminSupabase = { type: 'admin' };
+  const userScopedSupabase = { type: 'user-scoped' };
+
+  const resolved = resolveAuthorizationSupabase('test-token', {
+    supabaseConfig: {
+      serviceRoleKey: 'service-role-secret',
+    },
+    adminSupabase,
+    userScopedSupabase,
+  });
+
+  assert.equal(resolved, adminSupabase);
 });

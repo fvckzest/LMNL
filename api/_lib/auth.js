@@ -1,5 +1,5 @@
-import { getAdminSupabase } from './clients.js';
-import { getAdminAuthorizationConfig } from './env.js';
+import { getAdminSupabase, getUserScopedSupabase } from './clients.js';
+import { getAdminAuthorizationConfig, getSupabaseConfig } from './env.js';
 import { AppError } from './http.js';
 
 function extractBearerToken(authorizationHeader = '') {
@@ -18,6 +18,23 @@ function isMissingAdminUsersTable(error) {
 function isListedAdmin(user, config) {
   const email = normalizeEmail(user?.email);
   return config.adminUserIds.includes(user?.id) || (email && config.adminUserEmails.includes(email));
+}
+
+export function resolveAuthorizationSupabase(accessToken, deps = {}) {
+  if (deps.authorizationSupabase) {
+    return deps.authorizationSupabase;
+  }
+
+  if (deps.supabase) {
+    return deps.supabase;
+  }
+
+  const config = deps.supabaseConfig || getSupabaseConfig();
+  if (config.serviceRoleKey) {
+    return deps.adminSupabase || getAdminSupabase();
+  }
+
+  return deps.userScopedSupabase || getUserScopedSupabase(accessToken);
 }
 
 export async function assertAdminAccess(user, deps = {}) {
@@ -107,9 +124,7 @@ export async function requireAdminUser(req, deps = {}) {
     });
   }
 
-  const authorizationSupabase = deps.authorizationSupabase
-    || deps.supabase
-    || getAdminSupabase();
+  const authorizationSupabase = resolveAuthorizationSupabase(accessToken, deps);
 
   await assertAdminAccess(data.user, {
     supabase: authorizationSupabase,
