@@ -30,20 +30,20 @@ export default function BlogPostView() {
   usePageSeo(
     loading
       ? {
-          title: 'LMNL | Blog',
+          title: 'LMNL | BLOG',
           description: 'Loading LMNL blog post.',
           image: '/seo/blog-seo.png',
           path: `/blog/${slug || ''}`,
         }
       : post
         ? {
-            title: `LMNL | ${post.title}`,
+            title: `LMNL | ${String(post.title || 'BLOG').toUpperCase()}`,
             description: buildTextDescription(post.content, 'Read the latest post from LMNL.'),
             image: '/seo/blog-seo.png',
             path: `/blog/${post.slug || slug}`,
           }
         : {
-            title: 'LMNL | Post Not Found',
+            title: 'LMNL | POST NOT FOUND',
             description: 'This LMNL blog post could not be found.',
             image: '/seo/blog-seo.png',
             path: `/blog/${slug || ''}`,

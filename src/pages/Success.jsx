@@ -95,7 +95,7 @@ export default function Success() {
   const ticket = summary?.ticket;
 
   usePageSeo({
-    title: ticket?.id ? 'LMNL | Ticket Ready' : 'LMNL | Order Confirmation',
+    title: ticket?.id ? 'LMNL | TICKET READY' : 'LMNL | ORDER CONFIRMATION',
     description: buildTextDescription(
       event?.name
         ? `Order confirmation for ${event.name}. Track ticket issuance and delivery status.`

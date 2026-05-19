@@ -44,7 +44,7 @@ export default function Ticket() {
   }, [ticketId]);
 
   usePageSeo({
-    title: eventData?.name ? `LMNL | ${eventData.name} Ticket` : 'LMNL | Ticket',
+    title: eventData?.name ? `LMNL | ${String(`${eventData.name} Ticket`).toUpperCase()}` : 'LMNL | TICKET',
     description: buildTextDescription(
       eventData?.location_name
         ? `Secure LMNL ticket access for ${eventData.name || 'your event'} at ${eventData.location_name}.`
