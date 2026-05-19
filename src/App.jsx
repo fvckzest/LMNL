@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import ContentPageShell, { ShellLayoutProvider } from './components/ContentPageShell';
 import TerminalShell from './components/TerminalShell';
 import { useSupabaseSession } from './hooks/useSupabaseSession';
+import { getRouteSeo, usePageSeo } from './hooks/usePageSeo';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { createExpiringPromiseCache } from './lib/expiringPromiseCache';
 import { ThemeProvider, useThemeNeutralColor } from './components/ThemeProvider';
@@ -364,6 +365,18 @@ function SessionAwareCommunityRoute({ children, allowIncomplete = false }) {
   );
 }
 
+function RouteSeoManager() {
+  const location = useLocation();
+  const hostname = window.location.hostname;
+  const seoMetadata = useMemo(
+    () => getRouteSeo(location.pathname, hostname),
+    [hostname, location.pathname],
+  );
+
+  usePageSeo(seoMetadata);
+  return null;
+}
+
 function App() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -375,6 +388,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
+        <RouteSeoManager />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route element={<PersistentShellLayout />}>

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiGet } from '../lib/api';
 import ContentPageShell from '../components/ContentPageShell';
+import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { buildAdminCheckInUrl } from '../utils/checkInUrl';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './Ticket.css';
@@ -41,6 +42,19 @@ export default function Ticket() {
 
     fetchTicket();
   }, [ticketId]);
+
+  usePageSeo({
+    title: eventData?.name ? `LMNL | ${eventData.name} Ticket` : 'LMNL | Ticket',
+    description: buildTextDescription(
+      eventData?.location_name
+        ? `Secure LMNL ticket access for ${eventData.name || 'your event'} at ${eventData.location_name}.`
+        : `Secure LMNL ticket access for ${eventData?.name || 'your event'}.`,
+      'Secure LMNL event ticket access.',
+    ),
+    image: '/seo/events-seo.png',
+    path: `/ticket/${ticketId || ''}`,
+    robots: 'noindex, nofollow',
+  });
 
   return (
     <ContentPageShell

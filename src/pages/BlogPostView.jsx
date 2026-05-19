@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { fetchPublishedBlogPost } from '../lib/siteData';
 import './Blog.css';
 
@@ -25,6 +26,30 @@ export default function BlogPostView() {
       fetchPost();
     }
   }, [slug]);
+
+  usePageSeo(
+    loading
+      ? {
+          title: 'LMNL | Blog',
+          description: 'Loading LMNL blog post.',
+          image: '/seo/blog-seo.png',
+          path: `/blog/${slug || ''}`,
+        }
+      : post
+        ? {
+            title: `LMNL | ${post.title}`,
+            description: buildTextDescription(post.content, 'Read the latest post from LMNL.'),
+            image: '/seo/blog-seo.png',
+            path: `/blog/${post.slug || slug}`,
+          }
+        : {
+            title: 'LMNL | Post Not Found',
+            description: 'This LMNL blog post could not be found.',
+            image: '/seo/blog-seo.png',
+            path: `/blog/${slug || ''}`,
+            robots: 'noindex, nofollow',
+          },
+  );
 
   return (
     <ContentPageShell

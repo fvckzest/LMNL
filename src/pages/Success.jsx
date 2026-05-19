@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
+import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { apiPost } from '../lib/api';
 import './Success.css';
 
@@ -92,6 +93,19 @@ export default function Success() {
   const request = summary?.request;
   const event = summary?.event;
   const ticket = summary?.ticket;
+
+  usePageSeo({
+    title: ticket?.id ? 'LMNL | Ticket Ready' : 'LMNL | Order Confirmation',
+    description: buildTextDescription(
+      event?.name
+        ? `Order confirmation for ${event.name}. Track ticket issuance and delivery status.`
+        : 'Order confirmation and ticket delivery status.',
+      'Order confirmation and ticket delivery status.',
+    ),
+    image: '/seo/events-seo.png',
+    path: '/success',
+    robots: 'noindex, nofollow',
+  });
 
   return (
     <ContentPageShell
