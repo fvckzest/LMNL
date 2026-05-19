@@ -48,10 +48,8 @@ export default function SpaceActivityList({ items = [], isLive = false }) {
         <div className="space-activity-list" role="list" aria-live="polite">
           {items.map((item) => (
             <div key={item.id} className="space-activity-item" role="listitem">
-              <div className="space-activity-copy">
-                <p className="space-activity-title">{item.customerName}</p>
-                <p className="space-activity-meta">ticket purchased</p>
-              </div>
+              <p className="space-activity-title">{item.customerName}</p>
+              <p className="space-activity-meta">ticket purchased</p>
               <p className="space-activity-time">{formatActivityTimeAgo(item.createdAt, nowTick)}</p>
             </div>
           ))}

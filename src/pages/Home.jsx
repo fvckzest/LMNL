@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import EventTitleDisplay from '../components/EventTitleDisplay';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import {
   fetchNotificationEvent,
@@ -13,6 +14,7 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
   if (notificationEvent) {
     return {
       title: notificationEvent.name,
+      imageUrl: notificationEvent.image_url || '',
       date: notificationEvent.event_date,
       location: notificationEvent.location_name || 'LMNL',
       price: notificationEvent.price,
@@ -25,6 +27,7 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
   if (nextEvent) {
     return {
       title: nextEvent.title,
+      imageUrl: nextEvent.image_url || '',
       date: nextEvent.date,
       location: nextEvent.location || 'LMNL',
       price: nextEvent.price,
@@ -36,6 +39,7 @@ function getActiveHomeEvent(notificationEvent, nextEvent) {
 
   return {
     title: 'LOADING',
+    imageUrl: '',
     date: 'TBA',
     location: 'Tacoma WA',
     price: null,
@@ -141,7 +145,12 @@ export default function Home() {
               <div className="upcoming-header-row">
                 <div className="upcoming-header-copy">
                   <div className="upcoming-tag">UPCOMING EVENT</div>
-                  <h2 className="upcoming-title">{activeHomeEvent.title}</h2>
+                  <EventTitleDisplay
+                    title={activeHomeEvent.title}
+                    imageUrl={activeHomeEvent.imageUrl}
+                    className="upcoming-title"
+                    imageClassName="event-title-display__image--upcoming"
+                  />
                   <div className="upcoming-meta">
                     <span className="upcoming-date">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">

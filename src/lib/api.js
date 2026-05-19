@@ -2,13 +2,46 @@ function extractErrorMessage(payload, fallback) {
   return payload?.error?.message || payload?.message || fallback;
 }
 
+let authTokenCache = null;
+let authTokenPromise = null;
+
+async function getAccessToken() {
+  if (authTokenCache?.token && authTokenCache.expiresAt > Date.now()) {
+    return authTokenCache.token;
+  }
+
+  if (authTokenPromise) {
+    return authTokenPromise;
+  }
+
+  authTokenPromise = import('./supabase')
+    .then(async ({ supabase }) => {
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session || null;
+      const accessToken = session?.access_token || '';
+      const expiresAt = session?.expires_at
+        ? (session.expires_at * 1000) - 30_000
+        : Date.now() + 10_000;
+
+      authTokenCache = {
+        token: accessToken,
+        expiresAt,
+      };
+
+      return accessToken;
+    })
+    .finally(() => {
+      authTokenPromise = null;
+    });
+
+  return authTokenPromise;
+}
+
 async function buildHeaders(options = {}) {
   const headers = { ...(options.headers || {}) };
 
   if (options.auth) {
-    const { supabase } = await import('./supabase');
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data?.session?.access_token;
+    const accessToken = await getAccessToken();
 
     if (accessToken) {
       headers.Authorization = `Bearer ${accessToken}`;

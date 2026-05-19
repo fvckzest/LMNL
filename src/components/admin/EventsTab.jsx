@@ -1,4 +1,4 @@
- import { Fragment, useMemo, useState } from 'react';
+ import { Fragment, useEffect, useMemo, useState } from 'react';
  import { apiPost } from '../../lib/api';
  import { LinkIcon, PinIcon } from './Icons';
  import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
@@ -223,6 +223,14 @@ const MANAGED_METADATA_KEYS = new Set([
     }
     setIsModalOpen(true);
   }
+
+  useEffect(() => {
+    if (!isModalOpen || fetchingCatalog || squareItems.length > 0 || squareError) {
+      return;
+    }
+
+    fetchSquareCatalog();
+  }, [fetchSquareCatalog, fetchingCatalog, isModalOpen, squareError, squareItems.length]);
 
   function addTrait() {
     if (!newTraitKey || !newTraitValue) return;

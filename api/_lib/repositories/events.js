@@ -1,5 +1,29 @@
 import { getAdminSupabase } from '../clients.js';
 
+const SPACE_EVENT_NAME_ALIASES = new Set([
+  'space',
+  'lmnl space',
+]);
+
+function normalizeSpaceEventName(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\[\]()]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function isSpaceEvent(event) {
+  if (!event) return false;
+
+  const eventLink = String(event.metadata?.event_link || '').trim().toLowerCase();
+  if (eventLink === '/space') {
+    return true;
+  }
+
+  return SPACE_EVENT_NAME_ALIASES.has(normalizeSpaceEventName(event.name));
+}
+
 export async function getEventById(id) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
@@ -19,6 +43,18 @@ export async function getLatestEventByName(name) {
 
   if (error) throw error;
   return data;
+}
+
+export async function findLatestSpaceEvent() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return (data || []).find(isSpaceEvent) || null;
 }
 
 export async function getEventBySquareVariationIds(variationIds) {

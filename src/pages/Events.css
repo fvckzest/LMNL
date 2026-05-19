@@ -51,6 +51,48 @@
   font-weight: normal;
 }
 
+.event-title-display {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.event-title-display__image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+html[data-theme='dark'] .event-title-display__image {
+  filter: invert(1);
+}
+
+.event-title-display.upcoming-title {
+  min-height: 40px;
+}
+
+.event-title-display.card-title {
+  min-height: 40px;
+  justify-content: center;
+}
+
+.event-title-display__image--upcoming {
+  max-height: 40px;
+}
+
+.event-title-display__image--card {
+  max-height: 40px;
+}
+
+.event-title-display.events-table-title {
+  min-height: 24px;
+}
+
+.event-title-display__image--table {
+  max-height: 24px;
+}
+
 .upcoming-description,
 .card-description {
   white-space: pre-wrap;
@@ -181,17 +223,21 @@
 }
 
 .events-table-row-button {
+  display: flex;
+  justify-content: center;
+  width: 100%;
   border: 0;
   background: transparent;
   padding: 0;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
 .events-table-title {
-  display: inline-block;
+  display: inline-flex;
+  justify-content: center;
   font-size: calc(14px * 1.25);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -213,11 +259,17 @@
   box-shadow: inset 0 0 0 1px var(--page-color);
 }
 
+.events-table tbody tr:hover .event-title-display__image,
+.events-table tbody tr.active .event-title-display__image {
+  filter: brightness(0) invert(1);
+}
+
 .card-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
-  align-items: baseline;
+  align-items: center;
+  text-align: center;
 }
 
 .lineup-grid {
@@ -273,6 +325,16 @@
   .upcoming-title {
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .event-title-display.upcoming-title,
+  .event-title-display.card-title {
+    min-height: 32px;
+  }
+
+  .event-title-display__image--upcoming,
+  .event-title-display__image--card {
+    max-height: 32px;
   }
 
   .upcoming-rsvp-mobile .upcoming-rsvp-btn,

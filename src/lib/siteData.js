@@ -4,6 +4,29 @@ import { hasSupabaseCredentials, supabase } from './supabase';
 const HOME_FALLBACK_LINK = '/space';
 const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
 const siteActivityCache = new Map();
+const SPACE_EVENT_NAME_ALIASES = new Set([
+  'space',
+  'lmnl space',
+]);
+
+function normalizeSpaceEventName(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\[\]()]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function isSpaceEvent(event) {
+  if (!event) return false;
+
+  const eventLink = String(event.metadata?.event_link || '').trim().toLowerCase();
+  if (eventLink === '/space') {
+    return true;
+  }
+
+  return SPACE_EVENT_NAME_ALIASES.has(normalizeSpaceEventName(event.name));
+}
 
 export const fallbackEventsTimeline = [
   {
@@ -69,6 +92,7 @@ export function mapEventToTimelineItem(event) {
   return {
     id: event.id,
     title: event.name,
+    image_url: event.image_url || '',
     type: event.image_url ? 'image' : 'text',
     display: event.image_url || `[${String(event.name || '').toUpperCase()}]`,
     link: event.metadata?.event_link || event.partiful_url || event.spotify_id || '',
@@ -112,6 +136,11 @@ export async function fetchTimelineEvents() {
   return events.map(mapEventToTimelineItem);
 }
 
+export async function fetchFeaturedTimelineEvent() {
+  const events = await fetchTimelineEvents();
+  return events.find((event) => event.is_featured) || events[0] || null;
+}
+
 export async function fetchCommunitySnapshot() {
   const [credits, events] = await Promise.all([
     safeSupabaseQuery(() => supabase.from('community_credits').select('*'), []),
@@ -122,16 +151,16 @@ export async function fetchCommunitySnapshot() {
 }
 
 export async function fetchSpaceEventSnapshot() {
-  const event = await safeSupabaseQuery(
+  const events = await safeSupabaseQuery(
     () => supabase
       .from('events')
       .select('*')
-      .eq('name', 'SPACE')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single(),
-    null
+      .limit(50),
+    []
   );
+
+  const event = events.find(isSpaceEvent) || null;
 
   if (!event) {
     return null;
@@ -178,8 +207,6 @@ export async function fetchSpaceTicketActivity(eventId, limit = 8) {
 
   if (eventId) {
     params.set('eventId', eventId);
-  } else {
-    params.set('eventName', 'SPACE');
   }
 
   const response = await apiGet(`/api/space-activity?${params.toString()}`);

@@ -103,6 +103,12 @@
   --lmnl-modal-bg: var(--terminal-panel-bg);
   --lmnl-modal-overlay-bg: color-mix(in srgb, var(--lmnl-color-text) 18%, transparent);
   --terminal-qr-bg: var(--lmnl-color-surface);
+  --lmnl-notification-bg: var(--terminal-panel-bg-strong);
+  --lmnl-notification-color: var(--lmnl-color-text);
+  --lmnl-notification-border: color-mix(in srgb, var(--lmnl-color-text) 18%, transparent);
+  --lmnl-notification-shadow: var(--lmnl-shadow-panel);
+  --lmnl-notification-success-accent: #1f9d55;
+  --lmnl-notification-error-accent: #c1121f;
   --lmnl-logo-wordmark-invert: 0;
 }
 

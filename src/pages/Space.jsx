@@ -20,12 +20,23 @@ export default function Space() {
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [activityItems, setActivityItems] = useState([]);
   const [activityLive, setActivityLive] = useState(false);
-  const [eventData, setEventData] = useState({ 
-    name: 'SPACE', 
-    price: undefined, 
-    sold_tickets: 0, 
-    capacity: 0 
+  const [eventData, setEventData] = useState({
+    name: '[SPACE]',
+    image_url: '',
+    price: undefined,
+    sold_tickets: 0,
+    capacity: 0
   });
+
+  const introLogo = (
+    <span className="space-page-title-logo">
+      <img
+        src={eventData.image_url || '/lmnl-logo-black.png'}
+        alt={eventData.name || 'SPACE'}
+        className="space-page-title-logo__image"
+      />
+    </span>
+  );
 
   const DONATION_LINKS = {
     10: 'https://square.link/u/wS5ae9vZ',
@@ -83,18 +94,37 @@ export default function Space() {
     };
   }, [eventData.id]);
 
-  const totalGoal = 3500;
-  const soundCovered = 500;
-
-  const nodes = [
-    { name: 'FORM', raised: 600, goal: 1500 },
-    { name: 'ENERGY', raised: 250, goal: 800 },
-    { name: 'ATMOSPHERE', raised: 200, goal: 700 },
-  ];
-
-  const activeRaised = nodes.reduce((sum, item) => sum + item.raised, 0);
-  const totalRaised = activeRaised + soundCovered;
+  const totalGoal = 2000;
+  const sourcedSoundAmount = 500;
+  const ticketPrice = (Number(eventData.price) || 0) / 100;
+  const soldTickets = Number(eventData.sold_tickets) || 0;
+  const ticketRaised = soldTickets * ticketPrice;
+  const totalRaised = sourcedSoundAmount + ticketRaised;
   const totalPct = Math.min((totalRaised / totalGoal) * 100, 100);
+
+  const goalRows = [
+    { name: 'SOUND', goal: sourcedSoundAmount },
+    { name: 'LIGHTS', goal: 500 },
+    { name: 'ATMOSPHERE', goal: 750 },
+    { name: 'FOOD & DRINKS', goal: 250 },
+  ].map((row, index) => {
+    if (index === 0) {
+      return {
+        ...row,
+        raised: row.goal,
+        isOnline: true,
+      };
+    }
+
+    const raisedBeforeRow = (index - 1) * row.goal;
+    const rowRaised = Math.min(Math.max(ticketRaised - raisedBeforeRow, 0), row.goal);
+
+    return {
+      ...row,
+      raised: rowRaised,
+      isOnline: rowRaised >= row.goal,
+    };
+  });
 
   const currency = (n) =>
     new Intl.NumberFormat("en-US", {
@@ -141,149 +171,146 @@ export default function Space() {
     <ContentPageShell
       title={eventData.name || 'SPACE'}
       color="#004ffa"
-      introTitle={eventData.name || 'SPACE'}
+      introTitle={introLogo}
       introCopy="CURRENT PHYSICAL NODE / ACCESS, FUNDING, OCCUPANCY, AND BRIEFING"
       contentClassName="space-content page-stack"
     >
       <div className="space-body">
-          <div className="space-grid">
-            <div className="space-metrics-stack">
-              <SpaceCountdown eventDate={eventData.event_date} eventTime={eventData.event_time} />
-              <SpaceOccupancy
-                sold={eventData.sold_tickets} 
-                capacity={eventData.capacity} 
-              />
-            </div>
-
-            <SpaceSystemPanel
-              totalRaised={totalRaised}
-              totalGoal={totalGoal}
-              totalPct={totalPct}
-              currency={currency}
-              nodes={nodes}
-              soundCovered={soundCovered}
+        <div className="space-grid">
+          <div className="space-metrics-stack">
+            <SpaceCountdown eventDate={eventData.event_date} eventTime={eventData.event_time} />
+            <SpaceOccupancy
+              sold={eventData.sold_tickets}
+              capacity={eventData.capacity}
             />
           </div>
 
-          <div className="space-details-row">
-            <SpacePriceCard
-              price={eventData.price} 
-              eventStatus={eventData.status}
-              isPrivate={eventData.is_private}
-              eventId={eventData.id}
-              onInvite={() => setShowRequestForm(true)}
-              onPurchase={handlePurchase}
-              onDonate={() => setShowDonationModal(true)}
-            />
-            {purchaseStatus === 'error' && (
-              <p className="error-message">Unable to open checkout right now. Please try again.</p>
-            )}
-              
-              <div className="space-description">
-                <p className="description-label">brief</p>
-              <div className="description-content">
-                {eventData.description ? (
-                  eventData.description.split('\n').map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))
-                ) : (
-                  <p>
-                    System initialized. SPACE is a collaborative experiment in form, energy, and atmosphere. 
-                    All nodes are currently in the building phase. Request access to participate in the physical manifestation.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <SpaceActivityList items={activityItems} isLive={activityLive} />
+          <SpaceSystemPanel
+            totalRaised={totalRaised}
+            totalGoal={totalGoal}
+            totalPct={totalPct}
+            currency={currency}
+            rows={goalRows}
+          />
         </div>
 
-        {showRequestForm && (
-          <div className="request-modal-overlay">
-            <div className="request-modal">
-              <button className="close-modal" onClick={() => {
-                setShowRequestForm(false);
-                setRequestStatus('idle');
-              }}>×</button>
-              
-              {requestStatus === 'success' ? (
-                <div className="request-success">
-                  <h2>REQUEST SENT.</h2>
-                  <p>Check your email soon for confirmation.</p>
-                  <button className="space-button" onClick={() => setShowRequestForm(false)}>close</button>
-                </div>
+        <div className="space-details-row">
+          <SpacePriceCard
+            price={eventData.price}
+            eventStatus={eventData.status}
+            isPrivate={eventData.is_private}
+            eventId={eventData.id}
+            onInvite={() => setShowRequestForm(true)}
+            onPurchase={handlePurchase}
+            onDonate={() => setShowDonationModal(true)}
+          />
+          {purchaseStatus === 'error' && (
+            <p className="error-message">Unable to open checkout right now. Please try again.</p>
+          )}
+
+          <div className="space-description">
+            <p className="description-label">brief</p>
+            <div className="description-content">
+              {eventData.description ? (
+                eventData.description.split('\n').map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))
               ) : (
-                <>
-                  <h2>REQUEST ACCESS</h2>
-                  <p className="request-subtitle">
-                    PRIVATE EVENT // {eventData.location_name && `${eventData.location_name.toUpperCase()} // `} {eventData.event_date ? new Date(eventData.event_date + 'T00:00:00').toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : 'TBD'}
-                  </p>
-                  
-                  <form onSubmit={handleRequestSubmit} className="request-form">
-                    <input 
-                      type="text" 
-                      placeholder="NAME" 
-                      required 
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="request-input"
-                    />
-                    <input 
-                      type="email" 
-                      placeholder="EMAIL" 
-                      required 
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="request-input"
-                    />
-                    
-                    {requestStatus === 'error' && (
-                      <p className="error-message">System error. Please try again.</p>
-                    )}
-                    
-                    <button 
-                      type="submit" 
-                      className="space-button submit-request"
-                      disabled={requestStatus === 'loading'}
-                    >
-                      {requestStatus === 'loading' ? 'TRANSMITTING...' : 'SEND REQUEST'}
-                    </button>
-                  </form>
-                </>
+                <p>
+                </p>
               )}
             </div>
           </div>
-        )}
+        </div>
 
-        {showDonationModal && (
-          <div className="request-modal-overlay" onClick={() => setShowDonationModal(false)}>
-            <div className="request-modal donation-modal" onClick={e => e.stopPropagation()}>
-              <button className="close-modal" onClick={() => setShowDonationModal(false)}>×</button>
-              <h2>FEED THE HORSE</h2>
-              <p className="request-subtitle">SELECT DONATION AMOUNT</p>
-              
-              <div className="donation-choices">
-                <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                  <span className="amount">$10</span>
-                  <span className="label">SUPPORT</span>
-                </a>
-                <a href={DONATION_LINKS[20]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                  <span className="amount">$20</span>
-                  <span className="label">SUSTAIN</span>
-                </a>
-                <a href={DONATION_LINKS[50]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                  <span className="amount">$50</span>
-                  <span className="label">EXPAND</span>
-                </a>
-                <a href={DONATION_LINKS[100]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                  <span className="amount">$100</span>
-                  <span className="label">COUNCIL</span>
-                </a>
+        <SpaceActivityList items={activityItems} isLive={activityLive} />
+      </div>
+
+      {showRequestForm && (
+        <div className="request-modal-overlay">
+          <div className="request-modal">
+            <button className="close-modal" onClick={() => {
+              setShowRequestForm(false);
+              setRequestStatus('idle');
+            }}>×</button>
+
+            {requestStatus === 'success' ? (
+              <div className="request-success">
+                <h2>REQUEST SENT.</h2>
+                <p>Confirmation email will be sent soon.</p>
+                <button className="space-button" onClick={() => setShowRequestForm(false)}>close</button>
               </div>
+            ) : (
+              <>
+                <h2>REQUEST ACCESS</h2>
+                <p className="request-subtitle">
+                  PRIVATE EVENT // {eventData.location_name && `${eventData.location_name.toUpperCase()} // `} {eventData.event_date ? new Date(eventData.event_date + 'T00:00:00').toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : 'TBD'}
+                </p>
+
+                <form onSubmit={handleRequestSubmit} className="request-form">
+                  <input
+                    type="text"
+                    placeholder="NAME"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="request-input"
+                  />
+                  <input
+                    type="email"
+                    placeholder="EMAIL"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="request-input"
+                  />
+
+                  {requestStatus === 'error' && (
+                    <p className="error-message">System error. Please try again.</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="space-button submit-request"
+                    disabled={requestStatus === 'loading'}
+                  >
+                    {requestStatus === 'loading' ? 'TRANSMITTING...' : 'SEND REQUEST'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDonationModal && (
+        <div className="request-modal-overlay" onClick={() => setShowDonationModal(false)}>
+          <div className="request-modal donation-modal" onClick={e => e.stopPropagation()}>
+            <button className="close-modal" onClick={() => setShowDonationModal(false)}>×</button>
+            <h2>FEED THE HORSE</h2>
+            <p className="request-subtitle">SELECT DONATION AMOUNT</p>
+
+            <div className="donation-choices">
+              <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                <span className="amount">$10</span>
+                <span className="label">SUPPORT</span>
+              </a>
+              <a href={DONATION_LINKS[20]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                <span className="amount">$20</span>
+                <span className="label">SUSTAIN</span>
+              </a>
+              <a href={DONATION_LINKS[50]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                <span className="amount">$50</span>
+                <span className="label">EXPAND</span>
+              </a>
+              <a href={DONATION_LINKS[100]} target="_blank" rel="noopener noreferrer" className="donation-choice">
+                <span className="amount">$100</span>
+                <span className="label">COUNCIL</span>
+              </a>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </ContentPageShell>
   );
 }

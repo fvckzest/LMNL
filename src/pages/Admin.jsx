@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiGet, apiPost } from '../lib/api';
 import ContentPageShell, {
@@ -6,14 +6,72 @@ import ContentPageShell, {
   ModuleStrip,
 } from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
-import EventsTab from '../components/admin/EventsTab';
-import InquiriesTab from '../components/admin/InquiriesTab';
-import ContactTab from '../components/admin/ContactTab';
-import ShopTab from '../components/admin/ShopTab';
-import CommunityTab from '../components/admin/CommunityTab';
-import BlogTab from '../components/admin/BlogTab';
+import RouteStatusScreen from '../components/RouteStatusScreen';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import './Admin.css';
+
+const EventsTab = lazyWithRetry(() => import('../components/admin/EventsTab'));
+const InquiriesTab = lazyWithRetry(() => import('../components/admin/InquiriesTab'));
+const ContactTab = lazyWithRetry(() => import('../components/admin/ContactTab'));
+const ShopTab = lazyWithRetry(() => import('../components/admin/ShopTab'));
+const CommunityTab = lazyWithRetry(() => import('../components/admin/CommunityTab'));
+const BlogTab = lazyWithRetry(() => import('../components/admin/BlogTab'));
+
+const DEFAULT_TAB = 'events';
+
+const TAB_DATASETS = {
+  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'serviceProducts', 'communityCredits', 'attendanceQueue', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
+  events: ['requests', 'events', 'tickets'],
+  inquiries: ['serviceInquiries', 'serviceProducts'],
+  contact: ['serviceInquiries'],
+  shop: ['preorders', 'squareCatalog', 'events', 'tickets'],
+  community: ['communityCredits', 'attendanceQueue', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
+  blog: ['blogPosts'],
+};
+
+const PINNED_SECTION_DATASETS = {
+  events_mgmt: ['events', 'tickets'],
+  invite_reqs: ['requests'],
+  service_inquiries: ['serviceInquiries', 'serviceProducts'],
+  contact_inquiries: ['serviceInquiries'],
+  merch_preorders: ['preorders', 'events', 'tickets'],
+  square_catalog: ['squareCatalog'],
+  attendance_queue: ['attendanceQueue'],
+  artist_interest: ['artistInterest'],
+  community_credits: ['communityCredits', 'events'],
+  mailing_list: ['mailingList'],
+  blog_posts: ['blogPosts'],
+};
+
+function readInitialActiveTab() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_TAB;
+  }
+
+  try {
+    const saved = localStorage.getItem('lmnl_admin_active_tab');
+    return saved || DEFAULT_TAB;
+  } catch {
+    return DEFAULT_TAB;
+  }
+}
+
+function getDatasetsForView(activeTab, pinnedSections) {
+  const datasetKeys = new Set(TAB_DATASETS[activeTab] || TAB_DATASETS[DEFAULT_TAB]);
+
+  if (activeTab === 'all') {
+    pinnedSections.forEach((sectionId) => {
+      (PINNED_SECTION_DATASETS[sectionId] || []).forEach((dataset) => datasetKeys.add(dataset));
+    });
+  }
+
+  return [...datasetKeys];
+}
+
+function AdminTabFallback() {
+  return <RouteStatusScreen message="LOADING MODULE..." />;
+}
 
 export default function Admin() {
   const neutralColor = useThemeNeutralColor();
@@ -29,7 +87,7 @@ export default function Admin() {
   const [serviceProducts, setServiceProducts] = useState([]);
   const [serviceProductsLoading, setServiceProductsLoading] = useState(true);
   const [serviceProductsTableMissing, setServiceProductsTableMissing] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(readInitialActiveTab);
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
@@ -56,6 +114,9 @@ export default function Admin() {
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const loadedDatasetsRef = useRef(new Set());
+  const inflightDatasetsRef = useRef(new Set());
+  const loadDatasetsRef = useRef(async () => {});
 
   // Pinning state
   const [pinnedSections, setPinnedSections] = useState(() => {
@@ -98,19 +159,12 @@ export default function Admin() {
   ];
 
   useEffect(() => {
-    fetchRequests();
-    fetchEvents();
-    fetchTickets();
-    fetchServiceInquiries();
-    fetchServiceProducts();
-    fetchCommunityCredits();
-    fetchAttendanceQueue();
-    fetchArtistInterest();
-    fetchSquareCatalog();
-    fetchPreorders();
-    fetchMailingList();
-    fetchBlogPosts();
-  }, []);
+    try {
+      localStorage.setItem('lmnl_admin_active_tab', activeTab);
+    } catch {
+      // Ignore persistence issues for local admin preferences.
+    }
+  }, [activeTab]);
 
   function showToast(message, type = 'success') {
     setToast({ message, type });
@@ -292,24 +346,63 @@ export default function Admin() {
     }
   }
 
-  async function refreshAllData() {
+  loadDatasetsRef.current = async (datasetNames, { force = false } = {}) => {
+    const datasetLoaders = {
+      requests: fetchRequests,
+      events: fetchEvents,
+      tickets: fetchTickets,
+      serviceInquiries: fetchServiceInquiries,
+      serviceProducts: fetchServiceProducts,
+      communityCredits: fetchCommunityCredits,
+      attendanceQueue: fetchAttendanceQueue,
+      artistInterest: fetchArtistInterest,
+      mailingList: fetchMailingList,
+      blogPosts: fetchBlogPosts,
+      squareCatalog: fetchSquareCatalog,
+      preorders: fetchPreorders,
+    };
+
+    const pendingLoads = datasetNames
+      .filter(Boolean)
+      .filter((name) => {
+        if (!force && loadedDatasetsRef.current.has(name)) {
+          return false;
+        }
+
+        if (inflightDatasetsRef.current.has(name)) {
+          return false;
+        }
+
+        return Boolean(datasetLoaders[name]);
+      });
+
+    if (pendingLoads.length === 0) {
+      return;
+    }
+
+    pendingLoads.forEach((name) => inflightDatasetsRef.current.add(name));
+
+    await Promise.allSettled(
+      pendingLoads.map(async (name) => {
+        try {
+          await datasetLoaders[name]();
+          loadedDatasetsRef.current.add(name);
+        } finally {
+          inflightDatasetsRef.current.delete(name);
+        }
+      })
+    );
+  };
+
+  useEffect(() => {
+    loadDatasetsRef.current(getDatasetsForView(activeTab, pinnedSections));
+  }, [activeTab, pinnedSections]);
+
+  async function refreshVisibleData() {
     setIsRefreshing(true);
     try {
-      await Promise.all([
-        fetchRequests(),
-        fetchEvents(),
-        fetchTickets(),
-        fetchServiceInquiries(),
-        fetchServiceProducts(),
-        fetchCommunityCredits(),
-        fetchAttendanceQueue(),
-        fetchArtistInterest(),
-        fetchMailingList(),
-        fetchSquareCatalog(),
-        fetchPreorders(),
-        fetchBlogPosts()
-      ]);
-      showToast('Dashboard Refreshed');
+      await loadDatasetsRef.current(getDatasetsForView(activeTab, pinnedSections), { force: true });
+      showToast(activeTab === 'all' ? 'All visible modules refreshed' : `${activeTab.toUpperCase()} refreshed`);
     } catch (error) {
       console.error('Refresh error:', error);
       showToast('Refresh failed', 'error');
@@ -449,9 +542,9 @@ export default function Admin() {
       <button
         type="button"
         className={`admin-btn admin-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-        onClick={refreshAllData}
+        onClick={refreshVisibleData}
         disabled={isRefreshing}
-        title="Refresh all data"
+        title={activeTab === 'all' ? 'Refresh visible data' : `Refresh ${activeTab} data`}
       >
         <svg
           width="14"
@@ -468,7 +561,7 @@ export default function Admin() {
           <path d="M1 20v-6h6" />
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
         </svg>
-        <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH'}</span>
+        <span>{isRefreshing ? 'REFRESHING...' : 'REFRESH VIEW'}</span>
       </button>
       <button
         type="button"
@@ -526,6 +619,121 @@ export default function Admin() {
         {/* Pinned Sections (Only visible in 'all' tab) */}
         {activeTab === 'all' && pinnedSections.length > 0 && (
           <div className="pinned-sections-container">
+            <Suspense fallback={<AdminTabFallback />}>
+              <EventsTab
+                events={events}
+                tickets={tickets}
+                eventLoading={eventLoading}
+                ticketsLoading={ticketsLoading}
+                tableMissing={tableMissing}
+                squareItems={squareItems}
+                fetchingCatalog={fetchingCatalog}
+                squareError={squareError}
+                fetchEvents={fetchEvents}
+                fetchTickets={fetchTickets}
+                fetchRequests={fetchRequests}
+                showToast={showToast}
+                triggerConfirm={triggerConfirm}
+                fetchSquareCatalog={fetchSquareCatalog}
+                requests={requests}
+                loading={loading}
+                updateStatus={updateStatus}
+                deleteRequest={deleteRequest}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+              <InquiriesTab
+                serviceInquiries={serviceOnlyInquiries}
+                servicesLoading={servicesLoading}
+                updateServiceStatus={updateServiceStatus}
+                deleteServiceInquiry={deleteServiceInquiry}
+                serviceProducts={serviceProducts}
+                serviceProductsLoading={serviceProductsLoading}
+                serviceProductsTableMissing={serviceProductsTableMissing}
+                fetchServiceProducts={fetchServiceProducts}
+                showToast={showToast}
+                triggerConfirm={triggerConfirm}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+              <ContactTab
+                contactInquiries={contactOnlyInquiries}
+                loading={servicesLoading}
+                updateStatus={updateServiceStatus}
+                deleteInquiry={deleteServiceInquiry}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+              <ShopTab
+                squareItems={squareItems}
+                fetchingCatalog={fetchingCatalog}
+                squareError={squareError}
+                fetchSquareCatalog={fetchSquareCatalog}
+                preorders={preorders}
+                preordersLoading={preordersLoading}
+                fetchPreorders={fetchPreorders}
+                showToast={showToast}
+                triggerConfirm={triggerConfirm}
+                tickets={tickets}
+                events={events}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+              <CommunityTab
+                events={events}
+                communityCredits={communityCredits}
+                communityLoading={communityLoading}
+                communityTableMissing={communityTableMissing}
+                fetchCommunityCredits={fetchCommunityCredits}
+                attendanceQueue={attendanceQueue}
+                attendanceQueueLoading={attendanceQueueLoading}
+                fetchAttendanceQueue={fetchAttendanceQueue}
+                requests={requests}
+                requestsLoading={loading}
+                tickets={tickets}
+                ticketsLoading={ticketsLoading}
+                serviceInquiries={serviceInquiries}
+                servicesLoading={servicesLoading}
+                artistInterest={artistInterest}
+                artistInterestLoading={artistInterestLoading}
+                artistInterestTableMissing={artistInterestTableMissing}
+                fetchArtistInterest={fetchArtistInterest}
+                mailingList={mailingList}
+                mailingListLoading={mailingListLoading}
+                mailingListTableMissing={mailingListTableMissing}
+                fetchMailingList={fetchMailingList}
+                updateArtistInterestStatus={updateArtistInterestStatus}
+                deleteArtistInterest={deleteArtistInterest}
+                showToast={showToast}
+                triggerConfirm={triggerConfirm}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+              <BlogTab
+                blogPosts={blogPosts}
+                blogLoading={blogLoading}
+                blogTableMissing={blogTableMissing}
+                fetchBlogPosts={fetchBlogPosts}
+                showToast={showToast}
+                triggerConfirm={triggerConfirm}
+                pinnedSections={pinnedSections}
+                onTogglePin={togglePin}
+                renderMode="pinned"
+              />
+            </Suspense>
+            <div className="pinned-divider">
+              <span className="pinned-divider__label">End Of Pinned Sections</span>
+            </div>
+          </div>
+        )}
+
+        {(activeTab === 'events' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <EventsTab
               events={events}
               tickets={tickets}
@@ -547,10 +755,15 @@ export default function Admin() {
               deleteRequest={deleteRequest}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
+          </Suspense>
+        )}
+
+        {(activeTab === 'inquiries' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <InquiriesTab
-              serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
+              serviceInquiries={serviceOnlyInquiries}
               servicesLoading={servicesLoading}
               updateServiceStatus={updateServiceStatus}
               deleteServiceInquiry={deleteServiceInquiry}
@@ -562,17 +775,27 @@ export default function Admin() {
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
+          </Suspense>
+        )}
+
+        {(activeTab === 'contact' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <ContactTab
-              contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
+              contactInquiries={contactOnlyInquiries}
               loading={servicesLoading}
               updateStatus={updateServiceStatus}
               deleteInquiry={deleteServiceInquiry}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
+          </Suspense>
+        )}
+
+        {(activeTab === 'shop' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <ShopTab
               squareItems={squareItems}
               fetchingCatalog={fetchingCatalog}
@@ -587,8 +810,13 @@ export default function Admin() {
               events={events}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
+          </Suspense>
+        )}
+
+        {(activeTab === 'community' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <CommunityTab
               events={events}
               communityCredits={communityCredits}
@@ -618,8 +846,13 @@ export default function Admin() {
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
+          </Suspense>
+        )}
+
+        {(activeTab === 'blog' || activeTab === 'all') && (
+          <Suspense fallback={<AdminTabFallback />}>
             <BlogTab
               blogPosts={blogPosts}
               blogLoading={blogLoading}
@@ -629,135 +862,9 @@ export default function Admin() {
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
               onTogglePin={togglePin}
-              renderMode="pinned"
+              renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
-            <div className="pinned-divider">
-              <span className="pinned-divider__label">End Of Pinned Sections</span>
-            </div>
-          </div>
-        )}
-
-        {(activeTab === 'events' || activeTab === 'all') && (
-          <EventsTab
-            events={events}
-            tickets={tickets}
-            eventLoading={eventLoading}
-            ticketsLoading={ticketsLoading}
-            tableMissing={tableMissing}
-            squareItems={squareItems}
-            fetchingCatalog={fetchingCatalog}
-            squareError={squareError}
-            fetchEvents={fetchEvents}
-            fetchTickets={fetchTickets}
-            fetchRequests={fetchRequests}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-            fetchSquareCatalog={fetchSquareCatalog}
-            requests={requests}
-            loading={loading}
-            updateStatus={updateStatus}
-            deleteRequest={deleteRequest}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
-        )}
-
-        {(activeTab === 'inquiries' || activeTab === 'all') && (
-          <InquiriesTab
-            serviceInquiries={serviceInquiries.filter(iq => !iq.selected_services?.includes('general'))}
-            servicesLoading={servicesLoading}
-            updateServiceStatus={updateServiceStatus}
-            deleteServiceInquiry={deleteServiceInquiry}
-            serviceProducts={serviceProducts}
-            serviceProductsLoading={serviceProductsLoading}
-            serviceProductsTableMissing={serviceProductsTableMissing}
-            fetchServiceProducts={fetchServiceProducts}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
-        )}
-
-        {(activeTab === 'contact' || activeTab === 'all') && (
-          <ContactTab
-            contactInquiries={serviceInquiries.filter(iq => iq.selected_services?.includes('general'))}
-            loading={servicesLoading}
-            updateStatus={updateServiceStatus}
-            deleteInquiry={deleteServiceInquiry}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
-        )}
-
-        {(activeTab === 'shop' || activeTab === 'all') && (
-          <ShopTab
-            squareItems={squareItems}
-            fetchingCatalog={fetchingCatalog}
-            squareError={squareError}
-            fetchSquareCatalog={fetchSquareCatalog}
-            preorders={preorders}
-            preordersLoading={preordersLoading}
-            fetchPreorders={fetchPreorders}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-            tickets={tickets}
-            events={events}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
-        )}
-
-        {(activeTab === 'community' || activeTab === 'all') && (
-          <CommunityTab
-            events={events}
-            communityCredits={communityCredits}
-            communityLoading={communityLoading}
-            communityTableMissing={communityTableMissing}
-            fetchCommunityCredits={fetchCommunityCredits}
-            attendanceQueue={attendanceQueue}
-            attendanceQueueLoading={attendanceQueueLoading}
-            fetchAttendanceQueue={fetchAttendanceQueue}
-            requests={requests}
-            requestsLoading={loading}
-            tickets={tickets}
-            ticketsLoading={ticketsLoading}
-            serviceInquiries={serviceInquiries}
-            servicesLoading={servicesLoading}
-            artistInterest={artistInterest}
-            artistInterestLoading={artistInterestLoading}
-            artistInterestTableMissing={artistInterestTableMissing}
-            fetchArtistInterest={fetchArtistInterest}
-            mailingList={mailingList}
-            mailingListLoading={mailingListLoading}
-            mailingListTableMissing={mailingListTableMissing}
-            fetchMailingList={fetchMailingList}
-            updateArtistInterestStatus={updateArtistInterestStatus}
-            deleteArtistInterest={deleteArtistInterest}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
-        )}
-
-        {(activeTab === 'blog' || activeTab === 'all') && (
-          <BlogTab
-            blogPosts={blogPosts}
-            blogLoading={blogLoading}
-            blogTableMissing={blogTableMissing}
-            fetchBlogPosts={fetchBlogPosts}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-            pinnedSections={pinnedSections}
-            onTogglePin={togglePin}
-            renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
-          />
+          </Suspense>
         )}
       </ContentPageShell>
 

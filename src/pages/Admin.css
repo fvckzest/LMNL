@@ -1376,19 +1376,21 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: black;
-  color: white;
+  background: var(--lmnl-notification-bg);
+  color: var(--lmnl-notification-color);
   padding: 12px 16px;
   font-size: calc(var(--lmnl-text-mono-xs) * 1.25);
   font-weight: 600;
   letter-spacing: var(--lmnl-tracking-ui);
   z-index: 2000;
   animation: slideInUp 0.3s ease-out;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--lmnl-notification-border);
+  box-shadow: var(--lmnl-notification-shadow);
 }
 
 .admin-toast.error {
-  background: #ff0000;
+  background: var(--lmnl-notification-bg);
+  border-color: color-mix(in srgb, var(--lmnl-notification-error-accent) 40%, var(--lmnl-notification-border));
 }
 
 .admin-confirm-notification {

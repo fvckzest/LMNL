@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import EventTitleDisplay from '../components/EventTitleDisplay';
 import { usePageColor } from '../hooks/usePageColor';
 import { fallbackEventsTimeline, fetchTimelineEvents } from '../lib/siteData';
 import './Events.css';
@@ -7,6 +8,7 @@ import './Events.css';
 const upcomingEvent = {
   id: 'next-fest',
   title: 'LMNL FEST 2026',
+  imageUrl: '',
   date: 'June 15, 2026',
   location: 'LMNL Space, LA',
   description: 'Our biggest gathering yet. A multi-day festival celebrating the intersection of art, technology, and community. Featuring live performances, interactive installations, and exclusive drops.',
@@ -35,6 +37,7 @@ export default function Events() {
           setFeaturedEvent({
             id: feat.id,
             title: feat.title,
+            imageUrl: feat.image_url || '',
             date: feat.date,
             location: feat.location,
             description: feat.description,
@@ -88,7 +91,12 @@ export default function Events() {
                 <div className="upcoming-header-copy">
                   <div className="upcoming-tag">UPCOMING EVENT</div>
                   <div className="upcoming-title-row">
-                    <h2 className="upcoming-title">{featuredEvent.title}</h2>
+                    <EventTitleDisplay
+                      title={featuredEvent.title}
+                      imageUrl={featuredEvent.imageUrl}
+                      className="upcoming-title"
+                      imageClassName="event-title-display__image--upcoming"
+                    />
                     <div className="upcoming-rsvp-mobile">
                       {featuredEventAction}
                     </div>
@@ -176,7 +184,12 @@ export default function Events() {
                             onClick={() => setSelectedId(event.id)}
                             aria-pressed={selectedId === event.id}
                           >
-                            <span className="events-table-title">{event.title}</span>
+                            <EventTitleDisplay
+                              title={event.title}
+                              imageUrl={event.image_url}
+                              className="events-table-title"
+                              imageClassName="event-title-display__image--table"
+                            />
                           </button>
                         </td>
                         <td>{event.location || 'LMNL Space, LA'}</td>
@@ -193,7 +206,12 @@ export default function Events() {
                 <div className="card-glow" />
                 <div className="card-content">
                   <div className="card-header">
-                    <h2 className="card-title">{selectedEvent.title}</h2>
+                    <EventTitleDisplay
+                      title={selectedEvent.title}
+                      imageUrl={selectedEvent.image_url}
+                      className="card-title"
+                      imageClassName="event-title-display__image--card"
+                    />
                     <span className="card-date">{selectedEvent.date}</span>
                   </div>
                   <p className="card-description">{selectedEvent.description}</p>

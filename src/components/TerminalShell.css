@@ -57,6 +57,7 @@
 }
 
 .terminal-shell__right {
+  --lmnl-color-panel-label: var(--lmnl-color-text);
   width: 332px;
   justify-self: end;
   display: flex;
@@ -436,6 +437,11 @@
   flex: 1 0 auto;
 }
 
+.terminal-shell__right .system-panel__title {
+  color: var(--lmnl-color-text) !important;
+  -webkit-text-fill-color: var(--lmnl-color-text);
+}
+
 .system-panel__header::before {
   content: '';
   position: absolute;
@@ -446,6 +452,10 @@
   transform: translateY(-50%);
   border-radius: 999px;
   background: color-mix(in srgb, var(--page-color) 82%, white 18%);
+}
+
+.terminal-shell__right .system-panel__header::before {
+  background: color-mix(in srgb, var(--lmnl-color-text) 82%, transparent);
 }
 
 .terminal-signal-list {
@@ -612,6 +622,51 @@
   justify-content: space-between;
   font-size: calc(7px * 1.25);
   letter-spacing: 0.1em;
+}
+
+.terminal-invite-card {
+  padding-top: 2px;
+}
+
+.terminal-invite-card__row {
+  display: flex;
+  align-items: center;
+}
+
+.terminal-invite-card__actions {
+  --terminal-invite-card-control-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.terminal-invite-card__logo {
+  display: block;
+  height: var(--terminal-invite-card-control-height);
+  width: auto;
+  max-width: 96px;
+  object-fit: contain;
+  object-position: center;
+  flex: 0 0 auto;
+}
+
+html[data-theme='dark'] .terminal-invite-card__logo {
+  filter: invert(1);
+}
+
+.terminal-invite-card__button {
+  --theme-button-font: var(--lmnl-font-mono);
+  --theme-button-size: 10px;
+  --theme-button-weight: 500;
+  --theme-button-height: var(--terminal-invite-card-control-height);
+  --theme-button-padding: 8px 12px;
+  --theme-button-color: var(--lmnl-color-text-muted);
+  --theme-button-bg: transparent;
+  --theme-button-border: var(--lmnl-border-subtle);
+  flex: 0 0 auto;
+  text-decoration: none;
 }
 
 .terminal-notice-graph span {

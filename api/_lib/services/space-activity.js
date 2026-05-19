@@ -1,5 +1,5 @@
 import { AppError } from '../errors.js';
-import { getEventById, getLatestEventByName } from '../repositories/events.js';
+import { findLatestSpaceEvent, getEventById, getLatestEventByName } from '../repositories/events.js';
 import { countTicketsByEventId, listRecentTicketsByEventId } from '../repositories/tickets.js';
 
 function maskCustomerName(value) {
@@ -9,11 +9,7 @@ function maskCustomerName(value) {
     .filter(Boolean);
 
   if (!parts.length) return 'Guest';
-  if (parts.length === 1) return parts[0];
-
-  const [firstName, ...rest] = parts;
-  const lastInitial = rest[rest.length - 1]?.charAt(0)?.toUpperCase();
-  return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+  return parts[0];
 }
 
 function formatTimeAgo(value) {
@@ -50,12 +46,13 @@ export async function getSpaceTicketActivity({ eventId, eventName = 'SPACE', lim
   const safeLimit = Math.max(Number(limit) || 8, 1);
   const loadEventById = deps.getEventById || getEventById;
   const loadLatestEventByName = deps.getLatestEventByName || getLatestEventByName;
+  const loadLatestSpaceEvent = deps.findLatestSpaceEvent || findLatestSpaceEvent;
   const loadTicketsByEventId = deps.listRecentTicketsByEventId || listRecentTicketsByEventId;
   const loadTicketCountByEventId = deps.countTicketsByEventId || countTicketsByEventId;
 
   const event = eventId
     ? await loadEventById(eventId)
-    : await loadLatestEventByName(eventName);
+    : await loadLatestEventByName(eventName) || await loadLatestSpaceEvent();
 
   if (!event?.id) {
     throw new AppError('Event not found.', {

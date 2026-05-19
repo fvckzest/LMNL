@@ -1,4 +1,4 @@
-export default function SpaceSystemPanel({ totalRaised, totalGoal, totalPct, currency, nodes, soundCovered }) {
+export default function SpaceSystemPanel({ totalRaised, totalGoal, totalPct, currency, rows }) {
   return (
     <div className="space-system-container">
       <p className="space-system-header">system diagnostics</p>
@@ -14,29 +14,24 @@ export default function SpaceSystemPanel({ totalRaised, totalGoal, totalPct, cur
       </div>
 
       <div className="space-system-nodes">
-        <div className="space-system-node-item sound-node">
-          <div className="space-node-info">
-            <span className="space-node-name">
-              <span className="space-pulse-dot" />
-              SOUND
-            </span>
-            <span className="space-node-status">ONLINE ({currency(soundCovered)})</span>
-          </div>
-          <div className="space-node-bar-bg">
-            <div className="space-node-bar-fill completed" style={{ width: '100%' }} />
-          </div>
-        </div>
-
-        {nodes.map((node) => {
-          const pct = Math.round((node.raised / node.goal) * 100);
+        {rows.map((row, index) => {
+          const pct = row.goal > 0 ? Math.round((row.raised / row.goal) * 100) : 0;
           return (
-            <div key={node.name} className="space-system-node-item">
+            <div key={row.name} className="space-system-node-item">
               <div className="space-node-info">
-                <span className="space-node-name">{node.name}</span>
-                <span className="space-node-pct">{pct}%</span>
+                <span className="space-node-name">
+                  {row.isOnline && index === 0 ? <span className="space-pulse-dot" /> : null}
+                  {row.name}
+                </span>
+                <span className="space-node-status">
+                  {row.isOnline ? 'ONLINE' : currency(row.goal)}
+                </span>
               </div>
               <div className="space-node-bar-bg">
-                <div className="space-node-bar-fill" style={{ width: `${pct}%` }} />
+                <div
+                  className={`space-node-bar-fill${row.isOnline ? ' completed' : ''}`}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             </div>
           );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { usePageColor } from '../hooks/usePageColor';
-import { fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
+import { fetchFeaturedTimelineEvent, fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
 import { getThemeNeutralColor, useTheme } from './ThemeProvider';
 import LmnlLogoBlack from './LmnlLogoBlack';
 import SystemPanel from './SystemPanel';
@@ -200,6 +200,78 @@ function ActivityFeedCard() {
   );
 }
 
+function InviteCard() {
+  const [featuredEvent, setFeaturedEvent] = useState(null);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadFeaturedEvent() {
+      try {
+        const event = await fetchFeaturedTimelineEvent();
+        if (isCancelled) return;
+        setFeaturedEvent(event);
+        setStatus(event ? 'ready' : 'empty');
+      } catch (error) {
+        if (isCancelled) return;
+        console.error('Failed to load featured event for sidebar invite:', error);
+        setFeaturedEvent(null);
+        setStatus('error');
+      }
+    }
+
+    loadFeaturedEvent();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const eventTitle = featuredEvent?.title || 'No featured event';
+  const eventHref = featuredEvent?.link || (eventTitle === 'SPACE' || eventTitle === 'LMNL SPACE' ? '/space' : '/events');
+  const eventLogoSrc = featuredEvent?.image_url || '/lmnl-logo-black.png';
+  const eventLogoAlt = featuredEvent?.title ? `${featuredEvent.title} logo` : 'LMNL logo';
+  const isExternal = eventHref.startsWith('http');
+
+  const button =
+    status === 'ready'
+      ? (
+        isExternal ? (
+          <a href={eventHref} target="_blank" rel="noreferrer" className="terminal-invite-card__button theme-button">
+            view
+          </a>
+        ) : (
+          <Link to={eventHref} className="terminal-invite-card__button theme-button">
+            view
+          </Link>
+        )
+      )
+      : (
+        <Link to="/events" className="terminal-invite-card__button theme-button">
+          view
+        </Link>
+      );
+
+  return (
+    <SystemPanel title="INVITE">
+      <div className="terminal-invite-card">
+        <div className="terminal-invite-card__row">
+          <div className="terminal-invite-card__actions">
+            <img
+              className="terminal-invite-card__logo"
+              src={eventLogoSrc}
+              alt={eventLogoAlt}
+              loading="lazy"
+            />
+            {button}
+          </div>
+        </div>
+      </div>
+    </SystemPanel>
+  );
+}
+
 export default function TerminalShell({
   title,
   color,
@@ -272,6 +344,13 @@ export default function TerminalShell({
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
   };
+
+  const rightSidebarContent = (
+    <>
+      <ActivityFeedCard />
+      <InviteCard />
+    </>
+  );
 
   return (
     <div
@@ -436,9 +515,9 @@ export default function TerminalShell({
 
         <footer className="terminal-shell__footer">
           <div className="terminal-shell__footer-links">
-            <a href="https://instagram.com" target="_blank" rel="noreferrer">INSTAGRAM</a>
-            <a href="https://x.com" target="_blank" rel="noreferrer">X</a>
-            <a href="https://discord.com" target="_blank" rel="noreferrer">DISCORD</a>
+            <a href="https://instagram.com/lmnlart" target="_blank" rel="noreferrer">INSTAGRAM</a>
+            <a href="https://x.com/lmnlart" target="_blank" rel="noreferrer">X</a>
+            <a href="https://discord.gg/hYYfTtyJzK" target="_blank" rel="noreferrer">DISCORD</a>
           </div>
           <Link to="/contact" className="terminal-shell__footer-cta theme-button">SIGNAL THE SYSTEM +</Link>
         </footer>
@@ -465,8 +544,7 @@ export default function TerminalShell({
           </div>
         ) : null}
 
-        {rightSidebar || <ActivityFeedCard />}
-        {rightSidebarFooter ? <div className="terminal-shell__right-footer">{rightSidebarFooter}</div> : null}
+        {rightSidebarContent}
       </aside>
     </div>
   );
