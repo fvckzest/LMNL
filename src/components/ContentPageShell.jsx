@@ -1,5 +1,16 @@
+import { createContext, useContext, useEffect } from 'react';
 import TerminalShell from './TerminalShell';
 import './ContentPageShell.css';
+
+const ShellLayoutContext = createContext(null);
+
+export function ShellLayoutProvider({ value, children }) {
+  return (
+    <ShellLayoutContext.Provider value={value}>
+      {children}
+    </ShellLayoutContext.Provider>
+  );
+}
 
 export function PageStatus({ children, className = '' }) {
   const classes = ['page-status-message', className].filter(Boolean).join(' ');
@@ -123,10 +134,40 @@ export default function ContentPageShell({
   introTitle,
   introCopy,
   introActions,
-  rightSidebar,
-  rightSidebarFooter,
 }) {
   const contentClasses = ['content-page-shell__content', contentClassName].filter(Boolean).join(' ');
+  const shellLayout = useContext(ShellLayoutContext);
+
+  useEffect(() => {
+    if (!shellLayout) return undefined;
+
+    shellLayout.setShellConfig({
+      title,
+      color,
+      introAccentColor,
+      introLabel,
+      introTitle,
+      introCopy,
+      introActions,
+      contentClassName: contentClasses,
+    });
+
+    return undefined;
+  }, [
+    color,
+    contentClasses,
+    introAccentColor,
+    introActions,
+    introCopy,
+    introLabel,
+    introTitle,
+    shellLayout,
+    title,
+  ]);
+
+  if (shellLayout) {
+    return children;
+  }
 
   return (
     <TerminalShell
@@ -138,12 +179,6 @@ export default function ContentPageShell({
       introTitle={introTitle}
       introCopy={introCopy}
       introActions={introActions}
-      rightSidebar={rightSidebar}
-      rightSidebarFooter={rightSidebarFooter || (
-        <p className="home-terminal__system-note">
-          A creative platform for events, artists, artifacts, and cultural systems.
-        </p>
-      )}
       contentClassName={contentClasses}
     >
       {children}

@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Suspense, cloneElement, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Suspense, cloneElement, useMemo, useState, useEffect } from 'react';
 import Home from './pages/Home';
-import ContentPageShell from './components/ContentPageShell';
+import ContentPageShell, { ShellLayoutProvider } from './components/ContentPageShell';
+import TerminalShell from './components/TerminalShell';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { ThemeProvider, useThemeNeutralColor } from './components/ThemeProvider';
 import RouteStatusScreen from './components/RouteStatusScreen';
@@ -411,6 +412,26 @@ function CommunityAppRoute({ children, session, allowIncomplete = false }) {
   });
 }
 
+function PersistentShellLayout() {
+  const [shellConfig, setShellConfig] = useState({
+    title: 'TERMINAL',
+    color: '#111111',
+    introTitle: 'TERMINAL',
+    introCopy: 'Welcome to LMNL',
+    contentClassName: 'page-stack',
+  });
+
+  const contextValue = useMemo(() => ({ setShellConfig }), []);
+
+  return (
+    <ShellLayoutProvider value={contextValue}>
+      <TerminalShell {...shellConfig}>
+        <Outlet />
+      </TerminalShell>
+    </ShellLayoutProvider>
+  );
+}
+
 function App() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -454,11 +475,23 @@ function App() {
       <Router>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
-            <Route path="/ticket/:ticketId" element={<Ticket />} />
-            <Route path="/success" element={<Success />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/space" element={<Space />} />
-            <Route path="/about" element={<About />} />
+            <Route element={<PersistentShellLayout />}>
+              <Route path="/ticket/:ticketId" element={<Ticket />} />
+              <Route path="/success" element={<Success />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/space" element={<Space />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/community/share" element={<ArtistInterest />} />
+              <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPostView />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/prsm" element={<PrsmPage />} />
+            </Route>
 
             {showAdmin ? (
               <>
@@ -472,14 +505,18 @@ function App() {
                     <CheckIn />
                   </ProtectedRoute>
                 } />
-                <Route path="/home" element={<Home />} />
+                <Route element={<PersistentShellLayout />}>
+                  <Route path="/home" element={<Home />} />
+                </Route>
                 <Route path="/login" element={<Login />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
                 {showCommunityApp ? <Route path="/auth/callback" element={<AuthCallback session={appSession} />} /> : null}
               </>
             ) : (
               <>
-                <Route path="/" element={<Home />} />
+                <Route element={<PersistentShellLayout />}>
+                  <Route path="/" element={<Home />} />
+                </Route>
                 <Route path="/admin" element={<Navigate to="/" />} />
                 <Route path="/login" element={<Navigate to="/" />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
@@ -523,17 +560,6 @@ function App() {
                 <Route path={COMMUNITY_ONBOARDING_PATH} element={<Navigate to="/" replace />} />
               </>
             )}
-
-            <Route path="/services" element={<Services />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/community/share" element={<ArtistInterest />} />
-            <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPostView />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/prsm" element={<PrsmPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

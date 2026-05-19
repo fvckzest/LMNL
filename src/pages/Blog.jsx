@@ -1,34 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
-import SystemPanel from '../components/SystemPanel';
-import { supabase } from '../lib/supabase';
+import { fetchPublishedBlogPosts } from '../lib/siteData';
 import './Blog.css';
-
-function BlogSidebar({ posts, loading }) {
-  const latestDate = posts[0]
-    ? new Date(posts[0].date || posts[0].created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()
-    : '---';
-
-  return (
-    <>
-      <SystemPanel title="ARCHIVE INDEX">
-        <div className="terminal-metric-list">
-          <div className="terminal-metric-row"><span>RECORDS</span><span>{loading ? '---' : String(posts.length).padStart(2, '0')}</span></div>
-          <div className="terminal-metric-row"><span>STATE</span><span>{loading ? 'SYNCING' : 'LIVE'}</span></div>
-          <div className="terminal-metric-row"><span>LATEST</span><span>{latestDate}</span></div>
-        </div>
-      </SystemPanel>
-
-      <SystemPanel title="ARCHIVE MODE">
-        <div className="blog-sidebar-copy">
-          <p>Field notes, releases, and transmissions are logged here as indexed records.</p>
-          <p>Open any record to enter the full transmission view.</p>
-        </div>
-      </SystemPanel>
-    </>
-  );
-}
 
 export default function Blog() {
   const [posts, setPosts] = useState([]);
@@ -37,13 +11,7 @@ export default function Blog() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const { data, error } = await supabase
-          .from('blog_posts')
-          .select('*')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        const data = await fetchPublishedBlogPosts();
         setPosts(data || []);
       } catch (error) {
         console.error('Failed to load blog posts:', error);
@@ -60,7 +28,6 @@ export default function Blog() {
       color="#ffde00"
       introTitle="BLOG"
       introCopy="TRANSMISSIONS, WRITING, AND SYSTEM LOGS"
-      rightSidebar={<BlogSidebar posts={posts} loading={loading} />}
       contentClassName="blog-content page-stack"
     >
       <div className="blog-layout">

@@ -1,32 +1,10 @@
 import { useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
-import SystemPanel from '../components/SystemPanel';
 import { useTheme } from '../components/ThemeProvider';
 import SocialLinks from '../components/SocialLinks';
 import Turnstile from '../components/Turnstile';
 import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import './Contact.css';
-
-function ContactSidebar({ status }) {
-  return (
-    <>
-      <SystemPanel title="ROUTING STATUS">
-        <div className="terminal-metric-list">
-          <div className="terminal-metric-row"><span>NODE</span><span>CONTACT</span></div>
-          <div className="terminal-metric-row"><span>INTAKE</span><span>{status === 'loading' ? 'ACTIVE' : 'READY'}</span></div>
-          <div className="terminal-metric-row"><span>ROUTE</span><span>GENERAL</span></div>
-        </div>
-      </SystemPanel>
-
-      <SystemPanel title="MESSAGE PROTOCOL">
-        <div className="contact-sidebar-copy">
-          <p>Use this terminal for general outreach, partnership questions, or project context before a scoped inquiry.</p>
-          <p>For detailed project builds, the services route remains the primary intake path.</p>
-        </div>
-      </SystemPanel>
-    </>
-  );
-}
 
 export default function Contact() {
   const { theme } = useTheme();
@@ -73,7 +51,6 @@ export default function Contact() {
       color="#90e937"
       introTitle="CONTACT"
       introCopy="SIGNAL THE SYSTEM"
-      rightSidebar={<ContactSidebar status={status} />}
       contentClassName="page-stack"
     >
       <div className="contact-layout">

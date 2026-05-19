@@ -196,7 +196,7 @@ const MANAGED_METADATA_KEYS = new Set([
         address: event.address || '',
         description: event.description || '',
         image_url: event.image_url || '',
-        partiful_url: event.partiful_url || event.spotify_id || '',
+        partiful_url: event.partiful_url || '',
         is_private: event.is_private ?? true,
         status: event.status || 'active',
         square_variation_id: event.square_variation_id || '',

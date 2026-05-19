@@ -2,25 +2,13 @@ import { useState, useEffect } from 'react';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import EventTitleDisplay from '../components/EventTitleDisplay';
 import { usePageColor } from '../hooks/usePageColor';
-import { fallbackEventsTimeline, fetchTimelineEvents } from '../lib/siteData';
+import { fetchTimelineEvents, getEventImageUrl, normalizeEventSummary } from '../lib/siteData';
 import './Events.css';
-
-const upcomingEvent = {
-  id: 'next-fest',
-  title: 'LMNL FEST 2026',
-  imageUrl: '',
-  date: 'June 15, 2026',
-  location: 'LMNL Space, LA',
-  description: 'Our biggest gathering yet. A multi-day festival celebrating the intersection of art, technology, and community. Featuring live performances, interactive installations, and exclusive drops.',
-  rsvpLink: '#rsvp',
-  price: 2500,
-  is_private: false
-};
 
 export default function Events() {
   const [events, setEvents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [featuredEvent, setFeaturedEvent] = useState(upcomingEvent);
+  const [featuredEvent, setFeaturedEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
   usePageColor('#004ffa');
@@ -30,27 +18,13 @@ export default function Events() {
       try {
         const mapped = await fetchTimelineEvents();
         setEvents(mapped);
-        setSelectedId(mapped[0].id);
-
-        const feat = mapped.find((event) => event.is_featured);
-        if (feat) {
-          setFeaturedEvent({
-            id: feat.id,
-            title: feat.title,
-            imageUrl: feat.image_url || '',
-            date: feat.date,
-            location: feat.location,
-            description: feat.description,
-            rsvpLink: feat.link || '#rsvp',
-            price: feat.price,
-            is_private: feat.is_private,
-            is_home_notif: feat.is_home_notif
-          });
-        }
+        setSelectedId(mapped[0]?.id || null);
+        setFeaturedEvent(normalizeEventSummary(mapped.find((event) => event.is_featured) || mapped[0] || null));
       } catch (error) {
         console.error('Failed to load events timeline:', error);
-        setEvents(fallbackEventsTimeline);
-        setSelectedId(fallbackEventsTimeline[0].id);
+        setEvents([]);
+        setSelectedId(null);
+        setFeaturedEvent(null);
       } finally {
         setLoading(false);
       }
@@ -59,7 +33,7 @@ export default function Events() {
   }, []);
 
   const selectedEvent = events.find(e => e.id === selectedId);
-  const featuredEventAction = featuredEvent.is_home_notif ? (
+  const featuredEventAction = featuredEvent?.rsvpLink ? (
     <a href={featuredEvent.rsvpLink} className="upcoming-rsvp-btn">
       VIEW EVENT
     </a>
@@ -91,12 +65,14 @@ export default function Events() {
                 <div className="upcoming-header-copy">
                   <div className="upcoming-tag">UPCOMING EVENT</div>
                   <div className="upcoming-title-row">
-                    <EventTitleDisplay
-                      title={featuredEvent.title}
-                      imageUrl={featuredEvent.imageUrl}
-                      className="upcoming-title"
-                      imageClassName="event-title-display__image--upcoming"
-                    />
+                    {featuredEvent ? (
+                      <EventTitleDisplay
+                        title={featuredEvent.title}
+                        imageUrl={featuredEvent.imageUrl}
+                        className="upcoming-title"
+                        imageClassName="event-title-display__image--upcoming"
+                      />
+                    ) : null}
                     <div className="upcoming-rsvp-mobile">
                       {featuredEventAction}
                     </div>
@@ -109,14 +85,14 @@ export default function Events() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      {featuredEvent.date}
+                      {featuredEvent?.date || 'TBA'}
                     </span>
                     <span className="upcoming-location">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                         <circle cx="12" cy="10" r="3" />
                       </svg>
-                      {featuredEvent.location}
+                      {featuredEvent?.location || 'LMNL Space, LA'}
                     </span>
                   </div>
                 </div>
@@ -130,10 +106,10 @@ export default function Events() {
                     <line x1="12" y1="1" x2="12" y2="23" />
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                   </svg>
-                  {featuredEvent.price === 0 || !featuredEvent.price ? 'FREE' : `$${(featuredEvent.price / 100).toFixed(2)}`}
+                  {featuredEvent?.price === 0 || !featuredEvent?.price ? 'FREE' : `$${(featuredEvent.price / 100).toFixed(2)}`}
                 </span>
                 <span className="upcoming-location">
-                  {featuredEvent.is_private ? (
+                  {featuredEvent?.is_private ? (
                     <>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="meta-icon">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -186,7 +162,7 @@ export default function Events() {
                           >
                             <EventTitleDisplay
                               title={event.title}
-                              imageUrl={event.image_url}
+                              imageUrl={getEventImageUrl(event)}
                               className="events-table-title"
                               imageClassName="event-title-display__image--table"
                             />
@@ -208,7 +184,7 @@ export default function Events() {
                   <div className="card-header">
                     <EventTitleDisplay
                       title={selectedEvent.title}
-                      imageUrl={selectedEvent.image_url}
+                      imageUrl={getEventImageUrl(selectedEvent)}
                       className="card-title"
                       imageClassName="event-title-display__image--card"
                     />

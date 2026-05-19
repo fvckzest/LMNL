@@ -1,11 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { apiGet, apiPost } from '../lib/api';
-import ContentPageShell, {
-  MetadataList,
-  ModuleStrip,
-} from '../components/ContentPageShell';
-import SystemPanel from '../components/SystemPanel';
+import ContentPageShell from '../components/ContentPageShell';
 import RouteStatusScreen from '../components/RouteStatusScreen';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
@@ -512,31 +508,6 @@ export default function Admin() {
   const serviceOnlyInquiries = serviceInquiries.filter((iq) => !iq.selected_services?.includes('general'));
   const contactOnlyInquiries = serviceInquiries.filter((iq) => iq.selected_services?.includes('general'));
 
-  const sidebarStatus = useMemo(() => ([
-    { label: 'Mode', value: activeTab.toUpperCase() },
-    { label: 'Refresh', value: isRefreshing ? 'Running' : 'Idle' },
-    { label: 'Auth', value: 'Supabase' },
-    { label: 'Surface', value: 'Admin' },
-  ]), [activeTab, isRefreshing]);
-
-  const sidebarQueues = useMemo(() => ([
-    {
-      label: 'Pending requests',
-      value: String(requests.filter((item) => item.status === 'pending').length).padStart(2, '0'),
-      copy: 'Private access and invite queue awaiting action.',
-    },
-    {
-      label: 'Service inquiries',
-      value: String(serviceOnlyInquiries.filter((item) => item.status !== 'archived').length).padStart(2, '0'),
-      copy: 'Active service leads routed from the front-end inquiry flow.',
-    },
-    {
-      label: 'Contact inbox',
-      value: String(contactOnlyInquiries.filter((item) => item.status !== 'archived').length).padStart(2, '0'),
-      copy: 'General contact submissions that still need review.',
-    },
-  ]), [contactOnlyInquiries, requests, serviceOnlyInquiries]);
-
   const introActions = (
     <div className="admin-toolbar admin-toolbar--hero">
       <button
@@ -573,17 +544,6 @@ export default function Admin() {
     </div>
   );
 
-  const rightSidebar = (
-    <>
-      <SystemPanel title="NODE STATUS">
-        <MetadataList items={sidebarStatus} />
-      </SystemPanel>
-      <SystemPanel title="QUEUE OVERVIEW">
-        <ModuleStrip items={sidebarQueues} />
-      </SystemPanel>
-    </>
-  );
-
   return (
     <>
       <ContentPageShell
@@ -594,7 +554,6 @@ export default function Admin() {
         introTitle="Admin"
         introCopy="Operations surface for events, inquiries, inventory, editorial, and community records."
         introActions={introActions}
-        rightSidebar={rightSidebar}
         contentClassName="admin-content page-stack"
       >
         <section

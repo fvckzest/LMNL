@@ -81,6 +81,17 @@ export async function listEvents() {
   return data || [];
 }
 
+export async function listPublicEvents() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('events')
+    .select('id,name,image_url,event_date,event_time,description,metadata,location_name,address,price,is_private,partiful_url,capacity,status,square_variation_id,created_at')
+    .order('event_date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function upsertEvent(eventPayload) {
   const supabase = getAdminSupabase();
   const { id, previousName, ...data } = eventPayload;

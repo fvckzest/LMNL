@@ -6,35 +6,17 @@ import { useThemeNeutralColor } from '../components/ThemeProvider';
 import {
   fetchNotificationEvent,
   fetchTimelineEvents,
-  getEventLink,
+  normalizeEventSummary,
 } from '../lib/siteData';
 import './Events.css';
 
 function getActiveHomeEvent(notificationEvent, nextEvent) {
   if (notificationEvent) {
-    return {
-      title: notificationEvent.name,
-      imageUrl: notificationEvent.image_url || '',
-      date: notificationEvent.event_date,
-      location: notificationEvent.location_name || 'LMNL',
-      price: notificationEvent.price,
-      is_private: notificationEvent.is_private,
-      is_home_notif: notificationEvent.metadata?.is_home_notif || false,
-      rsvpLink: getEventLink(notificationEvent),
-    };
+    return normalizeEventSummary(notificationEvent);
   }
 
   if (nextEvent) {
-    return {
-      title: nextEvent.title,
-      imageUrl: nextEvent.image_url || '',
-      date: nextEvent.date,
-      location: nextEvent.location || 'LMNL',
-      price: nextEvent.price,
-      is_private: nextEvent.is_private,
-      is_home_notif: nextEvent.is_home_notif || false,
-      rsvpLink: nextEvent.link || '/events',
-    };
+    return normalizeEventSummary(nextEvent);
   }
 
   return {

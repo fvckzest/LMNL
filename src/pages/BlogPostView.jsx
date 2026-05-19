@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
-import { supabase } from '../lib/supabase';
+import { fetchPublishedBlogPost } from '../lib/siteData';
 import './Blog.css';
 
 export default function BlogPostView() {
@@ -12,28 +12,7 @@ export default function BlogPostView() {
   useEffect(() => {
     async function fetchPost() {
       try {
-        const { data, error } = await supabase
-          .from('blog_posts')
-          .select('*')
-          .eq('slug', slug)
-          .single();
-
-        // Fallback for older posts that might not have a slug and were routed by ID
-        if (error && error.code === 'PGRST116') {
-          const { data: idData, error: idError } = await supabase
-            .from('blog_posts')
-            .select('*')
-            .eq('id', slug)
-            .single();
-            
-          if (!idError) {
-            setPost(idData);
-            return;
-          }
-        } else if (error) {
-          throw error;
-        }
-
+        const data = await fetchPublishedBlogPost(slug);
         setPost(data);
       } catch (error) {
         console.error('Failed to load blog post:', error);

@@ -37,7 +37,7 @@ import {
 } from './_lib/repositories/requests.js';
 import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
 import { deletePreorderById, listPreorders, updatePreorderStatus, upsertPreorder } from './_lib/repositories/preorders.js';
-import { deleteEventById, listEvents, updateEventMetadata, updateEventStatus, upsertEvent } from './_lib/repositories/events.js';
+import { deleteEventById, listEvents, listPublicEvents, updateEventMetadata, updateEventStatus, upsertEvent } from './_lib/repositories/events.js';
 import { listTickets } from './_lib/repositories/tickets.js';
 import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
 import {
@@ -349,12 +349,20 @@ async function handleEnableSquareTracking(req, res) {
 
 async function handleEvents(req, res) {
   allowMethods(req, ['GET', 'POST']);
-  await requireAdminUser(req);
 
   if (req.method === 'GET') {
-    const data = await listEvents();
+    const hasAuthHeader = Boolean(req.headers.authorization);
+    if (hasAuthHeader) {
+      await requireAdminUser(req);
+      const data = await listEvents();
+      return sendJson(res, 200, { success: true, data });
+    }
+
+    const data = await listPublicEvents();
     return sendJson(res, 200, { success: true, data });
   }
+
+  await requireAdminUser(req);
 
   const body = await parseJsonBody(req);
 

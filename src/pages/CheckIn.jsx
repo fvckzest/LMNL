@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
-import SystemPanel from '../components/SystemPanel';
 import { apiGet, apiPost } from '../lib/api';
-import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './CheckIn.css';
 
 function formatTimestamp(value) {
@@ -12,41 +10,6 @@ function formatTimestamp(value) {
   }
 
   return new Date(value).toLocaleString();
-}
-
-function CheckInSidebar({ event, status, ticket }) {
-  return (
-    <>
-      <SystemPanel title="ACCESS STATUS">
-        <div className="terminal-metric-list">
-          <div className="terminal-metric-row"><span>NODE</span><span>CHECK-IN</span></div>
-          <div className="terminal-metric-row"><span>STATE</span><span>{status.replace('_', ' ')}</span></div>
-          <div className="terminal-metric-row"><span>TOKEN</span><span>{ticket ? 'RESOLVED' : 'PENDING'}</span></div>
-        </div>
-      </SystemPanel>
-
-      <SystemPanel title="EVENT RECORD">
-        <div className="theme-data-list">
-          <div className="theme-data-row">
-            <span className="theme-data-label">Event</span>
-            <span className="theme-data-value">{event?.name || 'LMNL EVENT'}</span>
-          </div>
-          <div className="theme-data-row">
-            <span className="theme-data-label">Date</span>
-            <span className="theme-data-value">{formatEventDate(event?.event_date) || 'TBD'}</span>
-          </div>
-          <div className="theme-data-row">
-            <span className="theme-data-label">Time</span>
-            <span className="theme-data-value">{formatEventTime(event?.event_time) || 'TBD'}</span>
-          </div>
-          <div className="theme-data-row">
-            <span className="theme-data-label">Venue</span>
-            <span className="theme-data-value">{event?.location_name || 'TBA'}</span>
-          </div>
-        </div>
-      </SystemPanel>
-    </>
-  );
 }
 
 export default function CheckIn() {
@@ -125,7 +88,6 @@ export default function CheckIn() {
       introLabel="ACCESS / WRISTBAND ISSUANCE"
       introTitle="CHECK-IN"
       introCopy="VERIFY TOKEN, REVIEW EVENT RECORD, AND CONFIRM ENTRY"
-      rightSidebar={<CheckInSidebar event={event} status={status} ticket={ticket} />}
       contentClassName="checkin-content page-stack"
     >
       <div className="checkin-body">

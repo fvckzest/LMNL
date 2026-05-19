@@ -195,7 +195,7 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
       type: 'EVENT',
       title: event.name || 'Untitled event',
       date: event.event_date || event.created_at,
-      href: event.metadata?.event_link || event.partiful_url || event.spotify_id || '/events',
+      href: event.metadata?.event_link || event.partiful_url || '/events',
       accent: '#004ffa',
       meta: 'Hosted event',
     })),

@@ -6,7 +6,7 @@ import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
 import { apiGet, apiPost, getTurnstileSiteKey } from '../lib/api';
 import { buildPortfolioPath } from '../lib/portfolio';
-import { PRIMARY_SERVICES, SERVICE_PRINCIPLES } from '../lib/serviceCatalog';
+import { PRIMARY_SERVICES } from '../lib/serviceCatalog';
 import './Services.css';
 
 const DEFAULT_PRODUCT_ROWS = [
@@ -17,39 +17,6 @@ const DEFAULT_PRODUCT_ROWS = [
   },
 
 ].map((item, index) => ({ ...item, id: `${item.capability}-${index}`, is_active: true }));
-
-function ServicesSidebar({ selectedCount, productCount }) {
-  return (
-    <>
-      <SystemPanel title="MODULE OVERVIEW">
-        <div className="services-sidebar-metrics">
-          <div><span>PRIMARY CAPABILITIES</span><span>4</span></div>
-          <div><span>SELECTED</span><span>{String(selectedCount).padStart(2, '0')}</span></div>
-          <div><span>PRODUCT LINES</span><span>{productCount}</span></div>
-          <div><span>ACTIVE</span><span>4</span></div>
-        </div>
-      </SystemPanel>
-
-      <SystemPanel title="CORE PRINCIPLES">
-        <div className="services-principles">
-          {SERVICE_PRINCIPLES.map((item) => (
-            <div key={item} className="services-principles__item">
-              <span>{item}</span>
-              <span>+</span>
-            </div>
-          ))}
-        </div>
-      </SystemPanel>
-
-      <SystemPanel title="INQUIRE">
-        <div className="services-sidebar-card">
-          <p>Start a conversation about your project.</p>
-          <a href="#inquiry-form-section">SUBMIT INQUIRY →</a>
-        </div>
-      </SystemPanel>
-    </>
-  );
-}
 
 export default function Services() {
   const { theme } = useTheme();
@@ -94,7 +61,6 @@ export default function Services() {
   const activeServiceOfferings = productRows.filter((row) =>
     String(row.capability || '').trim().toLowerCase() === activeService.title.toLowerCase()
   );
-  const selectedCount = selectedDetails.length + selectedProducts.length;
   const selectedInquiryItems = [
     ...selectedDetails.map((detailId) => {
       const [serviceId, detailLabel] = detailId.split('::');
@@ -172,7 +138,6 @@ export default function Services() {
       color="#7b52d6"
       introTitle="SERVICES"
       introCopy="INTEGRATED TOOLING AND CREATIVE INFRASTRUCTURE."
-      rightSidebar={<ServicesSidebar selectedCount={selectedCount} productCount={productRows.length} />}
       contentClassName="services-layout page-stack"
     >
       <section className="services-capabilities">

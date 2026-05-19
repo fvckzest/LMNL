@@ -1,19 +1,177 @@
 import { apiGet } from './api';
-import { hasSupabaseCredentials, supabase } from './supabase';
+import { fetchPublicRows, hasPublicDataCredentials } from './publicData';
 
 const HOME_FALLBACK_LINK = '/space';
 const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
+const PUBLIC_DATA_CACHE_TTL_MS = 60 * 1000;
 const siteActivityCache = new Map();
+const publicDataCache = new Map();
 const SPACE_EVENT_NAME_ALIASES = new Set([
   'space',
   'lmnl space',
 ]);
+const TIMELINE_EVENT_SELECT = [
+  'id',
+  'name',
+  'image_url',
+  'event_date',
+  'description',
+  'metadata',
+  'location_name',
+  'price',
+  'is_private',
+  'partiful_url',
+  'capacity',
+  'status',
+  'square_variation_id',
+  'created_at',
+  'event_time',
+].join(',');
+const COMMUNITY_EVENT_SELECT = [
+  'id',
+  'name',
+  'event_date',
+  'capacity',
+  'metadata',
+].join(',');
+const COMMUNITY_CREDIT_SELECT = [
+  'id',
+  'name',
+  'role',
+  'event_name',
+  'link',
+].join(',');
+const OPEN_PRODUCT_SELECT = [
+  'id',
+  'item_name',
+  'category',
+  'created_at',
+  'status',
+  'goal_quantity',
+  'current_quantity',
+  'end_date',
+  'image_url',
+  'description',
+  'price',
+  'square_item_id',
+].join(',');
+const BLOG_POST_LIST_SELECT = [
+  'id',
+  'title',
+  'slug',
+  'date',
+  'created_at',
+  'status',
+  'content',
+  'author',
+].join(',');
+const BLOG_POST_DETAIL_SELECT = [
+  'id',
+  'title',
+  'slug',
+  'date',
+  'created_at',
+  'content',
+  'author',
+  'status',
+].join(',');
+
+async function fetchEventRows() {
+  try {
+    const data = await apiGet('/api/events');
+    if (Array.isArray(data)) {
+      return data;
+    }
+  } catch (error) {
+    console.error('Failed to load events from server API:', error);
+  }
+
+  return fetchPublicRows('events', {
+    select: TIMELINE_EVENT_SELECT,
+    order: { column: 'event_date', ascending: false },
+  });
+}
+
+function readPublicDataCache(key) {
+  const entry = publicDataCache.get(key);
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    isFresh: Date.now() - entry.updatedAt < PUBLIC_DATA_CACHE_TTL_MS,
+  };
+}
+
+function writePublicDataCache(key, data) {
+  publicDataCache.set(key, {
+    data,
+    updatedAt: Date.now(),
+    promise: null,
+  });
+}
+
+function setPublicDataCachePromise(key, promise) {
+  const existing = readPublicDataCache(key);
+
+  publicDataCache.set(key, {
+    data: existing?.data || null,
+    updatedAt: existing?.updatedAt || 0,
+    promise,
+  });
+}
+
+function clearPublicDataCachePromise(key) {
+  const existing = readPublicDataCache(key);
+  if (!existing) return;
+
+  publicDataCache.set(key, {
+    data: existing.data || null,
+    updatedAt: existing.updatedAt || 0,
+    promise: null,
+  });
+}
+
+async function fetchCachedPublicData(key, loader, fallback) {
+  const cached = readPublicDataCache(key);
+
+  if (cached?.data && cached.isFresh) {
+    return cached.data;
+  }
+
+  if (cached?.promise) {
+    return cached.promise;
+  }
+
+  const request = Promise.resolve()
+    .then(loader)
+    .then((data) => {
+      writePublicDataCache(key, data);
+      return data;
+    })
+    .catch((error) => {
+      if (cached?.data) {
+        return cached.data;
+      }
+
+      if (fallback !== undefined) {
+        return fallback;
+      }
+
+      throw error;
+    })
+    .finally(() => {
+      clearPublicDataCachePromise(key);
+    });
+
+  setPublicDataCachePromise(key, request);
+  return request;
+}
 
 function normalizeSpaceEventName(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
-    .replace(/[\[\]()]/g, '')
+    .replace(/[()[\]]/g, '')
     .replace(/\s+/g, ' ');
 }
 
@@ -32,8 +190,10 @@ export const fallbackEventsTimeline = [
   {
     id: 'space',
     title: 'LMNL SPACE',
-    type: 'text',
-    display: '[SPACE]',
+    type: 'image',
+    display: '/space-logo.png',
+    image_url: '/space-logo.png',
+    imageUrl: '/space-logo.png',
     link: '/space',
     date: 'Ongoing',
     description: 'The main LMNL space. A hub for creativity, collaboration, and innovation. Join us for workshops, exhibitions, and community gatherings.',
@@ -45,7 +205,9 @@ export const fallbackEventsTimeline = [
     id: 'camp-zest',
     title: 'Camp Zest',
     type: 'image',
-    display: '/cz1.png',
+    display: '/campzest-logo.png',
+    image_url: '/campzest-logo.png',
+    imageUrl: '/campzest-logo.png',
     date: 'Summer 2025',
     description: 'An immersive summer experience bringing together creators, builders, and thinkers for a week of intense collaboration and learning.',
     media: [],
@@ -54,7 +216,9 @@ export const fallbackEventsTimeline = [
     id: 'bloom',
     title: 'Bloom',
     type: 'image',
-    display: '/title1.png',
+    display: '/bloom-logo.png',
+    image_url: '/bloom-logo.png',
+    imageUrl: '/bloom-logo.png',
     date: 'Spring 2025',
     description: 'A celebration of new beginnings, showcasing the latest creative projects and breakthroughs in our community.',
     media: [],
@@ -64,6 +228,8 @@ export const fallbackEventsTimeline = [
     title: 'Genesis',
     type: 'image',
     display: '/genesis-logo.png',
+    image_url: '/genesis-logo.png',
+    imageUrl: '/genesis-logo.png',
     date: 'Winter 2024',
     description: 'The inception of the LMNL journey. This event marked the beginning of our mission to redefine creative spaces.',
     media: [],
@@ -71,16 +237,11 @@ export const fallbackEventsTimeline = [
 ];
 
 async function safeSupabaseQuery(buildQuery, fallback) {
-  if (!hasSupabaseCredentials) {
+  if (!hasPublicDataCredentials) {
     return fallback;
   }
 
-  const query = buildQuery();
-  const { data, error } = await query;
-  if (error) {
-    throw error;
-  }
-
+  const data = await buildQuery();
   return data ?? fallback;
 }
 
@@ -88,14 +249,55 @@ function normalizeEventDate(value) {
   return value || '';
 }
 
-export function mapEventToTimelineItem(event) {
+export function getEventImageUrl(event) {
+  if (!event) return '';
+
+  if (typeof event.imageUrl === 'string' && event.imageUrl.trim()) {
+    return event.imageUrl.trim();
+  }
+
+  if (typeof event.image_url === 'string' && event.image_url.trim()) {
+    return event.image_url.trim();
+  }
+
+  if (event.type === 'image' && typeof event.display === 'string' && event.display.trim()) {
+    return event.display.trim();
+  }
+
+  return '';
+}
+
+export function normalizeEventSummary(event) {
+  if (!event) return null;
+
+  const title = event.title || event.name || 'Untitled event';
+  const date = event.date || normalizeEventDate(event.event_date) || '';
+  const location = event.location || event.location_name || 'LMNL Space, LA';
+  const link = event.link || event.rsvpLink || getEventLink(event);
+  const imageUrl = getEventImageUrl(event);
+
   return {
+    ...event,
+    title,
+    image_url: imageUrl,
+    imageUrl,
+    date,
+    location,
+    link,
+    rsvpLink: link,
+    is_featured: event.is_featured || event.metadata?.is_featured || false,
+    is_home_notif: event.is_home_notif || event.metadata?.is_home_notif || false,
+    is_private: event.is_private ?? false,
+  };
+}
+
+export function mapEventToTimelineItem(event) {
+  return normalizeEventSummary({
     id: event.id,
     title: event.name,
-    image_url: event.image_url || '',
-    type: event.image_url ? 'image' : 'text',
-    display: event.image_url || `[${String(event.name || '').toUpperCase()}]`,
-    link: event.metadata?.event_link || event.partiful_url || event.spotify_id || '',
+    type: getEventImageUrl(event) ? 'image' : 'text',
+    display: getEventImageUrl(event) || `[${String(event.name || '').toUpperCase()}]`,
+    link: event.metadata?.event_link || event.partiful_url || '',
     date: normalizeEventDate(event.event_date),
     description: event.description || '',
     performers: event.metadata?.performers || '',
@@ -106,31 +308,34 @@ export function mapEventToTimelineItem(event) {
     location: event.location_name || 'LMNL Space, LA',
     price: event.price,
     is_private: event.is_private,
-  };
+  });
 }
 
 export async function fetchNotificationEvent() {
-  const events = await safeSupabaseQuery(
-    () => supabase.from('events').select('*'),
-    []
+  const events = await fetchCachedPublicData(
+    'events:timeline',
+    fetchEventRows,
+    [],
   );
 
-  return events.find((event) => event.metadata?.is_home_notif === true) || null;
+  const match = events.find((event) => event.metadata?.is_home_notif === true) || null;
+  return match ? normalizeEventSummary(match) : null;
 }
 
 export function getEventLink(event) {
   if (!event) return HOME_FALLBACK_LINK;
-  return event.metadata?.event_link || event.partiful_url || event.spotify_id || HOME_FALLBACK_LINK;
+  return event.metadata?.event_link || event.partiful_url || HOME_FALLBACK_LINK;
 }
 
 export async function fetchTimelineEvents() {
-  const events = await safeSupabaseQuery(
-    () => supabase.from('events').select('*').order('event_date', { ascending: false }),
-    []
+  const events = await fetchCachedPublicData(
+    'events:timeline',
+    fetchEventRows,
+    [],
   );
 
   if (!events.length) {
-    return fallbackEventsTimeline;
+    return fallbackEventsTimeline.map(normalizeEventSummary);
   }
 
   return events.map(mapEventToTimelineItem);
@@ -143,21 +348,22 @@ export async function fetchFeaturedTimelineEvent() {
 
 export async function fetchCommunitySnapshot() {
   const [credits, events] = await Promise.all([
-    safeSupabaseQuery(() => supabase.from('community_credits').select('*'), []),
-    safeSupabaseQuery(() => supabase.from('events').select('*'), []),
+    fetchCachedPublicData(
+      'community:credits',
+      () => fetchPublicRows('community_credits', { select: COMMUNITY_CREDIT_SELECT }),
+      [],
+    ),
+    fetchCachedPublicData('community:events', fetchEventRows, []),
   ]);
 
   return { credits, events };
 }
 
 export async function fetchSpaceEventSnapshot() {
-  const events = await safeSupabaseQuery(
-    () => supabase
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50),
-    []
+  const events = await fetchCachedPublicData(
+    'events:space',
+    fetchEventRows,
+    [],
   );
 
   const event = events.find(isSpaceEvent) || null;
@@ -166,7 +372,7 @@ export async function fetchSpaceEventSnapshot() {
     return null;
   }
 
-  const approvedCountPromise = hasSupabaseCredentials
+  const approvedCountPromise = hasPublicDataCredentials
     ? apiGet(`/api/event-stats?eventName=${encodeURIComponent(event.name)}`)
       .then((data) => data?.approvedCount || 0)
       .catch(() => 0)
@@ -217,26 +423,19 @@ export async function fetchSpaceTicketActivity(eventId, limit = 8) {
 }
 
 export async function fetchOpenProducts() {
-  const [products, catalogResponse] = await Promise.all([
-    safeSupabaseQuery(
-      () => supabase
-        .from('merch_preorders')
-        .select('*')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false }),
-      []
-    ),
-    apiGet('/api/square-catalog').catch(() => ({ catalog: [] })),
-  ]);
-
-  const catalogItems = catalogResponse?.catalog || [];
-  const catalogPriceMap = new Map(
-    catalogItems.map((item) => [item.id, item.variations?.[0]?.price || 0])
+  const products = await fetchCachedPublicData(
+    'shop:open-products',
+    () => fetchPublicRows('merch_preorders', {
+      select: OPEN_PRODUCT_SELECT,
+      filters: { status: 'open' },
+      order: { column: 'created_at', ascending: false },
+    }),
+    [],
   );
 
   return products.map((product) => ({
     ...product,
-    price: catalogPriceMap.get(product.square_item_id) ?? 0,
+    price: Number(product.price) || 0,
   }));
 }
 
@@ -378,37 +577,37 @@ async function loadSiteActivityHistory(limit = 6) {
 
   const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.allSettled([
     safeSupabaseQuery(
-      () => supabase
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(Math.max(limit, 6)),
+      () => fetchPublicRows('events', {
+        select: 'id,name,event_date,created_at,metadata,partiful_url',
+        order: { column: 'created_at', ascending: false },
+        limit: Math.max(limit, 6),
+      }),
       []
     ),
     safeSupabaseQuery(
-      () => supabase
-        .from('blog_posts')
-        .select('id,title,slug,date,created_at,status')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(Math.max(limit, 6)),
+      () => fetchPublicRows('blog_posts', {
+        select: 'id,title,slug,date,created_at,status',
+        filters: { status: 'published' },
+        order: { column: 'created_at', ascending: false },
+        limit: Math.max(limit, 6),
+      }),
       []
     ),
     safeSupabaseQuery(
-      () => supabase
-        .from('merch_preorders')
-        .select('id,item_name,category,created_at,status')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false })
-        .limit(Math.max(limit, 6)),
+      () => fetchPublicRows('merch_preorders', {
+        select: 'id,item_name,category,created_at,status',
+        filters: { status: 'open' },
+        order: { column: 'created_at', ascending: false },
+        limit: Math.max(limit, 6),
+      }),
       []
     ),
     safeSupabaseQuery(
-      () => supabase
-        .from('tickets')
-        .select('id,event_id,created_at')
-        .order('created_at', { ascending: false })
-        .limit(Math.max(limit, 6)),
+      () => fetchPublicRows('tickets', {
+        select: 'id,event_id,created_at',
+        order: { column: 'created_at', ascending: false },
+        limit: Math.max(limit, 6),
+      }),
       []
     ),
   ]);
@@ -426,7 +625,7 @@ async function loadSiteActivityHistory(limit = 6) {
       type: 'EVENT',
       title: event.name || 'Untitled event',
       date: event.event_date || event.created_at,
-      href: event.metadata?.event_link || event.partiful_url || event.spotify_id || '/events',
+      href: event.metadata?.event_link || event.partiful_url || '/events',
       accent: '#004ffa',
       meta: 'Hosted event',
     })),
@@ -499,4 +698,58 @@ export async function fetchSiteActivityHistory(limit = 6, options = {}) {
   setSiteActivityCachePromise(limit, request);
 
   return request;
+}
+
+export async function fetchPublishedBlogPosts() {
+  return fetchCachedPublicData(
+    'blog:published-posts',
+    () => fetchPublicRows('blog_posts', {
+      select: BLOG_POST_LIST_SELECT,
+      filters: { status: 'published' },
+      order: { column: 'created_at', ascending: false },
+    }),
+    [],
+  );
+}
+
+export async function fetchPublishedBlogPost(slug) {
+  if (!slug) {
+    return null;
+  }
+
+  const normalizedSlug = String(slug).trim();
+
+  return fetchCachedPublicData(
+    `blog:post:${normalizedSlug}`,
+    async () => {
+      const postBySlug = await fetchPublicRows('blog_posts', {
+        select: BLOG_POST_DETAIL_SELECT,
+        filters: { slug: normalizedSlug, status: 'published' },
+        single: true,
+      }).catch((error) => {
+        if (error?.details?.code === 'PGRST116') {
+          return null;
+        }
+
+        throw error;
+      });
+
+      if (postBySlug) {
+        return postBySlug;
+      }
+
+      return fetchPublicRows('blog_posts', {
+        select: BLOG_POST_DETAIL_SELECT,
+        filters: { id: normalizedSlug, status: 'published' },
+        single: true,
+      }).catch((error) => {
+        if (error?.details?.code === 'PGRST116') {
+          return null;
+        }
+
+        throw error;
+      });
+    },
+    null,
+  );
 }
