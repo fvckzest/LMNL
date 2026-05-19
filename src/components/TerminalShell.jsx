@@ -4,6 +4,7 @@ import { usePageColor } from '../hooks/usePageColor';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { getThemeNeutralColor, useTheme } from './ThemeProvider';
 import LmnlLogoBlack from './LmnlLogoBlack';
+import SocialLinks from './SocialLinks';
 import './TerminalShell.css';
 
 const MOBILE_SHELL_BREAKPOINT = '(max-width: 980px)';
@@ -361,9 +362,7 @@ export default function TerminalShell({
 
         <footer className="terminal-shell__footer">
           <div className="terminal-shell__footer-links">
-            <a href="https://instagram.com/lmnlart" target="_blank" rel="noreferrer">INSTAGRAM</a>
-            <a href="https://x.com/lmnlart" target="_blank" rel="noreferrer">X</a>
-            <a href="https://discord.gg/hYYfTtyJzK" target="_blank" rel="noreferrer">DISCORD</a>
+            <SocialLinks className="terminal-shell__footer-socials" iconSize={18} />
           </div>
           <Link to="/contact" className="terminal-shell__footer-cta theme-button">SIGNAL THE SYSTEM +</Link>
         </footer>

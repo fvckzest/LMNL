@@ -11,7 +11,7 @@ const routes = [
   {
     path: '',
     title: 'LMNL',
-    description: 'LMNL is an art and culture platform for events, creative services, digital tools, and community experiences.',
+    description: 'LMNL is a Tacoma-based art and culture platform creating events, media, design systems, creative services, and community experiences.',
     image: '/seo/home-seo.png',
     changefreq: 'weekly',
     priority: '1.0',
@@ -29,7 +29,7 @@ const routes = [
   {
     path: 'home',
     title: 'LMNL',
-    description: 'Explore LMNL events, services, shop releases, and community experiences.',
+    description: 'LMNL is a Tacoma-based art and culture platform creating events, media, design systems, creative services, and community experiences.',
     image: '/seo/home-seo.png',
     changefreq: 'weekly',
     priority: '0.9',

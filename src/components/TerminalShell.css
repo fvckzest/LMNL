@@ -695,6 +695,18 @@ html[data-theme='dark'] .terminal-invite-card__logo {
   gap: 28px;
 }
 
+.terminal-shell__footer-socials {
+  gap: 18px;
+}
+
+.terminal-shell__footer-socials .social-link {
+  color: inherit;
+}
+
+.terminal-shell__footer-socials .social-link:hover {
+  color: var(--page-color);
+}
+
 .terminal-shell__footer a,
 .terminal-shell__footer-cta {
   color: inherit;
