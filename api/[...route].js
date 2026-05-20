@@ -40,6 +40,7 @@ import { deletePreorderById, listPreorders, updatePreorderStatus, upsertPreorder
 import { deleteEventById, listEvents, listPublicEvents, updateEventMetadata, updateEventStatus, upsertEvent } from './_lib/repositories/events.js';
 import { listTickets } from './_lib/repositories/tickets.js';
 import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
+import { getAdminAuthorizationConfig, getSupabaseConfig } from './_lib/env.js';
 import {
   deleteCommunityCreditById,
   deleteServiceProductById,
@@ -504,6 +505,68 @@ async function handleAdminSession(req, res) {
   });
 }
 
+async function handleAdminRuntime(req, res) {
+  allowMethods(req, ['GET']);
+
+  let supabaseConfig = null;
+  let supabaseConfigError = null;
+
+  try {
+    supabaseConfig = getSupabaseConfig();
+  } catch (error) {
+    supabaseConfigError = {
+      code: error?.code || 'CONFIG_READ_FAILED',
+      message: error?.message || 'Unable to read Supabase configuration.',
+      details: error?.details || null,
+    };
+  }
+
+  const authConfig = getAdminAuthorizationConfig();
+  const runtime = {
+    nodeEnv: process.env.NODE_ENV || '',
+    vercelEnv: process.env.VERCEL_ENV || '',
+    supabaseUrlConfigured: Boolean(process.env.SUPABASE_URL),
+    supabaseServiceRoleConfigured: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    supabaseAnonConfigured: Boolean(process.env.SUPABASE_ANON_KEY),
+    viteSupabaseUrlConfigured: Boolean(process.env.VITE_SUPABASE_URL),
+    viteSupabaseAnonConfigured: Boolean(process.env.VITE_SUPABASE_ANON_KEY),
+    adminAuthSource: authConfig.source,
+    adminUserIdsConfigured: authConfig.adminUserIds.length > 0,
+    adminUserEmailsConfigured: authConfig.adminUserEmails.length > 0,
+    resolvedClientKey: supabaseConfig?.serviceRoleKey
+      ? 'service_role'
+      : (supabaseConfig?.anonKey ? 'anon' : 'missing'),
+    supabaseConfigError,
+  };
+
+  let authProbe = null;
+
+  if (supabaseConfig) {
+    try {
+      const { error } = await getAdminSupabase().auth.getUser('diagnostic-token');
+      authProbe = {
+        ok: true,
+        code: error?.code || null,
+        message: error?.message || null,
+      };
+    } catch (error) {
+      authProbe = {
+        ok: false,
+        code: error?.code || null,
+        message: error?.message || String(error),
+      };
+    }
+  }
+
+  return sendJson(res, 200, {
+    success: true,
+    data: {
+      runtime,
+      authProbe,
+    },
+  });
+}
+
 async function handlePreorders(req, res) {
   allowMethods(req, ['GET', 'POST']);
 
@@ -931,6 +994,7 @@ const handlers = {
   'attendance-claim': handleAttendanceClaim,
   'admin-attendance-attach': handleAdminAttendanceAttach,
   'admin-attendance-sources': handleAdminAttendanceSources,
+  'admin-runtime': handleAdminRuntime,
   'event-stats': handleEventStats,
   'site-activity': handleSiteActivity,
   'space-activity': handleSpaceActivity,
