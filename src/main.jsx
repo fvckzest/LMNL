@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import './styles/theme.css'
 import './index.css'
 import App from './App.jsx'
@@ -64,5 +65,6 @@ window.addEventListener('pageshow', () => {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
+    <SpeedInsights />
   </StrictMode>,
 )
