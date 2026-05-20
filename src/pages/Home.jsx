@@ -80,8 +80,9 @@ export default function Home() {
       <div className="page-hero-grid">
         <div className="page-hero-grid__main">
           <section className="home-company-box" aria-label="Company introduction">
+            <h1 className="sr-only">LMNL</h1>
             <p className="home-company-box__copy">
-              We are building experiences, creative systems, and digital tools that brings people together and facilitates cultural development.
+              LMNL is a Tacoma-based art and culture platform building events, creative services, digital tools, and community experiences that bring people together.
             </p>
             <p className="home-company-box__copy">
               Visit one of our events, explore our services, and join our community.

@@ -11,7 +11,7 @@ const routes = [
   {
     path: '',
     title: 'LMNL',
-    description: 'LMNL is a Tacoma-based art and culture platform creating events, media, design systems, creative services, and community experiences.',
+    description: 'LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.',
     image: '/seo/home-seo.png',
     changefreq: 'weekly',
     priority: '1.0',
@@ -29,7 +29,7 @@ const routes = [
   {
     path: 'home',
     title: 'LMNL',
-    description: 'LMNL is a Tacoma-based art and culture platform creating events, media, design systems, creative services, and community experiences.',
+    description: 'LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.',
     image: '/seo/home-seo.png',
     changefreq: 'weekly',
     priority: '0.9',
@@ -226,9 +226,34 @@ async function generateSeoPages() {
           "@type": "Organization",
           "@id": "${siteUrl}/#organization",
           "name": "LMNL",
+          "alternateName": [
+            "LMNL Art",
+            "LMNL Tacoma"
+          ],
           "url": "${siteUrl}/",
           "logo": "${siteUrl}/lmnl-logo-black.png",
+          "description": "LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.",
           "email": "hi@lmnl.art",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Tacoma",
+            "addressRegion": "WA",
+            "addressCountry": "US"
+          },
+          "areaServed": [
+            {
+              "@type": "City",
+              "name": "Tacoma"
+            },
+            {
+              "@type": "State",
+              "name": "Washington"
+            },
+            {
+              "@type": "Country",
+              "name": "United States"
+            }
+          ],
           "sameAs": [
             "https://instagram.com/lmnlart",
             "https://x.com/lmnlart",
@@ -250,6 +275,7 @@ async function generateSeoPages() {
           "@id": "${siteUrl}/#website",
           "url": "${siteUrl}/",
           "name": "LMNL",
+          "description": "Tacoma art, events, creative services, and community experiences by LMNL.",
           "publisher": {
             "@id": "${siteUrl}/#organization"
           }

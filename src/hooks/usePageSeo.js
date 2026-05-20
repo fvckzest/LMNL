@@ -5,7 +5,7 @@ export const SITE_URL = 'https://lmnl.art';
 export const ADMIN_SITE_URL = 'https://admin.lmnl.art';
 export const DEFAULT_SEO_IMAGE = '/seo/home-seo.png';
 export const DEFAULT_SEO_TITLE = 'LMNL';
-export const DEFAULT_SEO_DESCRIPTION = 'LMNL is a Tacoma-based art and culture platform creating events, media, design systems, creative services, and community experiences.';
+export const DEFAULT_SEO_DESCRIPTION = 'LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.';
 
 function toAbsoluteUrl(value, baseUrl = SITE_URL) {
   if (!value) {
