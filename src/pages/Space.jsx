@@ -113,10 +113,10 @@ export default function Space() {
   const totalPct = Math.min((totalRaised / totalGoal) * 100, 100);
 
   const goalRows = [
-    { name: 'SOUND', goal: sourcedSoundAmount },
-    { name: 'LIGHTS', goal: 500 },
-    { name: 'ATMOSPHERE', goal: 750 },
-    { name: 'FOOD & DRINKS', goal: 250 },
+    { name: 'SOUND', goal: sourcedSoundAmount, detail: 'PA, DJ monitoring, room tuning, and playback infrastructure.' },
+    { name: 'POWER', goal: 500, detail: 'Distribution, cabling, load support, and technical reliability across the room.' },
+    { name: 'STAGE', goal: 700, detail: 'Platform buildout, sightlines, risers, and performance flow.' },
+    { name: 'DESIGN', goal: 650, detail: 'Spatial treatment, visual identity, and finishing touches that shape the atmosphere.' },
   ].map((row, index) => {
     if (index === 0) {
       return {
@@ -182,7 +182,7 @@ export default function Space() {
       title={eventData.name || 'SPACE'}
       color="#004ffa"
       introTitle={introLogo}
-      introCopy="CURRENT PHYSICAL NODE / ACCESS, FUNDING, OCCUPANCY, AND BRIEFING"
+      introCopy="MAKING SPACE, TOGETHER"
       contentClassName="space-content page-stack"
     >
       <div className="space-body">
@@ -205,19 +205,6 @@ export default function Space() {
         </div>
 
         <div className="space-details-row">
-          <SpacePriceCard
-            price={eventData.price}
-            eventStatus={eventData.status}
-            isPrivate={eventData.is_private}
-            eventId={eventData.id}
-            onInvite={() => setShowRequestForm(true)}
-            onPurchase={handlePurchase}
-            onDonate={() => setShowDonationModal(true)}
-          />
-          {purchaseStatus === 'error' && (
-            <p className="error-message">Unable to open checkout right now. Please try again.</p>
-          )}
-
           <div className="space-description">
             <p className="description-label">brief</p>
             <div className="description-content">
@@ -231,14 +218,35 @@ export default function Space() {
               )}
             </div>
           </div>
+
+          <div className="space-price-panel">
+            <SpacePriceCard
+              price={eventData.price}
+              eventStatus={eventData.status}
+              isPrivate={eventData.is_private}
+              eventId={eventData.id}
+              onInvite={() => setShowRequestForm(true)}
+              onPurchase={handlePurchase}
+              onDonate={() => setShowDonationModal(true)}
+            />
+            {purchaseStatus === 'error' && (
+              <p className="error-message">Unable to open checkout right now. Please try again.</p>
+            )}
+          </div>
         </div>
 
         <SpaceActivityList items={activityItems} isLive={activityLive} />
       </div>
 
       {showRequestForm && (
-        <div className="request-modal-overlay">
-          <div className="request-modal">
+        <div
+          className="request-modal-overlay"
+          onClick={() => {
+            setShowRequestForm(false);
+            setRequestStatus('idle');
+          }}
+        >
+          <div className="request-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-modal" onClick={() => {
               setShowRequestForm(false);
               setRequestStatus('idle');
@@ -303,19 +311,15 @@ export default function Space() {
             <div className="donation-choices">
               <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
                 <span className="amount">$10</span>
-                <span className="label">SUPPORT</span>
               </a>
               <a href={DONATION_LINKS[20]} target="_blank" rel="noopener noreferrer" className="donation-choice">
                 <span className="amount">$20</span>
-                <span className="label">SUSTAIN</span>
               </a>
               <a href={DONATION_LINKS[50]} target="_blank" rel="noopener noreferrer" className="donation-choice">
                 <span className="amount">$50</span>
-                <span className="label">EXPAND</span>
               </a>
               <a href={DONATION_LINKS[100]} target="_blank" rel="noopener noreferrer" className="donation-choice">
                 <span className="amount">$100</span>
-                <span className="label">COUNCIL</span>
               </a>
             </div>
           </div>

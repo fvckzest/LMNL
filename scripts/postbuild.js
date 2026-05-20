@@ -231,7 +231,8 @@ async function generateSeoPages() {
             "LMNL Tacoma"
           ],
           "url": "${siteUrl}/",
-          "logo": "${siteUrl}/lmnl-logo-black.png",
+          "logo": "${siteUrl}/pwa-512x512.png",
+          "image": "${siteUrl}/pwa-512x512.png",
           "description": "LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.",
           "email": "hi@lmnl.art",
           "address": {
