@@ -409,6 +409,9 @@ async function handleGeneratePass(req, res) {
 
   res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
   res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+  res.setHeader('Content-Length', String(result.buffer.length));
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Content-Transfer-Encoding', 'binary');
   return res.send(result.buffer);
 }
 
