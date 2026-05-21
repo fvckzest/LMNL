@@ -534,7 +534,29 @@
 
 .terminal-activity-feed {
   display: grid;
-  gap: 4px;
+  gap: 1px;
+  align-content: start;
+}
+
+.terminal-shell__right .system-panel--history {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.terminal-shell__right .system-panel--history .system-panel__body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.terminal-shell__right .system-panel--history .terminal-activity-feed {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
 }
 
 .terminal-activity-feed__status {
@@ -548,8 +570,8 @@
 
 .terminal-activity-feed__item {
   display: grid;
-  gap: 3px;
-  padding: 6px 0 7px;
+  gap: 2px;
+  padding: 4px 0 5px;
   border-bottom: var(--lmnl-border-subtle);
   color: inherit;
   text-decoration: none;
@@ -570,7 +592,7 @@
 .terminal-activity-feed__meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: var(--lmnl-font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -629,6 +651,10 @@
 
 .terminal-invite-card {
   padding-top: 2px;
+}
+
+.terminal-shell__right .system-panel--invite {
+  margin-top: auto;
 }
 
 .terminal-invite-card__row {

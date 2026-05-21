@@ -192,12 +192,6 @@ export default function Events() {
                   </div>
                   <p className="card-description">{selectedEvent.description}</p>
                   
-                  {selectedEvent.link && (
-                    <a href={selectedEvent.link} className="card-action-btn">
-                      Explore Space
-                    </a>
-                  )}
-
                   {selectedEvent.performers && (
                     <div className="card-lineup-section">
                       <h3 className="lineup-title">LINEUP</h3>

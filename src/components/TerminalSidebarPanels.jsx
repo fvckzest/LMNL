@@ -42,7 +42,7 @@ function ActivityFeedCard() {
   }, []);
 
   return (
-    <SystemPanel title="SITE HISTORY">
+    <SystemPanel title="SITE HISTORY" className="system-panel--history">
       <div className="terminal-activity-feed">
         {status === 'loading' ? (
           <p className="terminal-activity-feed__status">Pulling latest additions across LMNL.</p>
@@ -171,7 +171,7 @@ function InviteCard() {
       );
 
   return (
-    <SystemPanel title="INVITE">
+    <SystemPanel title="INVITE" className="system-panel--invite">
       <div className="terminal-invite-card">
         <div className="terminal-invite-card__row">
           <div className="terminal-invite-card__actions">
