@@ -48,6 +48,31 @@ html[data-theme='dark'] .space-page-title-logo__image {
   height: 100%;
 }
 
+.space-disclaimer {
+  margin: -4px 0 0;
+  color: var(--terminal-text-dim, rgba(0, 0, 0, 0.65));
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.space-disclaimer-break {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .space-disclaimer {
+    white-space: normal;
+  }
+
+  .space-disclaimer-break {
+    display: block;
+  }
+}
+
 .space-timer-container,
 .space-occupancy-container,
 .space-system-container,

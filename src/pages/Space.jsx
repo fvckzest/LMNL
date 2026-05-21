@@ -235,6 +235,12 @@ export default function Space() {
           </div>
         </div>
 
+        <p className="space-disclaimer">
+          <span>this is a private event on private property.</span>
+          <br className="space-disclaimer-break" />
+          <span>entry will not be permitted without a ticket</span>
+        </p>
+
         <SpaceActivityList items={activityItems} isLive={activityLive} />
       </div>
 
