@@ -742,11 +742,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <tr key={req.id} className={`status-${req.status}`}>
                     <td>{new Date(req.created_at).toLocaleDateString()}</td>
                     <td>
-                      {req.event_name.toUpperCase() === 'SPACE' ? (
-                        <a href="/space" target="_blank" className="event-name-link">{req.event_name}</a>
-                      ) : (
-                        req.event_name
-                      )}
+                      {req.event_name}
                     </td>
                     <td>{req.customer_name}</td>
                     <td>{req.customer_email}</td>
