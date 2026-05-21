@@ -368,6 +368,22 @@ const MANAGED_METADATA_KEYS = new Set([
     }, {});
   }, [requests]);
 
+  const issuedTicketOrderIds = useMemo(() => {
+    return new Set(
+      (tickets || [])
+        .map((ticket) => ticket.square_order_id)
+        .filter(Boolean)
+    );
+  }, [tickets]);
+
+  function getUnarchiveRequestStatus(request) {
+    if (request?.square_order_id && issuedTicketOrderIds.has(request.square_order_id)) {
+      return 'fulfilled';
+    }
+
+    return 'pending';
+  }
+
   const ticketRecords = useMemo(() => {
     return (tickets || []).map((ticket) => {
       let resolvedEvent = null;
@@ -755,7 +771,7 @@ const MANAGED_METADATA_KEYS = new Set([
                           {req.status === 'archived' && (
                             <button
                               className="admin-btn reset"
-                              onClick={() => updateStatus(req.id, 'pending', req)}
+                              onClick={() => updateStatus(req.id, getUnarchiveRequestStatus(req), req)}
                             >
                               UNARCHIVE
                             </button>
@@ -764,7 +780,7 @@ const MANAGED_METADATA_KEYS = new Set([
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {req.status === 'fulfilled' && req.square_order_id ? (
+                      {req.square_order_id && issuedTicketOrderIds.has(req.square_order_id) ? (
                         <a
                           href={`/success?requestId=${req.id}`}
                           target="_blank"
@@ -791,7 +807,7 @@ const MANAGED_METADATA_KEYS = new Set([
                           archiveTitle="Archive Request"
                           unarchiveTitle="Unarchive Request"
                           onArchive={() => updateStatus(req.id, 'archived', req)}
-                          onUnarchive={() => updateStatus(req.id, 'pending', req)}
+                          onUnarchive={() => updateStatus(req.id, getUnarchiveRequestStatus(req), req)}
                         />
                         <DeleteActionButton
                           title="Delete Request"

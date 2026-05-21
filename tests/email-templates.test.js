@@ -12,6 +12,9 @@ test('buildApprovalEmail includes subject, CTA, and fallback link text', () => {
   assert.match(email.html, /Complete Payment/);
   assert.match(email.html, /checkout\.lmnl\.art\/pay\/prsm-session/);
   assert.match(email.text, /Event: PRSM Listening Session/);
+  assert.match(email.html, /meta name="color-scheme" content="light"/);
+  assert.match(email.html, /bgcolor="#ffffff"/);
+  assert.match(email.html, /border: 2px solid #111111/);
 });
 
 test('buildTicketEmail includes guest, event, and ticket link', () => {
