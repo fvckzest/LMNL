@@ -684,6 +684,29 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   white-space: nowrap;
 }
 
+.ticket-link-header,
+.ticket-link-cell {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ticket-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  color: var(--table-text);
+  text-decoration: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.ticket-link-btn:hover,
+.ticket-link-btn:focus-visible {
+  color: var(--table-accent);
+  opacity: 1;
+}
+
 .ticket-detail-toggle .ticket-toggle-arrow {
   color: #004ffa;
 }

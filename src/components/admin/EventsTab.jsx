@@ -596,11 +596,13 @@ const MANAGED_METADATA_KEYS = new Set([
                                         <th>GUEST</th>
                                         <th>EMAIL</th>
                                         <th>STATUS</th>
+                                        <th className="ticket-link-header">LINK</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {eventTickets.map((ticket) => {
                                         const isTicketExpanded = Boolean(expandedTicketIds[ticket.id]);
+                                        const ticketHref = `/ticket/${ticket.id}`;
 
                                         return (
                                           <Fragment key={ticket.id}>
@@ -621,10 +623,22 @@ const MANAGED_METADATA_KEYS = new Set([
                                                   {ticket.is_used ? 'used' : 'valid'}
                                                 </span>
                                               </td>
+                                              <td className="ticket-link-cell">
+                                                <a
+                                                  href={ticketHref}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="ticket-link-btn"
+                                                  title="Open ticket"
+                                                  aria-label={`Open ticket for ${ticket.customer_name || 'guest'}`}
+                                                >
+                                                  <LinkIcon />
+                                                </a>
+                                              </td>
                                             </tr>
                                             {isTicketExpanded && (
                                               <tr className="ticket-metadata-row">
-                                                <td colSpan="4">
+                                                <td colSpan="5">
                                                   <div className="ticket-metadata-panel">
                                                     <div className="ticket-metadata-grid">
                                                       <div className="ticket-metadata-item">
