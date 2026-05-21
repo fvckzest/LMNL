@@ -191,7 +191,7 @@ export function buildTicketEmail({ eventName, ticketUrl, customerName, logoUrl }
     note: ticketUrl
       ? `You can also open your ticket directly here:<br /><a href="${escapeHtml(ticketUrl)}" style="color: #004ffa; word-break: break-all;">${escapeHtml(ticketUrl)}</a>`
       : '',
-    footer: 'Keep this email handy on the day of the event in case you need to reopen your ticket quickly.',
+    footer: 'if you experience any issues at all please email 4evr@lmnl.art so i can help fix things that may go awry.',
   });
   const text = [
     'YOUR TICKET',
