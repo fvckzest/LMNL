@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { fetchFeaturedTimelineEvent, fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
 import SystemPanel from './SystemPanel';
 
+const SIDEBAR_HISTORY_LIMIT = 24;
+
 function ActivityFeedCard() {
-  const [activity, setActivity] = useState(() => getCachedSiteActivityHistory(6) || []);
+  const [activity, setActivity] = useState(() => getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT) || []);
   const [status, setStatus] = useState(() => {
-    const cachedActivity = getCachedSiteActivityHistory(6);
+    const cachedActivity = getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT);
     if (!cachedActivity) return 'loading';
     return cachedActivity.length > 0 ? 'ready' : 'empty';
   });
@@ -15,12 +17,12 @@ function ActivityFeedCard() {
     let isCancelled = false;
 
     async function loadActivity() {
-      if (!getCachedSiteActivityHistory(6)) {
+      if (!getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT)) {
         setStatus('loading');
       }
 
       try {
-        const nextActivity = await fetchSiteActivityHistory(6);
+        const nextActivity = await fetchSiteActivityHistory(SIDEBAR_HISTORY_LIMIT);
         if (!isCancelled) {
           setActivity(nextActivity);
           setStatus(nextActivity.length > 0 ? 'ready' : 'empty');
