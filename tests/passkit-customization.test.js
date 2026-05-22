@@ -131,9 +131,9 @@ test('getWalletPassConfig exposes optional entrance coordinates metadata when va
     },
   });
 
-  assert.equal(config.entranceCoordinatesLabel, 'ENTRY');
+  assert.equal(config.entranceCoordinatesLabel, 'COORDS');
   assert.equal(config.entranceCoordinatesValue, '34.052235, -118.243683');
-  assert.equal(config.entranceValueLabel, 'ENTRY');
+  assert.equal(config.entranceValueLabel, 'COORDS');
   assert.equal(
     config.entranceMapsUrl,
     'https://maps.apple.com/?ll=34.052235,-118.243683&q=SPACE%20Entrance'
@@ -157,7 +157,7 @@ test('getWalletPassConfig parses combined wallet coordinates with direction lett
     },
   });
 
-  assert.equal(config.entranceCoordinatesLabel, 'ENTRY');
+  assert.equal(config.entranceCoordinatesLabel, 'COORDS');
   assert.equal(config.entranceCoordinatesValue, '34.052235, -118.243683');
   assert.equal(
     config.entranceMapsUrl,
@@ -198,7 +198,7 @@ test('getWalletPassConfig falls back to separate coordinates when combined value
     },
   });
 
-  assert.equal(config.entranceCoordinatesLabel, 'ENTRY');
+  assert.equal(config.entranceCoordinatesLabel, 'COORDS');
   assert.equal(config.entranceCoordinatesValue, '34.052235, -118.243683');
   assert.deepEqual(config.passLocations, [
     {

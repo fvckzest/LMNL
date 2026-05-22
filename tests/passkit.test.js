@@ -7,19 +7,18 @@ test('buildPassAuxiliaryFields keeps location unchanged and adds entry coordinat
     { customer_name: 'Alex Example' },
     {
       locationValue: 'LMNL COMPOUND',
-      entranceCoordinatesLabel: 'ENTRY',
+      entranceCoordinatesLabel: 'COORDS',
       entranceCoordinatesValue: '34.052235, -118.243683',
     },
   );
 
   assert.deepEqual(fields, [
     { key: 'location', label: 'LOCATION', value: 'LMNL COMPOUND' },
-    { key: 'entry', label: 'ENTRY', value: '34.052235, -118.243683' },
-    { key: 'guest', label: 'GUEST', value: 'Alex Example' },
+    { key: 'entry', label: 'COORDS', value: '34.052235, -118.243683' },
   ]);
 });
 
-test('buildPassAuxiliaryFields preserves current layout when no entrance coordinates exist', () => {
+test('buildPassAuxiliaryFields preserves location and entry when no entrance coordinates exist', () => {
   const fields = buildPassAuxiliaryFields(
     { customer_name: 'Alex Example' },
     {
@@ -33,7 +32,6 @@ test('buildPassAuxiliaryFields preserves current layout when no entrance coordin
   assert.deepEqual(fields, [
     { key: 'location', label: 'LOCATION', value: 'LMNL COMPOUND' },
     { key: 'entry', label: 'ADDRESS', value: '123 Main St, Los Angeles, CA 90012' },
-    { key: 'guest', label: 'GUEST', value: 'Alex Example' },
   ]);
 });
 
@@ -47,7 +45,5 @@ test('buildPassAuxiliaryFields hides location when no address or override exists
     },
   );
 
-  assert.deepEqual(fields, [
-    { key: 'guest', label: 'GUEST', value: 'Alex Example' },
-  ]);
+  assert.deepEqual(fields, []);
 });

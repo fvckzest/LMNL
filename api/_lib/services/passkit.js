@@ -76,8 +76,6 @@ export function buildPassAuxiliaryFields(ticket, wallet) {
     });
   }
 
-  fields.push({ key: 'guest', label: 'GUEST', value: ticket.customer_name });
-
   return fields;
 }
 
@@ -128,6 +126,9 @@ export async function generateTicketPass(ticketId) {
   );
 
   pass.auxiliaryFields.push(...buildPassAuxiliaryFields(ticket, wallet));
+  if (ticket.customer_name) {
+    pass.backFields.push({ key: 'guest', label: 'GUEST', value: ticket.customer_name });
+  }
 
   const barcodeMessage = buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id, {
     siteUrl: getBaseConfig().siteUrl,

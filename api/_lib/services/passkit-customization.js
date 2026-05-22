@@ -268,12 +268,12 @@ export function getWalletPassConfig(event = {}) {
     foregroundColor: readColor(metadata.wallet_foreground_color, DEFAULT_WALLET_COLORS.foregroundColor),
     labelColor: readColor(metadata.wallet_label_color, DEFAULT_WALLET_COLORS.labelColor),
     locationValue: readString(metadata.wallet_location_override) || readString(event?.location_name),
-    entranceCoordinatesLabel: hasValidCoordinates ? 'ENTRY' : '',
+    entranceCoordinatesLabel: hasValidCoordinates ? 'COORDS' : '',
     entranceCoordinatesValue: hasValidCoordinates
       ? `${formatCoordinate(latitude)}, ${formatCoordinate(longitude)}`
       : locationAddress,
     entranceValueLabel: hasValidCoordinates
-      ? 'ENTRY'
+      ? 'COORDS'
       : (locationAddress ? 'ADDRESS' : ''),
     entranceMapsUrl: hasValidCoordinates
       ? `https://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(mapsLabel)}`
