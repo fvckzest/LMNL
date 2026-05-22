@@ -30,6 +30,15 @@ export const LinkIcon = () => (
   </svg>
 );
 
+export const TicketIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"></path>
+    <path d="M9 9h.01"></path>
+    <path d="M9 15h.01"></path>
+    <path d="M14 8l-2 8"></path>
+  </svg>
+);
+
 export const PinIcon = ({ filled = false }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="17" x2="12" y2="22"></line>

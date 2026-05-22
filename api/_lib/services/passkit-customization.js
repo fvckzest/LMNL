@@ -31,6 +31,71 @@ function readCoordinate(value, min, max) {
   return coordinate;
 }
 
+function parseDirectionalCoordinate(value, min, max, positiveDirection, negativeDirection) {
+  const normalized = readString(value).replace(/°/g, '');
+  if (!normalized) {
+    return null;
+  }
+
+  const match = /^(?<prefix>[NSEW])?\s*(?<number>-?\d+(?:\.\d+)?)\s*(?<suffix>[NSEW])?$/i.exec(normalized);
+  if (!match?.groups?.number) {
+    return null;
+  }
+
+  const prefix = match.groups.prefix?.toUpperCase() || '';
+  const suffix = match.groups.suffix?.toUpperCase() || '';
+  const directions = [prefix, suffix].filter(Boolean);
+  const uniqueDirections = new Set(directions);
+  if (uniqueDirections.size > 1) {
+    return null;
+  }
+
+  const numericValue = Number(match.groups.number);
+  if (!Number.isFinite(numericValue)) {
+    return null;
+  }
+
+  let coordinate = numericValue;
+  const direction = directions[0] || '';
+
+  if (direction) {
+    if (direction === positiveDirection) {
+      coordinate = Math.abs(numericValue);
+    } else if (direction === negativeDirection) {
+      coordinate = -Math.abs(numericValue);
+    } else {
+      return null;
+    }
+  }
+
+  if (coordinate < min || coordinate > max) {
+    return null;
+  }
+
+  return coordinate;
+}
+
+function parseCoordinatePair(value) {
+  const normalized = readString(value);
+  if (!normalized) {
+    return { latitude: null, longitude: null };
+  }
+
+  const exactParts = normalized.split(/\s*[,;\n]\s*/).filter(Boolean);
+  const parts = exactParts.length === 2
+    ? exactParts
+    : normalized.match(/[NSEW]?\s*-?\d+(?:\.\d+)?\s*[NSEW]?/gi) || [];
+
+  if (parts.length !== 2) {
+    return { latitude: null, longitude: null };
+  }
+
+  const latitude = parseDirectionalCoordinate(parts[0], -90, 90, 'N', 'S');
+  const longitude = parseDirectionalCoordinate(parts[1], -180, 180, 'E', 'W');
+
+  return { latitude, longitude };
+}
+
 function formatCoordinate(value) {
   return value.toFixed(COORDINATE_DECIMALS).replace(/\.?0+$/, '');
 }
@@ -180,8 +245,9 @@ export function getWalletPassConfig(event = {}) {
   const stripImageUrl = readString(metadata.wallet_strip_image_url);
   const notes = readString(metadata.wallet_notes);
   const eventLink = readString(metadata.event_link);
-  const latitude = readCoordinate(metadata.wallet_latitude, -90, 90);
-  const longitude = readCoordinate(metadata.wallet_longitude, -180, 180);
+  const combinedCoordinates = parseCoordinatePair(metadata.wallet_coordinates);
+  const latitude = combinedCoordinates.latitude ?? readCoordinate(metadata.wallet_latitude, -90, 90);
+  const longitude = combinedCoordinates.longitude ?? readCoordinate(metadata.wallet_longitude, -180, 180);
   const hasValidCoordinates = latitude !== null && longitude !== null;
   const mapsLabel = readString(metadata.wallet_maps_label) || `${event?.name || 'Event'} Entrance`;
   const relevantText = readString(metadata.wallet_relevant_text);

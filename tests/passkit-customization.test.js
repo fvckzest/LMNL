@@ -147,6 +147,31 @@ test('getWalletPassConfig exposes optional entrance coordinates metadata when va
   ]);
 });
 
+test('getWalletPassConfig parses combined wallet coordinates with direction letters', () => {
+  const config = getWalletPassConfig({
+    name: 'SPACE',
+    metadata: {
+      wallet_coordinates: '34.052235 N, 118.243683 W',
+      wallet_relevant_text: 'Use the east entrance.',
+      wallet_maps_label: 'SPACE Entrance',
+    },
+  });
+
+  assert.equal(config.entranceCoordinatesLabel, 'ENTRY');
+  assert.equal(config.entranceCoordinatesValue, '34.052235, -118.243683');
+  assert.equal(
+    config.entranceMapsUrl,
+    'https://maps.apple.com/?ll=34.052235,-118.243683&q=SPACE%20Entrance'
+  );
+  assert.deepEqual(config.passLocations, [
+    {
+      latitude: 34.052235,
+      longitude: -118.243683,
+      relevantText: 'Use the east entrance.',
+    },
+  ]);
+});
+
 test('getWalletPassConfig ignores entrance coordinates when either coordinate is invalid', () => {
   const config = getWalletPassConfig({
     name: 'SPACE',
@@ -161,6 +186,26 @@ test('getWalletPassConfig ignores entrance coordinates when either coordinate is
   assert.equal(config.entranceCoordinatesValue, '');
   assert.equal(config.entranceMapsUrl, '');
   assert.deepEqual(config.passLocations, []);
+});
+
+test('getWalletPassConfig falls back to separate coordinates when combined value is invalid', () => {
+  const config = getWalletPassConfig({
+    name: 'SPACE',
+    metadata: {
+      wallet_coordinates: 'west side entrance',
+      wallet_latitude: '34.052235',
+      wallet_longitude: '-118.243683',
+    },
+  });
+
+  assert.equal(config.entranceCoordinatesLabel, 'ENTRY');
+  assert.equal(config.entranceCoordinatesValue, '34.052235, -118.243683');
+  assert.deepEqual(config.passLocations, [
+    {
+      latitude: 34.052235,
+      longitude: -118.243683,
+    },
+  ]);
 });
 
 test('getWalletPassConfig leaves wallet location blank when no override or address exists', () => {

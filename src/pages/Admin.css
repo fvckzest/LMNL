@@ -701,6 +701,12 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   transition: color 0.2s ease, opacity 0.2s ease;
 }
 
+.icon-action-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
 .ticket-link-btn:hover,
 .ticket-link-btn:focus-visible {
   color: var(--table-accent);

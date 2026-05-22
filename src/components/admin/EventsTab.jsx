@@ -1,19 +1,23 @@
  import { Fragment, useEffect, useMemo, useState } from 'react';
  import { apiPost } from '../../lib/api';
- import { LinkIcon, PinIcon } from './Icons';
+ import { LinkIcon, PinIcon, TicketIcon } from './Icons';
  import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const MANAGED_METADATA_KEYS = new Set([
   'event_link',
   'performers',
   'artists',
+  'vendors',
   'is_featured',
   'is_home_notif',
   'wallet_strip_image_url',
   'wallet_logo_text',
   'wallet_description',
   'wallet_primary_override',
+  'wallet_coordinates',
   'wallet_location_override',
+  'wallet_latitude',
+  'wallet_longitude',
   'wallet_background_color',
   'wallet_foreground_color',
   'wallet_label_color',
@@ -188,19 +192,19 @@ const MANAGED_METADATA_KEYS = new Set([
       setEditingEvent(event);
       setEventForm({
         ...event,
-        price: (event.price / 100).toFixed(2),
-        event_date: event.event_date || '',
-        event_time: event.event_time || '',
-        capacity: event.capacity || '',
-        location_name: event.location_name || '',
-        address: event.address || '',
-        description: event.description || '',
-        image_url: event.image_url || '',
-        partiful_url: event.partiful_url || '',
+        price: event.price == null ? '' : (event.price / 100).toFixed(2),
+        event_date: event.event_date ?? '',
+        event_time: event.event_time ?? '',
+        capacity: event.capacity ?? '',
+        location_name: event.location_name ?? '',
+        address: event.address ?? '',
+        description: event.description ?? '',
+        image_url: event.image_url ?? '',
+        partiful_url: event.partiful_url ?? '',
         is_private: event.is_private ?? true,
-        status: event.status || 'active',
-        square_variation_id: event.square_variation_id || '',
-        metadata: event.metadata || {}
+        status: event.status ?? '',
+        square_variation_id: event.square_variation_id ?? '',
+        metadata: event.metadata ?? {}
       });
     } else {
       setEditingEvent(null);
@@ -438,15 +442,17 @@ const MANAGED_METADATA_KEYS = new Set([
   }
 
   async function reconcileRequestTicket(request) {
-    try {
-      await apiPost('/api/confirm-ticket', { requestId: request.id });
-      fetchRequests();
-      fetchTickets();
-      showToast(`Ticket issued for ${request.customer_name}`);
-    } catch (error) {
-      console.error('Error reconciling ticket:', error);
-      showToast('Failed to issue ticket: ' + error.message, 'error');
-    }
+    triggerConfirm(`Issue ticket for ${request.customer_name}?`, async () => {
+      try {
+        await apiPost('/api/confirm-ticket', { requestId: request.id });
+        fetchRequests();
+        fetchTickets();
+        showToast(`Ticket issued for ${request.customer_name}`);
+      } catch (error) {
+        console.error('Error reconciling ticket:', error);
+        showToast('Failed to issue ticket: ' + error.message, 'error');
+      }
+    });
   }
 
   return (
@@ -798,14 +804,6 @@ const MANAGED_METADATA_KEYS = new Set([
                               RESET
                             </button>
                           )}
-                          {isRecoverableApprovedRequest(req) && (
-                            <button
-                              className="admin-btn approve"
-                              onClick={() => reconcileRequestTicket(req)}
-                            >
-                              ISSUE TICKET
-                            </button>
-                          )}
                           {req.status === 'archived' && (
                             <button
                               className="admin-btn reset"
@@ -818,7 +816,17 @@ const MANAGED_METADATA_KEYS = new Set([
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {req.square_order_id ? (
+                      {isRecoverableApprovedRequest(req) ? (
+                        <button
+                          type="button"
+                          className="ticket-link-btn icon-action-btn"
+                          onClick={() => reconcileRequestTicket(req)}
+                          title={`Issue ticket for ${req.customer_name}`}
+                          aria-label={`Issue ticket for ${req.customer_name}`}
+                        >
+                          <TicketIcon />
+                        </button>
+                      ) : req.square_order_id ? (
                         <a
                           href={`/success?requestId=${req.id}`}
                           target="_blank"
@@ -906,6 +914,7 @@ const MANAGED_METADATA_KEYS = new Set([
                 <div className="form-group">
                   <label>STATUS</label>
                   <select value={eventForm.status} onChange={e => setEventForm({...eventForm, status: e.target.value})}>
+                    <option value="">-- SELECT STATUS --</option>
                     <option value="active">ACTIVE</option>
                     <option value="past">PAST</option>
                     <option value="sold_out">SOLD OUT</option>
@@ -998,15 +1007,14 @@ const MANAGED_METADATA_KEYS = new Set([
 
                 <div className="form-group">
                   <label>PARTIFUL LINK</label>
-                  <input type="text" placeholder="https://partiful.com/e/..." value={eventForm.partiful_url} onChange={e => setEventForm({...eventForm, partiful_url: e.target.value})} />
+                  <input type="text" value={eventForm.partiful_url} onChange={e => setEventForm({...eventForm, partiful_url: e.target.value})} />
                 </div>
 
                 <div className="form-group">
                   <label>EVENT PAGE LINK (METADATA)</label>
                   <input 
                     type="text" 
-                    placeholder="https://..." 
-                    value={eventForm.metadata?.event_link || ''} 
+                    value={eventForm.metadata?.event_link ?? ''} 
                     onChange={e => updateMetadataField('event_link', e.target.value)} 
                   />
                 </div>
@@ -1015,8 +1023,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>PERFORMERS LINEUP (COMMA SEPARATED)</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Artist A, Artist B, Artist C" 
-                    value={eventForm.metadata?.performers || ''} 
+                    value={eventForm.metadata?.performers ?? ''} 
                     onChange={e => updateMetadataField('performers', e.target.value)} 
                   />
                 </div>
@@ -1025,9 +1032,17 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>FEATURED ARTISTS (COMMA SEPARATED)</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Painter A, Sculptor B, Visualist C" 
-                    value={eventForm.metadata?.artists || ''} 
+                    value={eventForm.metadata?.artists ?? ''} 
                     onChange={e => updateMetadataField('artists', e.target.value)} 
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>VENDORS (COMMA SEPARATED)</label>
+                  <input
+                    type="text"
+                    value={eventForm.metadata?.vendors ?? ''}
+                    onChange={e => updateMetadataField('vendors', e.target.value)}
                   />
                 </div>
 
@@ -1040,8 +1055,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET STRIP IMAGE URL (PNG)</label>
                   <input
                     type="text"
-                    placeholder="Direct PNG URL for the pass banner"
-                    value={eventForm.metadata?.wallet_strip_image_url || ''}
+                    value={eventForm.metadata?.wallet_strip_image_url ?? ''}
                     onChange={e => updateMetadataField('wallet_strip_image_url', e.target.value)}
                   />
                   <p className="form-help">If blank, the pass falls back to the event image URL. Apple Wallet strip images work best as direct PNG files.</p>
@@ -1051,8 +1065,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET RELEVANCE WINDOWS</label>
                   <textarea
                     rows="4"
-                    placeholder={`2026-08-21T13:00/2026-08-21T23:00\n2026-08-22T13:00/2026-08-22T23:00`}
-                    value={eventForm.metadata?.wallet_relevant_dates || ''}
+                    value={eventForm.metadata?.wallet_relevant_dates ?? ''}
                     onChange={e => updateMetadataField('wallet_relevant_dates', e.target.value)}
                   />
                   <p className="form-help">Optional. Add one Wallet date window per line in the format START/END. This is how a two-day event should be represented.</p>
@@ -1062,8 +1075,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET TIME ZONE</label>
                   <input
                     type="text"
-                    placeholder="America/Los_Angeles"
-                    value={eventForm.metadata?.wallet_time_zone || ''}
+                    value={eventForm.metadata?.wallet_time_zone ?? ''}
                     onChange={e => updateMetadataField('wallet_time_zone', e.target.value)}
                   />
                   <p className="form-help">Used to turn the Wallet windows above into Apple-safe timestamps. Defaults to Los Angeles if blank.</p>
@@ -1073,18 +1085,27 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET EXPIRATION</label>
                   <input
                     type="datetime-local"
-                    value={eventForm.metadata?.wallet_expiration_date || ''}
+                    value={eventForm.metadata?.wallet_expiration_date ?? ''}
                     onChange={e => updateMetadataField('wallet_expiration_date', e.target.value)}
                   />
                   <p className="form-help">Optional. If blank, Wallet expires the pass after the final relevance window ends.</p>
                 </div>
 
                 <div className="form-group">
+                  <label>WALLET COORDINATES</label>
+                  <input
+                    type="text"
+                    value={eventForm.metadata?.wallet_coordinates ?? ''}
+                    onChange={e => updateMetadataField('wallet_coordinates', e.target.value)}
+                  />
+                  <p className="form-help">Paste as one line, like `34.052235 N, 118.243683 W` or `34.052235, -118.243683`.</p>
+                </div>
+
+                <div className="form-group">
                   <label>WALLET LOCATION OVERRIDE</label>
                   <input
                     type="text"
-                    placeholder="Defaults to location name"
-                    value={eventForm.metadata?.wallet_location_override || ''}
+                    value={eventForm.metadata?.wallet_location_override ?? ''}
                     onChange={e => updateMetadataField('wallet_location_override', e.target.value)}
                   />
                 </div>
@@ -1093,8 +1114,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET LOGO TEXT</label>
                   <input
                     type="text"
-                    placeholder="Defaults to LMNL"
-                    value={eventForm.metadata?.wallet_logo_text || ''}
+                    value={eventForm.metadata?.wallet_logo_text ?? ''}
                     onChange={e => updateMetadataField('wallet_logo_text', e.target.value)}
                   />
                 </div>
@@ -1103,8 +1123,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET DESCRIPTION</label>
                   <input
                     type="text"
-                    placeholder="Defaults to LMNL Event Ticket"
-                    value={eventForm.metadata?.wallet_description || ''}
+                    value={eventForm.metadata?.wallet_description ?? ''}
                     onChange={e => updateMetadataField('wallet_description', e.target.value)}
                   />
                 </div>
@@ -1113,8 +1132,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET BACKGROUND COLOR</label>
                   <input
                     type="text"
-                    placeholder="rgb(255, 255, 255)"
-                    value={eventForm.metadata?.wallet_background_color || ''}
+                    value={eventForm.metadata?.wallet_background_color ?? ''}
                     onChange={e => updateMetadataField('wallet_background_color', e.target.value)}
                   />
                 </div>
@@ -1123,8 +1141,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET FOREGROUND COLOR</label>
                   <input
                     type="text"
-                    placeholder="rgb(0, 0, 0)"
-                    value={eventForm.metadata?.wallet_foreground_color || ''}
+                    value={eventForm.metadata?.wallet_foreground_color ?? ''}
                     onChange={e => updateMetadataField('wallet_foreground_color', e.target.value)}
                   />
                 </div>
@@ -1133,8 +1150,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET LABEL COLOR</label>
                   <input
                     type="text"
-                    placeholder="rgb(100, 100, 100)"
-                    value={eventForm.metadata?.wallet_label_color || ''}
+                    value={eventForm.metadata?.wallet_label_color ?? ''}
                     onChange={e => updateMetadataField('wallet_label_color', e.target.value)}
                   />
                 </div>
@@ -1143,8 +1159,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   <label>WALLET NOTES</label>
                   <textarea
                     rows="3"
-                    placeholder="Optional notes shown on the back of the pass"
-                    value={eventForm.metadata?.wallet_notes || ''}
+                    value={eventForm.metadata?.wallet_notes ?? ''}
                     onChange={e => updateMetadataField('wallet_notes', e.target.value)}
                   />
                 </div>
@@ -1159,13 +1174,11 @@ const MANAGED_METADATA_KEYS = new Set([
                   <div className="trait-input-row">
                     <input 
                       type="text" 
-                      placeholder="TRAIT (e.g. VIBE)" 
                       value={newTraitKey} 
                       onChange={e => setNewTraitKey(e.target.value)} 
                     />
                     <input 
                       type="text" 
-                      placeholder="VALUE (e.g. DARK)" 
                       value={newTraitValue} 
                       onChange={e => setNewTraitValue(e.target.value)} 
                     />
