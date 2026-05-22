@@ -59,6 +59,16 @@
   gap: 8px;
 }
 
+.ticket-event-logo {
+  display: block;
+  max-width: min(100%, 360px);
+  max-height: 140px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .ticket-label,
 .ticket-qr-caption {
   margin: 0;
@@ -115,6 +125,7 @@
 }
 
 .ticket-qr-col {
+  --ticket-qr-size: 280px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -123,6 +134,8 @@
 
 .ticket-qr-wrapper {
   position: relative;
+  width: calc(var(--ticket-qr-size) + 34px);
+  box-sizing: border-box;
   padding: 16px;
   background: #ffffff;
   border: var(--lmnl-border-medium);
@@ -130,6 +143,20 @@
 
 .ticket-qr-wrapper.is-used {
   opacity: 0.45;
+}
+
+.ticket-qr-wrapper svg {
+  width: var(--ticket-qr-size) !important;
+  height: var(--ticket-qr-size) !important;
+}
+
+.status-section {
+  width: calc(var(--ticket-qr-size) + 34px);
+}
+
+.ticket-status-badge {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .ticket-qr-corners .corner {
@@ -156,12 +183,11 @@
 }
 
 @media (max-width: 640px) {
-  .ticket-section-group {
-    grid-template-columns: 1fr;
+  .ticket-qr-col {
+    --ticket-qr-size: 220px;
   }
 
-  .ticket-qr-wrapper svg {
-    width: 220px !important;
-    height: 220px !important;
+  .ticket-section-group {
+    grid-template-columns: 1fr;
   }
 }

@@ -35,6 +35,7 @@ export async function getTicketView(ticketId, deps = {}) {
   return {
     ...result,
     wallet: {
+      displayDate: wallet.displayDate || '',
       locationValue: wallet.locationValue || '',
       entryLabel: wallet.entranceValueLabel || '',
       entryValue: wallet.entranceCoordinatesValue || '',

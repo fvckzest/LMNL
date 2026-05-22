@@ -26,6 +26,7 @@ export default function Ticket() {
   const checkInUrl = (ticket?.qr_code_payload || ticket?.id)
     ? buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id)
     : '';
+  const displayDate = walletData?.displayDate || formatEventDate(eventData?.event_date);
   const entryLabel = walletData?.entryLabel || '';
   const entryValue = walletData?.entryValue || '';
 
@@ -88,14 +89,21 @@ export default function Ticket() {
 
               <div className="ticket-details-col page-panel">
                 <div className="ticket-section">
-                  <p className="ticket-label">EVENT</p>
-                  <p className="ticket-value huge">{eventData?.name || 'LMNL Event'}</p>
+                  {eventData?.image_url ? (
+                    <img
+                      className="ticket-event-logo"
+                      src={eventData.image_url}
+                      alt={eventData?.name ? `${eventData.name} logo` : 'Event logo'}
+                    />
+                  ) : (
+                    <p className="ticket-value huge">{eventData?.name || 'LMNL Event'}</p>
+                  )}
                 </div>
 
                 <div className="ticket-section-group">
                   <div className="ticket-section">
                     <p className="ticket-label">DATE</p>
-                    <p className="ticket-value">{formatEventDate(eventData?.event_date)}</p>
+                    <p className="ticket-value">{displayDate}</p>
                   </div>
                   <div className="ticket-section">
                     <p className="ticket-label">TIME</p>
@@ -120,18 +128,9 @@ export default function Ticket() {
                   <p className="ticket-value">{ticket.customer_name}</p>
                 </div>
 
-                <div className="ticket-section status-section">
-                  <p className="ticket-label">STATUS</p>
-                  <div className={`ticket-status-badge ${ticket.is_used ? 'used' : 'valid'}`}>
-                    {ticket.is_used ? 'SCANNED / USED' : 'VALID ENTRY'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="ticket-qr-col page-panel">
                 {!ticket.is_used && (
                   <div className="ticket-section wallet-section">
-                    <a 
+                    <a
                       href={appleWalletUrl}
                       className="apple-wallet-button"
                     >
@@ -142,6 +141,14 @@ export default function Ticket() {
                     </a>
                   </div>
                 )}
+              </div>
+
+              <div className="ticket-qr-col page-panel">
+                <p className="ticket-qr-caption">
+                  {ticket.is_used
+                    ? `SCANNED ON ${new Date(ticket.used_at).toLocaleDateString()}`
+                    : 'PRESENT THIS CODE AT THE DOOR'}
+                </p>
                 <div className={`ticket-qr-wrapper ${ticket.is_used ? 'is-used' : ''}`}>
                   <QRCodeSVG
                     value={checkInUrl}
@@ -158,11 +165,11 @@ export default function Ticket() {
                     <span className="corner br"></span>
                   </div>
                 </div>
-                <p className="ticket-qr-caption">
-                  {ticket.is_used
-                    ? `SCANNED ON ${new Date(ticket.used_at).toLocaleDateString()}`
-                    : 'PRESENT THIS CODE AT THE DOOR'}
-                </p>
+                <div className="ticket-section status-section">
+                  <div className={`ticket-status-badge ${ticket.is_used ? 'used' : 'valid'}`}>
+                    {ticket.is_used ? 'SCANNED / USED' : 'VALID ENTRY'}
+                  </div>
+                </div>
               </div>
 
               <div className="ticket-disclaimer page-panel" aria-label="Ticket liability disclaimer">

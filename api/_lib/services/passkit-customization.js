@@ -201,14 +201,6 @@ function parseRelevantDateRanges(rawValue, timeZone) {
     .filter(Boolean);
 }
 
-function formatDisplayDate(date) {
-  return date.toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'numeric',
-    year: '2-digit',
-  }).replace(/\//g, '.');
-}
-
 function formatDateString(value) {
   const normalized = readString(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
@@ -234,10 +226,32 @@ function getDisplayDateRange(relevantDates) {
     return '';
   }
 
-  const formattedStart = formatDisplayDate(start);
-  const formattedEnd = formatDisplayDate(end);
+  const startMonthLabel = start.toLocaleString('en-US', { month: 'long' });
+  const startDay = start.getDate();
+  const startYear = start.getFullYear();
+  const endMonthLabel = end.toLocaleString('en-US', { month: 'long' });
+  const endDay = end.getDate();
+  const endYear = end.getFullYear();
+  const isSameYear = startYear === endYear;
+  const isSameMonth = isSameYear && startMonthLabel === endMonthLabel;
 
-  return formattedStart === formattedEnd ? formattedStart : `${formattedStart} - ${formattedEnd}`;
+  if (
+    isSameYear
+    && isSameMonth
+    && startDay === endDay
+  ) {
+    return formatDateString(`${startYear}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`);
+  }
+
+  if (isSameMonth) {
+    return `${startMonthLabel} ${startDay}-${endDay} ${endYear}`;
+  }
+
+  if (isSameYear) {
+    return `${startMonthLabel} ${startDay}-${endMonthLabel} ${endDay} ${endYear}`;
+  }
+
+  return `${startMonthLabel} ${startDay} ${startYear}-${endMonthLabel} ${endDay} ${endYear}`;
 }
 
 export function getWalletPassConfig(event = {}) {

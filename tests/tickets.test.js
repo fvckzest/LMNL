@@ -14,6 +14,7 @@ test('getTicketView returns ticket and event payload', async () => {
       event: {
         id: 'event_1',
         name: 'LMNL Event',
+        event_date: '2026-07-03',
         metadata: {
           wallet_coordinates: '34.052235 N, 118.243683 W',
         },
@@ -24,10 +25,31 @@ test('getTicketView returns ticket and event payload', async () => {
   assert.equal(result.ticket.id, 'ticket_1');
   assert.equal(result.event.name, 'LMNL Event');
   assert.deepEqual(result.wallet, {
+    displayDate: '7.3.26',
     locationValue: '',
     entryLabel: 'COORDS',
     entryValue: '34.052235, -118.243683',
   });
+});
+
+test('getTicketView uses wallet multi-day display formatting when relevance windows are configured', async () => {
+  const result = await getTicketView('ticket_1', {
+    getTicketWithEventById: async () => ({
+      ticket: { id: 'ticket_1', customer_name: 'Guest' },
+      event: {
+        id: 'event_1',
+        name: 'LMNL Event',
+        event_date: '2026-07-03',
+        event_time: '18:00',
+        metadata: {
+          wallet_time_zone: 'America/Los_Angeles',
+          wallet_relevant_dates: '2026-07-03T18:00/2026-07-03T23:00\n2026-07-04T18:00/2026-07-04T23:00',
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.wallet.displayDate, 'July 3-4 2026');
 });
 
 test('getTicketView exposes address entry details when coordinates are unavailable', async () => {
@@ -44,6 +66,7 @@ test('getTicketView exposes address entry details when coordinates are unavailab
   });
 
   assert.deepEqual(result.wallet, {
+    displayDate: '',
     locationValue: '',
     entryLabel: 'ADDRESS',
     entryValue: '123 Main St, Los Angeles, CA 90012',
