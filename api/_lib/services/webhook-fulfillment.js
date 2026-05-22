@@ -19,17 +19,6 @@ import { generateTicketPass } from './passkit.js';
 async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
   try {
     const response = await resend.emails.send(payload);
-    if (response.error && primaryFrom !== 'onboarding@resend.dev') {
-      const retry = await resend.emails.send({
-        ...payload,
-        from: 'onboarding@resend.dev',
-      });
-
-      if (!retry.error) {
-        return retry.data;
-      }
-    }
-
     if (!response.error) {
       return response.data;
     }
@@ -41,7 +30,7 @@ async function sendWithFallback(resend, payload, fallbackHtml, primaryFrom) {
     ...payload,
     html: fallbackHtml,
     text: undefined,
-    from: primaryFrom === 'onboarding@resend.dev' ? primaryFrom : 'onboarding@resend.dev',
+    from: primaryFrom,
   };
 
   const fallback = await resend.emails.send(minimalPayload);
@@ -197,6 +186,7 @@ export async function sendTicketEmail(ticket, event, customerEmail, customerName
   const emailOptions = {
     from: primaryFrom,
     to: customerEmail,
+    replyTo: 'hi@lmnl.art',
     subject: email.subject,
     html: email.html,
     text: email.text,

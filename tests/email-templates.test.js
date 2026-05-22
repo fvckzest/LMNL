@@ -8,7 +8,7 @@ test('buildApprovalEmail includes subject, CTA, and fallback link text', () => {
     checkoutUrl: 'https://checkout.lmnl.art/pay/prsm-session',
   });
 
-  assert.equal(email.subject, 'APPROVED: PRSM Listening Session');
+  assert.equal(email.subject, "You're approved for PRSM Listening Session");
   assert.match(email.html, /Complete Payment/);
   assert.match(email.html, /checkout\.lmnl\.art\/pay\/prsm-session/);
   assert.match(email.text, /Event: PRSM Listening Session/);
@@ -24,8 +24,9 @@ test('buildTicketEmail includes guest, event, and ticket link', () => {
     customerName: 'Ada Lovelace',
   });
 
-  assert.equal(email.subject, 'Genesis Opening Night TICKET');
+  assert.equal(email.subject, 'Your ticket for Genesis Opening Night');
   assert.match(email.html, /Ada Lovelace/);
   assert.match(email.html, /View Ticket/);
   assert.match(email.text, /https:\/\/lmnl\.art\/ticket\/tkt_42A91/);
+  assert.doesNotMatch(email.html, /Local Preview/);
 });

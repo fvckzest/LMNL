@@ -18,8 +18,8 @@ function renderEmailShell({
   note,
   footer,
 }) {
-  const titleFontFamily = 'Gantari, Arial, sans-serif';
-  const monoFontFamily = '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace';
+  const titleFontFamily = '"Helvetica Neue", Arial, sans-serif';
+  const monoFontFamily = '"SFMono-Regular", Menlo, Consolas, monospace';
   const headerRectWidth = 10;
   const headerTitleSize = 54;
 
@@ -72,9 +72,6 @@ function renderEmailShell({
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-collapse: collapse; background-color: #ffffff;">
                   <tr>
                     <td bgcolor="#ffffff" style="padding: 28px 28px 22px 0; background: #ffffff; background-color: #ffffff;">
-                      <div style="margin: 0 0 18px; padding-left: 28px; font: 700 11px/1.2 ${monoFontFamily}; letter-spacing: 0.24em; text-transform: uppercase; color: #666666;">
-                        Local Preview
-                      </div>
                       <div style="margin: 0 0 22px 28px; text-align: left;">
                         <img
                           src="${logoUrl}"
@@ -132,8 +129,6 @@ function renderEmailShell({
         <meta name="supported-color-schemes" content="light" />
         <title>${escapeHtml(title)}</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Gantari:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
-
           :root {
             color-scheme: light;
             supported-color-schemes: light;
@@ -155,7 +150,7 @@ function renderEmailShell({
 
 export function buildApprovalEmail({ eventName, checkoutUrl, logoUrl }) {
   const safeEventName = eventName || 'your event';
-  const subject = `APPROVED: ${safeEventName}`;
+  const subject = `You're approved for ${safeEventName}`;
   const rendered = renderEmailShell({
     accentColor: '#000000',
     logoUrl,
@@ -173,7 +168,7 @@ export function buildApprovalEmail({ eventName, checkoutUrl, logoUrl }) {
     footer: 'Questions or timing issues? Reply to this email and we will help.',
   });
   const text = [
-    'APPROVED',
+    'You are approved',
     `Event: ${safeEventName}`,
     checkoutUrl ? `Pay here: ${checkoutUrl}` : '',
   ].filter(Boolean).join('\n');
@@ -184,7 +179,7 @@ export function buildApprovalEmail({ eventName, checkoutUrl, logoUrl }) {
 export function buildTicketEmail({ eventName, ticketUrl, customerName, logoUrl }) {
   const safeEventName = eventName || 'LMNL Event';
   const safeCustomerName = customerName || 'Guest';
-  const subject = `${safeEventName} TICKET`;
+  const subject = `Your ticket for ${safeEventName}`;
   const rendered = renderEmailShell({
     accentColor: '#000000',
     logoUrl,
@@ -203,7 +198,7 @@ export function buildTicketEmail({ eventName, ticketUrl, customerName, logoUrl }
     footer: 'If you experience any issues at all please email 4evr@lmnl.art so I can help fix things that may go awry.',
   });
   const text = [
-    'YOUR TICKET',
+    'Your ticket is ready',
     `Guest: ${safeCustomerName}`,
     `Event: ${safeEventName}`,
     ticketUrl ? `View it here: ${ticketUrl}` : '',

@@ -310,14 +310,14 @@ test('resolveCustomer falls back to request email when Square provides placehold
   assert.equal(customer.customerEmail, 'real@example.org');
 });
 
-test('sendTicketEmail falls back to resend onboarding sender when branded sender fails', async () => {
+test('sendTicketEmail keeps the branded sender when retrying a minimal payload', async () => {
   const resendCalls = [];
   process.env.RESEND_API_KEY = 're_test';
   const resendClient = {
     emails: {
       send: async (payload) => {
         resendCalls.push(payload);
-        if (payload.from === 'LMNL <tickets@lmnl.art>') {
+        if (payload.html?.includes('<!doctype html>')) {
           return { error: { message: 'Domain not verified' } };
         }
         return { data: { id: 'email_123' } };
@@ -338,8 +338,9 @@ test('sendTicketEmail falls back to resend onboarding sender when branded sender
 
   assert.equal(resendCalls.length, 2);
   assert.equal(resendCalls[0].from, 'LMNL <tickets@lmnl.art>');
-  assert.equal(resendCalls[1].from, 'onboarding@resend.dev');
+  assert.equal(resendCalls[1].from, 'LMNL <tickets@lmnl.art>');
   assert.equal(resendCalls[1].to, 'ada@example.com');
+  assert.equal(resendCalls[0].replyTo, 'hi@lmnl.art');
   assert.deepEqual(result, { id: 'email_123' });
 });
 
@@ -370,5 +371,6 @@ test('sendTicketEmail still sends when pass generation throws', async () => {
   assert.equal(resendCalls.length, 1);
   assert.equal(resendCalls[0].from, 'LMNL <tickets@lmnl.art>');
   assert.equal(resendCalls[0].attachments, undefined);
+  assert.equal(resendCalls[0].replyTo, 'hi@lmnl.art');
   assert.deepEqual(result, { id: 'email_456' });
 });
