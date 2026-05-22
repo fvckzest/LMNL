@@ -187,6 +187,23 @@ export function buildArtistInterestDiscordEmbed(interest) {
   };
 }
 
+export function buildInviteRequestDiscordEmbed(request) {
+  return {
+    title: truncate('New Event Invite Request', DISCORD_EMBED_LIMITS.title),
+    color: 0x4f46e5,
+    fields: [
+      { name: 'Name', value: request?.customer_name, inline: true },
+      { name: 'Email', value: request?.customer_email, inline: true },
+      { name: 'Event', value: request?.event_name || '—', inline: true },
+      { name: 'Status', value: request?.status || 'pending', inline: true },
+    ].map(sanitizeField).filter(Boolean),
+    footer: {
+      text: truncate(`Invite Request ID: ${request?.id || 'pending'}`, DISCORD_EMBED_LIMITS.footer),
+    },
+    timestamp: request?.created_at || new Date().toISOString(),
+  };
+}
+
 export async function sendDiscordIntakeNotification(embed, deps = {}) {
   const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
   const channelId = config.discordIntakeChannelId;

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildArtistInterestDiscordEmbed,
+  buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
   getRemainingTicketCount,
   sendDiscordIntakeNotification,
@@ -119,6 +120,27 @@ test('buildArtistInterestDiscordEmbed maps artist interest submissions into an e
     value: 'Performance art',
     inline: false,
   });
+});
+
+test('buildInviteRequestDiscordEmbed maps invite requests into an embed payload', () => {
+  const embed = buildInviteRequestDiscordEmbed({
+    id: 'req_1',
+    customer_name: 'Jordan',
+    customer_email: 'jordan@example.com',
+    event_name: 'SPACE',
+    status: 'pending',
+    created_at: '2026-05-21T18:00:00.000Z',
+  });
+
+  assert.equal(embed.title, 'New Event Invite Request');
+  assert.equal(embed.color, 0x4f46e5);
+  assert.equal(embed.timestamp, '2026-05-21T18:00:00.000Z');
+  assert.deepEqual(embed.fields[2], {
+    name: 'Event',
+    value: 'SPACE',
+    inline: true,
+  });
+  assert.equal(embed.footer.text, 'Invite Request ID: req_1');
 });
 
 test('sendDiscordIntakeNotification posts embeds through the configured intake channel', async () => {

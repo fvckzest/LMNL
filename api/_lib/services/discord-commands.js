@@ -5,6 +5,7 @@ import { getLatestEventByName } from '../repositories/events.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
 import {
   buildArtistInterestDiscordEmbed,
+  buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
   getRemainingTicketCount,
 } from './discord.js';
@@ -75,6 +76,7 @@ export const discordCommandDefinitions = [
           { name: 'contact', value: 'contact' },
           { name: 'service', value: 'service' },
           { name: 'artist', value: 'artist' },
+          { name: 'invite', value: 'invite' },
         ],
       },
     ],
@@ -255,7 +257,18 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
       }), 'Previewing the artist interest intake embed.');
     }
 
-    return createMessageResponse('Please choose one of: contact, service, or artist.');
+    if (formType === 'invite') {
+      return createEmbedResponse(buildInviteRequestDiscordEmbed({
+        id: 'preview-invite',
+        customer_name: 'Jordan Ellis',
+        customer_email: 'jordan@example.com',
+        event_name: 'SPACE',
+        status: 'pending',
+        created_at: '2026-05-21T19:00:00.000Z',
+      }), 'Previewing the event invite request intake embed.');
+    }
+
+    return createMessageResponse('Please choose one of: contact, service, artist, or invite.');
   }
 
   return createMessageResponse(`/${commandName} is not wired up yet.`);

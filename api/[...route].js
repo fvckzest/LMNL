@@ -13,6 +13,7 @@ import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
 import {
   buildArtistInterestDiscordEmbed,
+  buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
   sendDiscordIntakeNotification,
 } from './_lib/services/discord.js';
@@ -616,6 +617,13 @@ async function handleRequests(req, res) {
       customer_name: requireValue(body.customerName, 'customerName is required.'),
       customer_email: requireValue(body.customerEmail, 'customerEmail is required.'),
     });
+
+    await settleNotificationTasks([
+      {
+        label: 'Discord invite request notification',
+        task: () => sendDiscordIntakeNotification(buildInviteRequestDiscordEmbed(created)),
+      },
+    ]);
 
     return sendJson(res, 200, {
       success: true,

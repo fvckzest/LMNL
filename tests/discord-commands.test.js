@@ -151,3 +151,18 @@ test('handleDiscordInteraction previews the artist intake embed', async () => {
   assert.equal(response.data.flags, undefined);
   assert.equal(response.data.embeds[0].title, 'New Artist Interest Submission');
 });
+
+test('handleDiscordInteraction previews the invite request intake embed', async () => {
+  const response = await handleDiscordInteraction({
+    type: 2,
+    data: {
+      name: 'test-intake',
+      options: [{ name: 'form', value: 'invite' }],
+    },
+  });
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, undefined);
+  assert.match(response.data.content, /event invite request intake embed/i);
+  assert.equal(response.data.embeds[0].title, 'New Event Invite Request');
+});

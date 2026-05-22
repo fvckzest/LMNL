@@ -112,7 +112,7 @@ export default function Admin() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const loadedDatasetsRef = useRef(new Set());
   const inflightDatasetsRef = useRef(new Set());
-  const loadDatasetsRef = useRef(async () => {});
+  const loadDatasetsRef = useRef(async () => { });
 
   // Pinning state
   const [pinnedSections, setPinnedSections] = useState(() => {
@@ -554,7 +554,7 @@ export default function Admin() {
         introAccentColor={neutralColor}
         introLabel="CONTROL NODE"
         introTitle="Admin"
-        introCopy="Operations surface for events, inquiries, inventory, editorial, and community records."
+        introCopy="Operations surface for GZTL"
         introActions={introActions}
         contentClassName="admin-content page-stack"
       >

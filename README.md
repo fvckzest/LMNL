@@ -79,7 +79,7 @@ For Discord slash commands:
 - Set the Interactions Endpoint URL in the Discord developer portal to `https://your-domain/api/discord-interactions`.
 - Add `DISCORD_APPLICATION_ID`, `DISCORD_BOT_TOKEN`, and `DISCORD_PUBLIC_KEY` to production.
 - Register commands with `npm run register:discord-commands`.
-- Use `/test-intake form:contact`, `/test-intake form:service`, or `/test-intake form:artist` in Discord to preview the current intake embeds privately before testing live form submissions.
+- Use `/test-intake form:contact`, `/test-intake form:service`, `/test-intake form:artist`, or `/test-intake form:invite` in Discord to preview the current intake embeds privately before testing live form submissions.
 
 ---
 
