@@ -6,6 +6,7 @@ const DEFAULT_WALLET_COLORS = {
 
 const DEFAULT_WALLET_TIME_ZONE = 'America/Los_Angeles';
 const RANGE_SEPARATOR = '/';
+const COORDINATE_DECIMALS = 6;
 
 function readString(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -14,6 +15,49 @@ function readString(value) {
 function readColor(value, fallback) {
   const normalized = readString(value);
   return normalized || fallback;
+}
+
+function readCoordinate(value, min, max) {
+  const normalized = readString(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const coordinate = Number(normalized);
+  if (!Number.isFinite(coordinate) || coordinate < min || coordinate > max) {
+    return null;
+  }
+
+  return coordinate;
+}
+
+function formatCoordinate(value) {
+  return value.toFixed(COORDINATE_DECIMALS).replace(/\.?0+$/, '');
+}
+
+function formatAddress(value) {
+  if (!value) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return readString(value);
+  }
+
+  if (typeof value !== 'object') {
+    return '';
+  }
+
+  return [
+    readString(value.addressLine1),
+    readString(value.addressLine2),
+    [
+      readString(value.locality),
+      readString(value.administrativeDistrictLevel1),
+      readString(value.postalCode),
+    ].filter(Boolean).join(', '),
+    readString(value.country),
+  ].filter(Boolean).join('\n');
 }
 
 function hasDateTimeOffset(value) {
@@ -136,6 +180,12 @@ export function getWalletPassConfig(event = {}) {
   const stripImageUrl = readString(metadata.wallet_strip_image_url);
   const notes = readString(metadata.wallet_notes);
   const eventLink = readString(metadata.event_link);
+  const latitude = readCoordinate(metadata.wallet_latitude, -90, 90);
+  const longitude = readCoordinate(metadata.wallet_longitude, -180, 180);
+  const hasValidCoordinates = latitude !== null && longitude !== null;
+  const mapsLabel = readString(metadata.wallet_maps_label) || `${event?.name || 'Event'} Entrance`;
+  const relevantText = readString(metadata.wallet_relevant_text);
+  const locationAddress = formatAddress(event?.address);
   const timeZone = readString(metadata.wallet_time_zone) || DEFAULT_WALLET_TIME_ZONE;
   const relevantDates = parseRelevantDateRanges(metadata.wallet_relevant_dates, timeZone);
   const expirationDate = normalizeDateTimeValue(metadata.wallet_expiration_date, timeZone);
@@ -151,7 +201,24 @@ export function getWalletPassConfig(event = {}) {
     backgroundColor: readColor(metadata.wallet_background_color, DEFAULT_WALLET_COLORS.backgroundColor),
     foregroundColor: readColor(metadata.wallet_foreground_color, DEFAULT_WALLET_COLORS.foregroundColor),
     labelColor: readColor(metadata.wallet_label_color, DEFAULT_WALLET_COLORS.labelColor),
-    locationValue: readString(metadata.wallet_location_override) || event?.location_name || 'TBA',
+    locationValue: readString(metadata.wallet_location_override) || readString(event?.location_name),
+    entranceCoordinatesLabel: hasValidCoordinates ? 'ENTRY' : '',
+    entranceCoordinatesValue: hasValidCoordinates
+      ? `${formatCoordinate(latitude)}, ${formatCoordinate(longitude)}`
+      : locationAddress,
+    entranceValueLabel: hasValidCoordinates
+      ? 'ENTRY'
+      : (locationAddress ? 'ADDRESS' : ''),
+    entranceMapsUrl: hasValidCoordinates
+      ? `https://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(mapsLabel)}`
+      : '',
+    passLocations: hasValidCoordinates
+      ? [{
+          latitude,
+          longitude,
+          ...(relevantText ? { relevantText } : {}),
+        }]
+      : [],
     notes,
     eventLink,
     timeZone,
@@ -209,6 +276,14 @@ export async function applyPassVisualCustomization(pass, event) {
     });
   }
 
+  if (wallet.entranceMapsUrl) {
+    pass.backFields.push({
+      key: 'entranceMap',
+      label: 'ENTRY MAP',
+      value: wallet.entranceMapsUrl,
+    });
+  }
+
   if (!wallet.stripImageUrl) {
     return;
   }
@@ -239,6 +314,10 @@ export async function applyPassVisualCustomization(pass, event) {
 
 export function applyPassTimingCustomization(pass, event) {
   const wallet = getWalletPassConfig(event);
+
+  if (wallet.passLocations.length) {
+    pass.setLocations(...wallet.passLocations);
+  }
 
   if (wallet.relevantDates.length) {
     pass.setRelevantDates(wallet.relevantDates);

@@ -61,6 +61,26 @@ function getCertificateMaterial() {
   };
 }
 
+export function buildPassAuxiliaryFields(ticket, wallet) {
+  const fields = [];
+
+  if (wallet.locationValue) {
+    fields.push({ key: 'location', label: 'LOCATION', value: wallet.locationValue });
+  }
+
+  if (wallet.entranceCoordinatesValue) {
+    fields.push({
+      key: 'entry',
+      label: wallet.entranceValueLabel || wallet.entranceCoordinatesLabel,
+      value: wallet.entranceCoordinatesValue,
+    });
+  }
+
+  fields.push({ key: 'guest', label: 'GUEST', value: ticket.customer_name });
+
+  return fields;
+}
+
 export async function generateTicketPass(ticketId) {
   const assets = loadPassAssets();
   const applePassConfig = getApplePassConfig();
@@ -107,10 +127,7 @@ export async function generateTicketPass(ticketId) {
     { key: 'time', label: 'TIME', value: wallet.isMultiDay ? 'MULTI-DAY' : (event?.event_time || 'TBA') }
   );
 
-  pass.auxiliaryFields.push(
-    { key: 'location', label: 'LOCATION', value: wallet.locationValue },
-    { key: 'guest', label: 'GUEST', value: ticket.customer_name }
-  );
+  pass.auxiliaryFields.push(...buildPassAuxiliaryFields(ticket, wallet));
 
   const barcodeMessage = buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id, {
     siteUrl: getBaseConfig().siteUrl,
