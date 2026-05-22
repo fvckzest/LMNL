@@ -5,6 +5,7 @@ import {
   markTicketAsUsed,
 } from '../repositories/tickets.js';
 import { recordTicketAttendanceVerification } from './attendance.js';
+import { getWalletPassConfig } from './passkit-customization.js';
 
 function isLocalHostname(hostname = '') {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -28,7 +29,17 @@ export function buildAdminCheckInUrl(token, options = {}) {
 
 export async function getTicketView(ticketId, deps = {}) {
   const loadTicket = deps.getTicketWithEventById || getTicketWithEventById;
-  return loadTicket(ticketId);
+  const result = await loadTicket(ticketId);
+  const wallet = getWalletPassConfig(result.event);
+
+  return {
+    ...result,
+    wallet: {
+      locationValue: wallet.locationValue || '',
+      entryLabel: wallet.entranceValueLabel || '',
+      entryValue: wallet.entranceCoordinatesValue || '',
+    },
+  };
 }
 
 export async function getCheckInTicketView(token, deps = {}) {

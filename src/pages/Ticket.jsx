@@ -16,6 +16,7 @@ export default function Ticket() {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [eventData, setEventData] = useState(null);
+  const [walletData, setWalletData] = useState(null);
   const [loading, setLoading] = useState(() => Boolean(ticketId));
   const [error, setError] = useState(ticketId ? null : 'Missing ticket ID.');
 
@@ -25,6 +26,8 @@ export default function Ticket() {
   const checkInUrl = (ticket?.qr_code_payload || ticket?.id)
     ? buildAdminCheckInUrl(ticket.qr_code_payload || ticket.id)
     : '';
+  const entryLabel = walletData?.entryLabel || '';
+  const entryValue = walletData?.entryValue || '';
 
   useEffect(() => {
     if (!ticketId) {
@@ -36,6 +39,7 @@ export default function Ticket() {
         const data = await apiGet(`/api/get-ticket?ticketId=${ticketId}`);
         setTicket(data.ticket);
         setEventData(data.event);
+        setWalletData(data.wallet || null);
       } catch (err) {
         console.error('Error fetching ticket:', err);
         setError(err.message || 'System error: Ticket not found or invalid.');
@@ -103,6 +107,13 @@ export default function Ticket() {
                   <p className="ticket-label">LOCATION</p>
                   <p className="ticket-value">{eventData?.location_name || 'TBA'}</p>
                 </div>
+
+                {entryLabel && entryValue && (
+                  <div className="ticket-section">
+                    <p className="ticket-label">{entryLabel}</p>
+                    <p className="ticket-value">{entryValue}</p>
+                  </div>
+                )}
 
                 <div className="ticket-section">
                   <p className="ticket-label">GUEST</p>

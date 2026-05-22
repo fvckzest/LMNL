@@ -11,12 +11,43 @@ test('getTicketView returns ticket and event payload', async () => {
   const result = await getTicketView('ticket_1', {
     getTicketWithEventById: async () => ({
       ticket: { id: 'ticket_1', customer_name: 'Guest' },
-      event: { id: 'event_1', name: 'LMNL Event' },
+      event: {
+        id: 'event_1',
+        name: 'LMNL Event',
+        metadata: {
+          wallet_coordinates: '34.052235 N, 118.243683 W',
+        },
+      },
     }),
   });
 
   assert.equal(result.ticket.id, 'ticket_1');
   assert.equal(result.event.name, 'LMNL Event');
+  assert.deepEqual(result.wallet, {
+    locationValue: '',
+    entryLabel: 'COORDS',
+    entryValue: '34.052235, -118.243683',
+  });
+});
+
+test('getTicketView exposes address entry details when coordinates are unavailable', async () => {
+  const result = await getTicketView('ticket_1', {
+    getTicketWithEventById: async () => ({
+      ticket: { id: 'ticket_1', customer_name: 'Guest' },
+      event: {
+        id: 'event_1',
+        name: 'LMNL Event',
+        address: '123 Main St, Los Angeles, CA 90012',
+        metadata: {},
+      },
+    }),
+  });
+
+  assert.deepEqual(result.wallet, {
+    locationValue: '',
+    entryLabel: 'ADDRESS',
+    entryValue: '123 Main St, Los Angeles, CA 90012',
+  });
 });
 
 test('buildAdminCheckInUrl points public site tokens at the admin subdomain', () => {
