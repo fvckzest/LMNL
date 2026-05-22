@@ -133,7 +133,7 @@ function getDisplayDateRange(relevantDates) {
 
 export function getWalletPassConfig(event = {}) {
   const metadata = event?.metadata || {};
-  const stripImageUrl = readString(metadata.wallet_strip_image_url) || readString(event?.image_url);
+  const stripImageUrl = readString(metadata.wallet_strip_image_url);
   const notes = readString(metadata.wallet_notes);
   const eventLink = readString(metadata.event_link);
   const timeZone = readString(metadata.wallet_time_zone) || DEFAULT_WALLET_TIME_ZONE;

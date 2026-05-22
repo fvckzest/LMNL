@@ -6,7 +6,7 @@ import {
   getWalletPassConfig,
 } from '../api/_lib/services/passkit-customization.js';
 
-test('getWalletPassConfig falls back to event defaults', () => {
+test('getWalletPassConfig does not use the event image as wallet strip art by default', () => {
   const config = getWalletPassConfig({
     name: 'SPACE',
     location_name: 'LMNL COMPOUND',
@@ -14,10 +14,21 @@ test('getWalletPassConfig falls back to event defaults', () => {
     metadata: {},
   });
 
-  assert.equal(config.stripImageUrl, 'https://cdn.example.com/default-strip.png');
+  assert.equal(config.stripImageUrl, '');
   assert.equal(config.logoText, 'SPACE');
   assert.equal(config.description, 'LMNL Event Ticket');
   assert.equal(config.locationValue, 'LMNL COMPOUND');
+});
+
+test('getWalletPassConfig uses an explicit wallet strip image when configured', () => {
+  const config = getWalletPassConfig({
+    name: 'SPACE',
+    metadata: {
+      wallet_strip_image_url: 'https://cdn.example.com/custom-strip.png',
+    },
+  });
+
+  assert.equal(config.stripImageUrl, 'https://cdn.example.com/custom-strip.png');
 });
 
 test('buildPassOverrides prefers per-event wallet metadata', () => {

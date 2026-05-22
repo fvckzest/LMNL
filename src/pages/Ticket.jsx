@@ -8,6 +8,10 @@ import { buildAdminCheckInUrl } from '../utils/checkInUrl';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
 import './Ticket.css';
 
+const TICKET_DISCLAIMER = 'By accessing, presenting, or using this ticket, the holder voluntarily assumes all risks, dangers, and hazards related to attendance at the event and presence on or around the venue or property, whether before, during, or after the event. To the fullest extent permitted by law, the holder accepts personal responsibility for any injury, death, loss, damage, liability, cost, or claim arising from attendance, participation, admission, or presence at the property or event.';
+
+const TICKET_LIABILITY_RELEASE = 'To the fullest extent permitted by law, the property owner, venue, event host, LMNL, and each of their respective owners, members, officers, employees, contractors, agents, affiliates, and representatives shall have no liability arising out of or related to use of this ticket, admission to the event, or presence at the property. Use of this ticket constitutes acceptance of these terms.';
+
 export default function Ticket() {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
@@ -148,6 +152,12 @@ export default function Ticket() {
                     ? `SCANNED ON ${new Date(ticket.used_at).toLocaleDateString()}`
                     : 'PRESENT THIS CODE AT THE DOOR'}
                 </p>
+              </div>
+
+              <div className="ticket-disclaimer page-panel" aria-label="Ticket liability disclaimer">
+                <p className="ticket-disclaimer-label">Disclaimer</p>
+                <p className="ticket-disclaimer-copy">{TICKET_DISCLAIMER}</p>
+                <p className="ticket-disclaimer-copy">{TICKET_LIABILITY_RELEASE}</p>
               </div>
 
             </div>

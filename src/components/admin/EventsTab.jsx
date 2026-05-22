@@ -384,6 +384,14 @@ const MANAGED_METADATA_KEYS = new Set([
     return 'pending';
   }
 
+  function hasIssuedTicketForRequest(request) {
+    return Boolean(request?.square_order_id && issuedTicketOrderIds.has(request.square_order_id));
+  }
+
+  function isRecoverableApprovedRequest(request) {
+    return request?.status === 'approved' && request?.square_order_id && !hasIssuedTicketForRequest(request);
+  }
+
   const ticketRecords = useMemo(() => {
     return (tickets || []).map((ticket) => {
       let resolvedEvent = null;
@@ -427,6 +435,18 @@ const MANAGED_METADATA_KEYS = new Set([
       ...current,
       [ticketId]: !current[ticketId],
     }));
+  }
+
+  async function reconcileRequestTicket(request) {
+    try {
+      await apiPost('/api/confirm-ticket', { requestId: request.id });
+      fetchRequests();
+      fetchTickets();
+      showToast(`Ticket issued for ${request.customer_name}`);
+    } catch (error) {
+      console.error('Error reconciling ticket:', error);
+      showToast('Failed to issue ticket: ' + error.message, 'error');
+    }
   }
 
   return (
@@ -778,6 +798,14 @@ const MANAGED_METADATA_KEYS = new Set([
                               RESET
                             </button>
                           )}
+                          {isRecoverableApprovedRequest(req) && (
+                            <button
+                              className="admin-btn approve"
+                              onClick={() => reconcileRequestTicket(req)}
+                            >
+                              ISSUE TICKET
+                            </button>
+                          )}
                           {req.status === 'archived' && (
                             <button
                               className="admin-btn reset"
@@ -790,12 +818,12 @@ const MANAGED_METADATA_KEYS = new Set([
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {req.square_order_id && issuedTicketOrderIds.has(req.square_order_id) ? (
+                      {req.square_order_id ? (
                         <a
                           href={`/success?requestId=${req.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          title="Open ticket success page"
+                          title={hasIssuedTicketForRequest(req) ? 'Open ticket success page' : 'Open order recovery page'}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',

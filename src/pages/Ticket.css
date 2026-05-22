@@ -90,6 +90,30 @@
   border-color: #d45e5e;
 }
 
+.ticket-disclaimer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-disclaimer-label {
+  margin: 0;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lmnl-color-text-subtle);
+}
+
+.ticket-disclaimer-copy {
+  margin: 0;
+  font-size: calc(12px * 1.25);
+  line-height: 1.55;
+  color: var(--lmnl-color-text-subtle);
+  text-transform: none;
+}
+
 .ticket-qr-col {
   display: flex;
   flex-direction: column;
