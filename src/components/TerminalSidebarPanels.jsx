@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchFeaturedTimelineEvent, fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
 import SystemPanel from './SystemPanel';
 
-const SIDEBAR_HISTORY_LIMIT = 15;
+const SIDEBAR_HISTORY_LIMIT = 14;
 
 function ActivityFeedCard() {
   const [activity, setActivity] = useState(() => getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT) || []);
