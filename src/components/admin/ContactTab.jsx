@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { PinIcon } from './Icons';
+import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 export default function ContactTab({
@@ -8,7 +8,9 @@ export default function ContactTab({
   updateStatus,
   deleteInquiry,
   pinnedSections = [],
+  collapsedSections = [],
   onTogglePin = () => { },
+  onToggleCollapse = () => { },
   renderMode = 'all'
 }) {
   const sectionId = 'contact_inquiries';
@@ -20,6 +22,7 @@ export default function ContactTab({
     if (renderMode === 'unpinned') return !isPinned;
     return true;
   };
+  const isCollapsed = collapsedSections.includes(sectionId);
 
   const [showArchived, setShowArchived] = useState(false);
   const [expandedInquiries, setExpandedInquiries] = useState({});
@@ -35,19 +38,20 @@ export default function ContactTab({
   const filteredInquiries = contactInquiries.filter(iq =>
     showArchived ? true : iq.status !== 'archived'
   );
+  const activeInquiryCount = contactInquiries.filter((iq) => iq.status !== 'archived').length;
 
   return shouldRender() ? (
     <section className="admin-section" style={{ '--active-tab-color': '#90e937' }}>
-      <div className="section-title-container">
-        <button
-          className={`pin-toggle-btn ${pinnedSections.includes(sectionId) ? 'pinned' : ''}`}
-          onClick={() => onTogglePin(sectionId)}
-          title={pinnedSections.includes(sectionId) ? 'Unpin from top' : 'Pin to top'}
-        >
-          <PinIcon filled={pinnedSections.includes(sectionId)} />
-        </button>
-        <h2 className="section-title">CONTACT INQUIRIES</h2>
-      </div>
+      <AdminSectionHeader
+        title="CONTACT INQUIRIES"
+        isPinned={pinnedSections.includes(sectionId)}
+        onTogglePin={() => onTogglePin(sectionId)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => onToggleCollapse(sectionId)}
+        collapsedCount={activeInquiryCount}
+      />
+      {!isCollapsed && (
+        <>
       <div className="admin-stats">
         <div className="stat-item">
           <span className="stat-label">TOTAL CONTACTS</span>
@@ -189,6 +193,8 @@ export default function ContactTab({
           </table>
         )}
       </div>
+        </>
+      )}
     </section>
   ) : null;
 }

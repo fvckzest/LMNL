@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { PinIcon } from './Icons';
+import AdminSectionHeader from './AdminSectionHeader';
 import { DeleteActionButton } from './ActionButtons';
 import { apiPost } from '../../lib/api';
 
@@ -11,7 +11,9 @@ export default function BlogTab({
   showToast,
   triggerConfirm,
   pinnedSections = [],
+  collapsedSections = [],
   onTogglePin = () => { },
+  onToggleCollapse = () => { },
   renderMode = 'all'
 }) {
   const sectionId = 'blog_posts';
@@ -23,6 +25,7 @@ export default function BlogTab({
     if (renderMode === 'unpinned') return !isPinned;
     return true;
   };
+  const isCollapsed = collapsedSections.includes(sectionId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -36,6 +39,7 @@ export default function BlogTab({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState({});
+  const activePostCount = blogPosts.filter((post) => post.status !== 'archived').length;
 
   function toggleExpansion(id) {
     setExpandedPosts(prev => ({
@@ -115,17 +119,17 @@ export default function BlogTab({
 
   return shouldRender() ? (
     <section className="admin-section" style={{ '--active-tab-color': '#ffde00' }}>
-      <div className="section-title-container">
-        <button
-          className={`pin-toggle-btn ${pinnedSections.includes(sectionId) ? 'pinned' : ''}`}
-          onClick={() => onTogglePin(sectionId)}
-          title={pinnedSections.includes(sectionId) ? 'Unpin from top' : 'Pin to top'}
-        >
-          <PinIcon filled={pinnedSections.includes(sectionId)} />
-        </button>
-        <h2 className="section-title">BLOG POSTS</h2>
-      </div>
+      <AdminSectionHeader
+        title="BLOG POSTS"
+        isPinned={pinnedSections.includes(sectionId)}
+        onTogglePin={() => onTogglePin(sectionId)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => onToggleCollapse(sectionId)}
+        collapsedCount={activePostCount}
+      />
 
+      {!isCollapsed && (
+        <>
       <div className="admin-stats">
         <div className="stat-item">
           <span className="stat-label">TOTAL POSTS</span>
@@ -257,6 +261,8 @@ export default function BlogTab({
           </table>
         )}
       </div>
+        </>
+      )}
 
       {isModalOpen && (
         <div className="admin-modal-overlay">

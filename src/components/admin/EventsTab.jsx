@@ -1,6 +1,7 @@
  import { Fragment, useEffect, useMemo, useState } from 'react';
  import { apiPost } from '../../lib/api';
- import { LinkIcon, PinIcon, TicketIcon } from './Icons';
+ import { LinkIcon, TicketIcon } from './Icons';
+ import AdminSectionHeader from './AdminSectionHeader';
  import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const MANAGED_METADATA_KEYS = new Set([
@@ -47,7 +48,9 @@ const MANAGED_METADATA_KEYS = new Set([
    updateStatus,
    deleteRequest,
    pinnedSections = [],
+   collapsedSections = [],
    onTogglePin = () => {},
+   onToggleCollapse = () => {},
    renderMode = 'all' // 'all', 'pinned', 'unpinned'
  }) {
    const sectionIds = {
@@ -62,6 +65,7 @@ const MANAGED_METADATA_KEYS = new Set([
      if (renderMode === 'unpinned') return !isPinned;
      return true;
    };
+   const isCollapsed = (sectionId) => collapsedSections.includes(sectionId);
   const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [showArchivedRequests, setShowArchivedRequests] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,6 +74,8 @@ const MANAGED_METADATA_KEYS = new Set([
   const [newTraitValue, setNewTraitValue] = useState('');
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [expandedTicketIds, setExpandedTicketIds] = useState({});
+  const activeEventCount = events.filter((event) => event.status !== 'archived').length;
+  const activeRequestCount = requests.filter((request) => request.status !== 'archived').length;
 
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -458,19 +464,17 @@ const MANAGED_METADATA_KEYS = new Set([
   return (
     <>
        {shouldRender(sectionIds.mgmt) && (
-        <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
+       <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
           <div className="section-header-flex">
-            <div className="section-title-container">
-              <button 
-                className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.mgmt) ? 'pinned' : ''}`}
-                onClick={() => onTogglePin(sectionIds.mgmt)}
-                title={pinnedSections.includes(sectionIds.mgmt) ? 'Unpin from top' : 'Pin to top'}
-              >
-                <PinIcon filled={pinnedSections.includes(sectionIds.mgmt)} />
-              </button>
-              <h2 className="section-title">EVENT MANAGEMENT</h2>
-            </div>
-            {!tableMissing && (
+            <AdminSectionHeader
+              title="EVENT MANAGEMENT"
+              isPinned={pinnedSections.includes(sectionIds.mgmt)}
+              onTogglePin={() => onTogglePin(sectionIds.mgmt)}
+              isCollapsed={isCollapsed(sectionIds.mgmt)}
+              onToggleCollapse={() => onToggleCollapse(sectionIds.mgmt)}
+              collapsedCount={activeEventCount}
+            />
+            {!isCollapsed(sectionIds.mgmt) && !tableMissing && (
               <div className="action-buttons">
                 <button 
                   className={`admin-btn small ${showArchivedEvents ? 'active' : ''}`}
@@ -483,8 +487,8 @@ const MANAGED_METADATA_KEYS = new Set([
               </div>
             )}
           </div>
-        
-        {tableMissing ? (
+
+        {!isCollapsed(sectionIds.mgmt) && (tableMissing ? (
           <div className="setup-guide">
             <div className="guide-header">
               <span className="warning-icon">⚠️</span>
@@ -708,47 +712,47 @@ const MANAGED_METADATA_KEYS = new Set([
               </table>
             )}
           </div>
-         )}
+         ))}
       </section>
       )}
 
       {/* INVITE REQUESTS SECTION */}
       {shouldRender(sectionIds.reqs) && (
       <section className="admin-section" style={{ '--active-tab-color': '#004ffa' }}>
-        <div className="section-title-container">
-          <button 
-            className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.reqs) ? 'pinned' : ''}`}
-            onClick={() => onTogglePin(sectionIds.reqs)}
-            title={pinnedSections.includes(sectionIds.reqs) ? 'Unpin from top' : 'Pin to top'}
-          >
-            <PinIcon filled={pinnedSections.includes(sectionIds.reqs)} />
-          </button>
-          <h2 className="section-title">INVITE REQUESTS</h2>
-        </div>
-        <div className="admin-stats">
-          <div className="stat-item">
-            <span className="stat-label">TOTAL REQUESTS</span>
-            <span className="stat-value">{requests.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">PENDING</span>
-            <span className="stat-value">{requests.filter(r => r.status === 'pending').length}</span>
-          </div>
-          <div className="stat-item toggle-archived">
-            <button 
-              className={`admin-btn small ${showArchivedRequests ? 'active' : ''}`}
-              onClick={() => setShowArchivedRequests(!showArchivedRequests)}
-            >
-              {showArchivedRequests ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({requests.filter(r => r.status === 'archived').length})
-            </button>
-          </div>
-        </div>
+        <AdminSectionHeader
+          title="INVITE REQUESTS"
+          isPinned={pinnedSections.includes(sectionIds.reqs)}
+          onTogglePin={() => onTogglePin(sectionIds.reqs)}
+          isCollapsed={isCollapsed(sectionIds.reqs)}
+          onToggleCollapse={() => onToggleCollapse(sectionIds.reqs)}
+          collapsedCount={activeRequestCount}
+        />
+        {!isCollapsed(sectionIds.reqs) && (
+          <>
+            <div className="admin-stats">
+              <div className="stat-item">
+                <span className="stat-label">TOTAL REQUESTS</span>
+                <span className="stat-value">{requests.length}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">PENDING</span>
+                <span className="stat-value">{requests.filter(r => r.status === 'pending').length}</span>
+              </div>
+              <div className="stat-item toggle-archived">
+                <button 
+                  className={`admin-btn small ${showArchivedRequests ? 'active' : ''}`}
+                  onClick={() => setShowArchivedRequests(!showArchivedRequests)}
+                >
+                  {showArchivedRequests ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({requests.filter(r => r.status === 'archived').length})
+                </button>
+              </div>
+            </div>
 
-        <div className="requests-table-container admin-table-shell">
-          {loading ? (
-            <p className="loading-text">RETRIEVING DATA...</p>
-          ) : (
-            <table className="requests-table">
+            <div className="requests-table-container admin-table-shell">
+              {loading ? (
+                <p className="loading-text">RETRIEVING DATA...</p>
+              ) : (
+                <table className="requests-table">
               <thead>
                 <tr>
                   <th>DATE</th>
@@ -867,6 +871,8 @@ const MANAGED_METADATA_KEYS = new Set([
             </table>
           )}
          </div>
+         </>
+        )}
       </section>
       )}
 

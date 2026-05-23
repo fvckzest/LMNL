@@ -847,7 +847,8 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
 }
 
 .icon-btn,
-.pin-toggle-btn {
+.pin-toggle-btn,
+.section-collapse-btn {
   cursor: pointer;
   color: var(--lmnl-color-text-subtle);
   transition:
@@ -873,7 +874,8 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   flex: 0 0 auto;
 }
 
-.pin-toggle-btn {
+.pin-toggle-btn,
+.section-collapse-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -896,7 +898,8 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   overflow: visible;
 }
 
-.pin-toggle-btn:hover {
+.pin-toggle-btn:hover,
+.section-collapse-btn:hover {
   color: var(--active-tab-color, var(--page-color, #000));
 }
 
@@ -962,11 +965,38 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   margin-bottom: 0;
 }
 
-.pin-toggle-btn {
+.section-title-container .section-title {
+  order: 1;
+}
+
+.section-collapsed-count {
   order: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  min-width: 32px;
+  padding: 6px 10px;
+  border: var(--lmnl-line-width) solid var(--active-tab-color, var(--terminal-line-medium));
+  background: var(--active-tab-color, var(--terminal-line-medium));
+  color: var(--lmnl-color-white);
+  font-size: calc(11px * 1.25);
+  font-weight: 700;
+  line-height: 1;
+  -webkit-text-fill-color: var(--lmnl-color-white);
+}
+
+.pin-toggle-btn {
+  order: 3;
   vertical-align: middle;
   margin-right: 0;
   margin-left: 0;
+}
+
+.section-collapse-btn {
+  order: 4;
+  vertical-align: middle;
+  margin: 0;
 }
 
 .admin-table-shell :is(.event-ticket-toggle, .artist-interest-toggle, .ticket-detail-toggle) {

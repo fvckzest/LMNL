@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiPost } from '../../lib/api';
-import { PinIcon } from './Icons';
+import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const PERSISTENT_END_DATE = '2099-12-31T23:59:00.000Z';
@@ -38,7 +38,9 @@ function isPersistentEndDate(value) {
    tickets = [],
    events = [],
    pinnedSections = [],
+   collapsedSections = [],
    onTogglePin = () => {},
+   onToggleCollapse = () => {},
    renderMode = 'all'
  }) {
    const sectionIds = {
@@ -53,12 +55,15 @@ function isPersistentEndDate(value) {
      if (renderMode === 'unpinned') return !isPinned;
      return true;
    };
+  const isCollapsed = (sectionId) => collapsedSections.includes(sectionId);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingPreorder, setEditingPreorder] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [expandedItems, setExpandedItems] = useState({}); // Track which catalog items are expanded
   const [selectedItem, setSelectedItem] = useState(null);
+  const activePreorderCount = preorders.filter((item) => item.status !== 'archived').length;
+  const activeCatalogCount = squareItems.filter((item) => item.isArchived !== true).length;
   const [formData, setFormData] = useState({
     goal_quantity: 100,
     end_date: '',
@@ -234,16 +239,15 @@ function isPersistentEndDate(value) {
       {shouldRender(sectionIds.products) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff0000' }}>
         <div className="section-header-flex">
-          <div className="section-title-container">
-            <button 
-              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.products) ? 'pinned' : ''}`}
-              onClick={() => onTogglePin(sectionIds.products)}
-              title={pinnedSections.includes(sectionIds.products) ? 'Unpin from top' : 'Pin to top'}
-            >
-              <PinIcon filled={pinnedSections.includes(sectionIds.products)} />
-            </button>
-            <h2 className="section-title">SHOP PRODUCTS</h2>
-          </div>
+          <AdminSectionHeader
+            title="SHOP PRODUCTS"
+            isPinned={pinnedSections.includes(sectionIds.products)}
+            onTogglePin={() => onTogglePin(sectionIds.products)}
+            isCollapsed={isCollapsed(sectionIds.products)}
+            onToggleCollapse={() => onToggleCollapse(sectionIds.products)}
+            collapsedCount={activePreorderCount}
+          />
+          {!isCollapsed(sectionIds.products) && (
           <div className="action-buttons">
             <button 
               className={`admin-btn small ${showArchived ? 'active' : ''}`}
@@ -259,8 +263,11 @@ function isPersistentEndDate(value) {
               ADD PRODUCT TO SHOP
             </button>
           </div>
+          )}
         </div>
 
+        {!isCollapsed(sectionIds.products) && (
+        <>
         {/* Stats for Shop Products (Added for consistency) */}
         <div className="admin-stats">
           <div className="stat-item">
@@ -364,6 +371,8 @@ function isPersistentEndDate(value) {
             </table>
           )}
         </div>
+        </>
+        )}
       </section>
       )}
 
@@ -372,23 +381,23 @@ function isPersistentEndDate(value) {
       <section className="admin-section" style={{ '--active-tab-color': '#ff0000' }}>
         <div className="section-header-flex">
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px' }}>
-            <div className="section-title-container">
-              <button 
-                className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.catalog) ? 'pinned' : ''}`}
-                onClick={() => onTogglePin(sectionIds.catalog)}
-                title={pinnedSections.includes(sectionIds.catalog) ? 'Unpin from top' : 'Pin to top'}
-              >
-                <PinIcon filled={pinnedSections.includes(sectionIds.catalog)} />
-              </button>
-              <h2 className="section-title">SQUARE PRODUCT CATALOG</h2>
-            </div>
-            <span className="status-pill pending">READ ONLY</span>
+            <AdminSectionHeader
+              title="SQUARE PRODUCT CATALOG"
+              isPinned={pinnedSections.includes(sectionIds.catalog)}
+              onTogglePin={() => onTogglePin(sectionIds.catalog)}
+              isCollapsed={isCollapsed(sectionIds.catalog)}
+              onToggleCollapse={() => onToggleCollapse(sectionIds.catalog)}
+              collapsedCount={activeCatalogCount}
+            />
+            {!isCollapsed(sectionIds.catalog) && <span className="status-pill pending">READ ONLY</span>}
           </div>
-          <button className="admin-btn" onClick={fetchSquareCatalog} disabled={fetchingCatalog}>
+          {!isCollapsed(sectionIds.catalog) && <button className="admin-btn" onClick={fetchSquareCatalog} disabled={fetchingCatalog}>
             {fetchingCatalog ? 'REFRESHING...' : 'REFRESH CATALOG'}
-          </button>
+          </button>}
         </div>
 
+        {!isCollapsed(sectionIds.catalog) && (
+        <>
         <div className="admin-stats">
           <div className="stat-item">
             <span className="stat-label">CATALOG ITEMS</span>
@@ -543,6 +552,8 @@ function isPersistentEndDate(value) {
             </table>
           )}
         </div>
+        </>
+        )}
       </section>
       )}
 

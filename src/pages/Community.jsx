@@ -38,6 +38,7 @@ export default function Community() {
 
   const [credits, setCredits] = useState([]);
   const [events, setEvents] = useState([]);
+  const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
 
 
@@ -49,10 +50,12 @@ export default function Community() {
         const snapshot = await fetchCommunitySnapshot();
         setCredits(snapshot.credits || []);
         setEvents(snapshot.events || []);
+        setBusinesses(snapshot.businesses || []);
       } catch (error) {
         console.error('Failed to load community data:', error);
         setCredits([]);
         setEvents([]);
+        setBusinesses([]);
       } finally {
         setLoading(false);
       }
@@ -98,7 +101,7 @@ export default function Community() {
         }
         if (c.event_name) pMap[name].events.add(c.event_name);
         if (c.link) pMap[name].links.add(c.link);
-      } else {
+      } else if (c.role === 'artist') {
         if (!aMap[name]) {
           aMap[name] = { name, events: new Set(), links: new Set() };
         }
@@ -156,6 +159,37 @@ export default function Community() {
     return pastEvents.reduce((sum, e) => sum + (Number(e.capacity) || 0), 0);
   }, [pastEvents]);
 
+  const totalBusinesses = useMemo(() => {
+    const uniqueBusinesses = new Set();
+
+    businesses.forEach((business) => {
+      const normalizedName = String(business.name || '').trim().toLowerCase();
+      if (normalizedName) {
+        uniqueBusinesses.add(normalizedName);
+      }
+    });
+
+    credits.forEach((credit) => {
+      if (credit.role !== 'vendor') return;
+      const normalizedName = String(credit.name || '').trim().toLowerCase();
+      if (normalizedName) {
+        uniqueBusinesses.add(normalizedName);
+      }
+    });
+
+    pastEvents.forEach((event) => {
+      const vendorList = String(event.metadata?.vendors || '');
+      vendorList.split(',').forEach((vendor) => {
+        const normalizedVendor = vendor.trim().toLowerCase();
+        if (normalizedVendor) {
+          uniqueBusinesses.add(normalizedVendor);
+        }
+      });
+    });
+
+    return uniqueBusinesses.size;
+  }, [businesses, credits, pastEvents]);
+
 
   return (
     <ContentPageShell
@@ -165,23 +199,27 @@ export default function Community() {
       introCopy="a rising tide raises all ships"
       contentClassName="community-layout page-stack"
     >
-      <div className="community-layout">
-        <div className="community-split-layout theme-split-layout">
-          <div className="community-stats-stack page-stack">
-            <CommunityStatCard
-              label="past events"
-              value={loading ? '---' : String(pastEvents.length).padStart(3, '0')}
-            />
-            <CommunityStatCard
-              label="creators count"
-              value={loading ? '---' : String(totalUnique).padStart(3, '0')}
-            />
-            <CommunityStatCard
-              label="community reach"
-              value={loading ? '---' : `${String(totalCapacity).padStart(3, '0')}+`}
-            />
-          </div>
+      <div className="community-layout page-stack">
+        <div className="community-stats-stack page-stack">
+          <CommunityStatCard
+            label="events"
+            value={loading ? '---' : String(pastEvents.length).padStart(3, '0')}
+          />
+          <CommunityStatCard
+            label="creators"
+            value={loading ? '---' : String(totalUnique).padStart(3, '0')}
+          />
+          <CommunityStatCard
+            label="reach"
+            value={loading ? '---' : `${String(totalCapacity).padStart(3, '0')}+`}
+          />
+          <CommunityStatCard
+            label="businesses"
+            value={loading ? '---' : String(totalBusinesses).padStart(3, '0')}
+          />
+        </div>
 
+        <div className="community-split-layout theme-split-layout">
           <div className="community-content-column">
             <div className="community-test-copy page-detail-pane">
               <p className="community-copy-primary">

@@ -63,6 +63,12 @@ const COMMUNITY_CREDIT_SELECT = [
   'event_name',
   'link',
 ].join(',');
+const COMMUNITY_BUSINESS_SELECT = [
+  'id',
+  'name',
+  'link',
+  'details',
+].join(',');
 const OPEN_PRODUCT_SELECT = [
   'id',
   'item_name',
@@ -296,7 +302,7 @@ export async function fetchFeaturedTimelineEvent() {
 }
 
 export async function fetchCommunitySnapshot() {
-  const [credits, events] = await Promise.all([
+  const [credits, events, businesses] = await Promise.all([
     fetchCachedPublicData(
       'community:credits',
       () => fetchPublicRows('community_credits', { select: COMMUNITY_CREDIT_SELECT }),
@@ -307,9 +313,14 @@ export async function fetchCommunitySnapshot() {
       () => fetchPublicEventRows(COMMUNITY_EVENT_SELECT),
       [],
     ),
+    fetchCachedPublicData(
+      'community:businesses',
+      () => fetchPublicRows('community_businesses', { select: COMMUNITY_BUSINESS_SELECT }).catch(() => []),
+      [],
+    ),
   ]);
 
-  return { credits, events };
+  return { credits, events, businesses };
 }
 
 export async function fetchSpaceEventSnapshot() {

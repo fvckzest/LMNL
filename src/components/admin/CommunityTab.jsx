@@ -1,7 +1,6 @@
 import { Fragment, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { apiPost } from '../../lib/api';
-import { PinIcon } from './Icons';
+import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 export default function CommunityTab({
@@ -10,9 +9,10 @@ export default function CommunityTab({
   communityLoading,
   communityTableMissing,
   fetchCommunityCredits,
-  attendanceQueue = [],
-  attendanceQueueLoading = false,
-  fetchAttendanceQueue = () => {},
+  communityBusinesses = [],
+  communityBusinessesLoading = false,
+  communityBusinessesTableMissing = false,
+  fetchCommunityBusinesses = () => {},
   requests,
   requestsLoading,
   tickets,
@@ -32,13 +32,15 @@ export default function CommunityTab({
    showToast,
   triggerConfirm,
   pinnedSections = [],
+  collapsedSections = [],
   onTogglePin = () => {},
+  onToggleCollapse = () => {},
   renderMode = 'all'
 }) {
   const sectionIds = {
-    attendance: 'attendance_queue',
     artist: 'artist_interest',
     credits: 'community_credits',
+    businesses: 'community_businesses',
     mailing: 'mailing_list'
   };
 
@@ -49,17 +51,17 @@ export default function CommunityTab({
     if (renderMode === 'unpinned') return !isPinned;
     return true;
   };
+  const isCollapsed = (sectionId) => collapsedSections.includes(sectionId);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
+  const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
   const [isMailingListModalOpen, setIsMailingListModalOpen] = useState(false);
   const [editingMailingEntry, setEditingMailingEntry] = useState(null);
   const [editingCredit, setEditingCredit] = useState(null);
+  const [editingBusiness, setEditingBusiness] = useState(null);
   const [expandedCommunityEvents, setExpandedCommunityEvents] = useState({});
   const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
   const [expandedCredits, setExpandedCredits] = useState({});
   const [expandedContacts, setExpandedContacts] = useState({});
-  const [expandedAttendance, setExpandedAttendance] = useState({});
-  const [attendanceTierById, setAttendanceTierById] = useState({});
-  const [attachingSourceId, setAttachingSourceId] = useState('');
   const [creditForm, setCreditForm] = useState({
     name: '',
     email: '',
@@ -67,6 +69,11 @@ export default function CommunityTab({
     event_id: '',
     details: '',
     link: ''
+  });
+  const [businessForm, setBusinessForm] = useState({
+    name: '',
+    link: '',
+    details: ''
   });
 
   const [mailingForm, setMailingForm] = useState({
@@ -130,6 +137,51 @@ export default function CommunityTab({
     });
   }
 
+  async function handleBusinessSubmit(e) {
+    e.preventDefault();
+    if (!businessForm.name) return showToast('Business name is required', 'error');
+
+    const data = {
+      name: businessForm.name,
+      link: businessForm.link || '',
+      details: businessForm.details || ''
+    };
+
+    let error;
+    if (editingBusiness) {
+      const { error: err } = await supabase.from('community_businesses').update(data).eq('id', editingBusiness.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('community_businesses').insert([data]);
+      error = err;
+    }
+
+    if (error) {
+      showToast('Error saving business: ' + error.message, 'error');
+    } else {
+      setIsBusinessModalOpen(false);
+      fetchCommunityBusinesses();
+      showToast('Business saved successfully');
+    }
+  }
+
+  async function deleteBusiness(id) {
+    triggerConfirm('Are you sure you want to delete this business permanently?', async () => {
+      const { error } = await supabase
+        .from('community_businesses')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting business:', error);
+        showToast('Failed to delete business: ' + error.message, 'error');
+      } else {
+        fetchCommunityBusinesses();
+        showToast('Business deleted');
+      }
+    });
+  }
+
   function openCommunityModal(credit = null) {
     if (credit) {
       setEditingCredit(credit);
@@ -153,6 +205,25 @@ export default function CommunityTab({
       });
     }
     setIsCommunityModalOpen(true);
+  }
+
+  function openBusinessModal(business = null) {
+    if (business) {
+      setEditingBusiness(business);
+      setBusinessForm({
+        name: business.name || '',
+        link: business.link || '',
+        details: business.details || ''
+      });
+    } else {
+      setEditingBusiness(null);
+      setBusinessForm({
+        name: '',
+        link: '',
+        details: ''
+      });
+    }
+    setIsBusinessModalOpen(true);
   }
 
   function openMailingListModal(entry = null) {
@@ -268,6 +339,31 @@ export default function CommunityTab({
             skippedCount++;
           }
         }
+
+        const vendors = event.metadata?.vendors
+          ? event.metadata.vendors.split(',').map(s => s.trim()).filter(Boolean)
+          : [];
+
+        for (const name of vendors) {
+          const exists = communityCredits.some(c =>
+            c.name.toLowerCase() === name.toLowerCase() &&
+            c.role === 'vendor' &&
+            c.event_id === event.id
+          );
+
+          if (!exists) {
+            const { error } = await supabase.from('community_credits').insert([{
+              name,
+              role: 'vendor',
+              event_id: event.id,
+              event_name: event.name
+            }]);
+            if (error) throw error;
+            addedCount++;
+          } else {
+            skippedCount++;
+          }
+        }
       }
 
       showToast(`Sync complete. Added ${addedCount} credits. Skipped ${skippedCount} duplicates.`);
@@ -306,13 +402,6 @@ export default function CommunityTab({
     }));
   }
 
-  function toggleAttendanceExpansion(sourceId) {
-    setExpandedAttendance(prev => ({
-      ...prev,
-      [sourceId]: !prev[sourceId]
-    }));
-  }
-
   const eventOrderLookup = events.reduce((acc, event, index) => {
     acc[event.id] = index;
     return acc;
@@ -325,31 +414,6 @@ export default function CommunityTab({
   function isPlaceholderEmail(email) {
     const normalized = normalizeEmail(email);
     return !normalized || normalized.endsWith('@example.com');
-  }
-
-  function formatDate(value) {
-    if (!value) return '-';
-    return new Date(value).toLocaleDateString();
-  }
-
-  async function handleAttachAttendance(source, candidateUserId) {
-    if (!source?.id || !candidateUserId || attachingSourceId) return;
-
-    setAttachingSourceId(source.id);
-    try {
-      await apiPost('/api/admin-attendance-attach', {
-        sourceId: source.id,
-        userId: candidateUserId,
-        participationTier: attendanceTierById[source.id] || source.participationTier || 'attendee'
-      }, { auth: true });
-
-      await fetchAttendanceQueue();
-      showToast(`Attendance attached for ${source.eventName || 'LMNL Event'}.`);
-    } catch (error) {
-      showToast('Attendance attach failed: ' + error.message, 'error');
-    } finally {
-      setAttachingSourceId('');
-    }
   }
 
   const emailContactsByEmail = new Map();
@@ -541,198 +605,25 @@ export default function CommunityTab({
     if (aOrder !== bOrder) return aOrder - bOrder;
     return a.eventName.localeCompare(b.eventName);
   });
-
-  const attendanceSection = shouldRender(sectionIds.attendance) && (
-    <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
-      <div className="section-header-flex">
-        <div className="section-title-container">
-          <button
-            className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.attendance) ? 'pinned' : ''}`}
-            onClick={() => onTogglePin(sectionIds.attendance)}
-            title={pinnedSections.includes(sectionIds.attendance) ? 'Unpin from top' : 'Pin to top'}
-          >
-            <PinIcon filled={pinnedSections.includes(sectionIds.attendance)} />
-          </button>
-          <h2 className="section-title">ATTENDANCE RESOLUTION QUEUE</h2>
-        </div>
-        <div className="action-buttons">
-          <button className="admin-btn" onClick={fetchAttendanceQueue} disabled={attendanceQueueLoading}>
-            {attendanceQueueLoading ? 'LOADING...' : 'REFRESH'}
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-stats">
-        <div className="stat-item">
-          <span className="stat-label">UNRESOLVED</span>
-          <span className="stat-value">{attendanceQueue.length}</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">EXACT MATCH READY</span>
-          <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount === 1).length}</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">NEEDS REVIEW</span>
-          <span className="stat-value">{attendanceQueue.filter((item) => item.candidateCount !== 1).length}</span>
-        </div>
-      </div>
-
-      <div className="events-table-container admin-table-shell">
-        {attendanceQueueLoading ? (
-          <p className="loading-text">RETRIEVING ATTENDANCE PROOF...</p>
-        ) : attendanceQueue.length === 0 ? (
-          <p className="loading-text">NO UNRESOLVED ATTENDANCE PROOF IS WAITING RIGHT NOW.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>EVENT</th>
-                <th>CONTACT</th>
-                <th>PROOF</th>
-                <th>CANDIDATES</th>
-                <th>ATTACH</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceQueue.map((source) => {
-                const isExpanded = Boolean(expandedAttendance[source.id]);
-                const selectedTier = attendanceTierById[source.id] || source.participationTier || 'attendee';
-
-                return (
-                  <Fragment key={source.id}>
-                    <tr className={isExpanded ? 'contact-row-expanded' : ''}>
-                      <td className="ticket-detail-toggle-cell">
-                        <button
-                          type="button"
-                          className={`ticket-detail-toggle ${isExpanded ? 'expanded' : ''}`}
-                          onClick={() => toggleAttendanceExpansion(source.id)}
-                          aria-expanded={isExpanded}
-                          title={isExpanded ? 'Hide details' : 'Show details'}
-                          style={{ '--004ffa': '#ff5bb8' }}
-                        >
-                          <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
-                        </button>
-                      </td>
-                      <td>
-                        <strong>{source.eventName}</strong>
-                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                          {formatDate(source.eventDate)}{source.locationName ? ` • ${source.locationName}` : ''}
-                        </div>
-                      </td>
-                      <td>
-                        <div>{source.contactName || 'Unnamed guest'}</div>
-                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                          {source.contactEmail || 'No contact email'}
-                        </div>
-                      </td>
-                      <td>
-                        <div>{String(source.verificationMethod || '').replace(/_/g, ' ')}</div>
-                        <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                          {String(source.sourceType || '').replace(/_/g, ' ')}{source.sourceId ? ` • ${source.sourceId}` : ''}
-                        </div>
-                      </td>
-                      <td>
-                        {source.candidateCount === 0
-                          ? 'No exact LMNL match'
-                          : source.candidateCount === 1
-                            ? '1 exact candidate'
-                            : `${source.candidateCount} exact candidates`}
-                      </td>
-                      <td>
-                        <select
-                          value={selectedTier}
-                          onChange={(event) => setAttendanceTierById((prev) => ({
-                            ...prev,
-                            [source.id]: event.target.value
-                          }))}
-                        >
-                          <option value="attendee">ATTENDEE</option>
-                          <option value="performer">PERFORMER</option>
-                        </select>
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr className="contact-metadata-row">
-                        <td></td>
-                        <td colSpan="5">
-                          <div className="contact-metadata-panel" style={{ padding: '15px 0', borderLeft: '2px solid #ff5bb8' }}>
-                            <div style={{ display: 'grid', gap: '14px', paddingLeft: '15px' }}>
-                              <div className="contact-metadata-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                                <div className="contact-metadata-item">
-                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>VERIFIED</span>
-                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{formatDate(source.verifiedAt)}</span>
-                                </div>
-                                <div className="contact-metadata-item">
-                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>STATUS</span>
-                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{source.verificationStatus}</span>
-                                </div>
-                                <div className="contact-metadata-item">
-                                  <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '4px' }}>CURRENT TIER</span>
-                                  <span className="contact-metadata-value" style={{ fontWeight: 600 }}>{selectedTier}</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <span className="contact-metadata-label" style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '8px' }}>LMNL CANDIDATES</span>
-                                {source.candidates.length > 0 ? (
-                                  <div style={{ display: 'grid', gap: '8px' }}>
-                                    {source.candidates.map((candidate) => (
-                                      <div key={`${source.id}-${candidate.userId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 12px', border: '1px solid rgba(255, 91, 184, 0.24)' }}>
-                                        <div>
-                                          <div style={{ fontWeight: 700 }}>{candidate.displayName}</div>
-                                          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
-                                            {candidate.profileSlug ? `@${candidate.profileSlug}` : 'Profile slug pending'}
-                                          </div>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          className="admin-btn approve"
-                                          disabled={Boolean(attachingSourceId)}
-                                          onClick={() => handleAttachAttendance(source, candidate.userId)}
-                                        >
-                                          {attachingSourceId === source.id ? 'ATTACHING...' : 'ATTACH'}
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="loading-text" style={{ textAlign: 'left', padding: 0 }}>
-                                    No exact LMNL profile match was found for this email yet. This record still needs manual follow-up or a later member sign-in.
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </section>
-  );
+  const activeArtistInterestCount = artistInterest.filter((entry) => entry.status !== 'archived').length;
+  const businessCount = communityBusinesses.length;
+  const creditCount = communityCredits.length;
+  const contactCount = emailContacts.length;
 
   return (
      <>
       {shouldRender(sectionIds.artist) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
-          <div className="section-title-container">
-            <button 
-              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.artist) ? 'pinned' : ''}`}
-              onClick={() => onTogglePin(sectionIds.artist)}
-              title={pinnedSections.includes(sectionIds.artist) ? 'Unpin from top' : 'Pin to top'}
-            >
-              <PinIcon filled={pinnedSections.includes(sectionIds.artist)} />
-            </button>
-            <h2 className="section-title">ARTIST INTEREST</h2>
-          </div>
-          {!artistInterestTableMissing && (
+          <AdminSectionHeader
+            title="ARTIST INTEREST"
+            isPinned={pinnedSections.includes(sectionIds.artist)}
+            onTogglePin={() => onTogglePin(sectionIds.artist)}
+            isCollapsed={isCollapsed(sectionIds.artist)}
+            onToggleCollapse={() => onToggleCollapse(sectionIds.artist)}
+            collapsedCount={activeArtistInterestCount}
+          />
+          {!isCollapsed(sectionIds.artist) && !artistInterestTableMissing && (
 
             <div className="action-buttons">
               <button className="admin-btn" onClick={fetchArtistInterest}>REFRESH</button>
@@ -740,7 +631,7 @@ export default function CommunityTab({
           )}
         </div>
 
-        {artistInterestTableMissing ? (
+        {!isCollapsed(sectionIds.artist) && (artistInterestTableMissing ? (
           <div className="setup-guide">
             <div className="guide-header">
               <span className="warning-icon">⚠️</span>
@@ -904,25 +795,129 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
               </table>
             )}
            </div>
-        )}
+        ))}
+      </section>
+      )}
+
+      {shouldRender(sectionIds.businesses) && (
+      <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
+        <div className="section-header-flex">
+          <AdminSectionHeader
+            title="COMMUNITY BUSINESSES"
+            isPinned={pinnedSections.includes(sectionIds.businesses)}
+            onTogglePin={() => onTogglePin(sectionIds.businesses)}
+            isCollapsed={isCollapsed(sectionIds.businesses)}
+            onToggleCollapse={() => onToggleCollapse(sectionIds.businesses)}
+            collapsedCount={businessCount}
+          />
+
+          {!isCollapsed(sectionIds.businesses) && !communityBusinessesTableMissing && (
+            <div className="action-buttons">
+              <button className="admin-btn approve" onClick={() => openBusinessModal()}>+ ADD BUSINESS</button>
+            </div>
+          )}
+        </div>
+
+        {!isCollapsed(sectionIds.businesses) && (communityBusinessesTableMissing ? (
+          <div className="setup-guide">
+            <div className="guide-header">
+              <span className="warning-icon">⚠️</span>
+              <h3>DATABASE SETUP REQUIRED</h3>
+            </div>
+            <p>Please create the <code>community_businesses</code> table in your Supabase SQL Editor.</p>
+            <pre style={{
+              background: '#111',
+              color: '#fff',
+              padding: '15px',
+              borderRadius: '4px',
+              textAlign: 'left',
+              fontSize: '11px',
+              overflowX: 'auto',
+              marginTop: '10px',
+              marginBottom: '20px',
+              fontFamily: 'var(--lmnl-font-mono)'
+            }}>
+{`CREATE TABLE IF NOT EXISTS community_businesses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    link TEXT DEFAULT '',
+    details TEXT DEFAULT '',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE community_businesses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access" ON community_businesses FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated all access" ON community_businesses FOR ALL USING (auth.role() = 'authenticated');`}
+            </pre>
+            <button className="admin-btn" onClick={fetchCommunityBusinesses}>REFRESH</button>
+          </div>
+        ) : (
+          <div className="events-table-container admin-table-shell">
+            {communityBusinessesLoading ? (
+              <p className="loading-text">RETRIEVING COMMUNITY BUSINESSES...</p>
+            ) : communityBusinesses.length === 0 ? (
+              <p className="loading-text">NO COMMUNITY BUSINESSES FOUND YET. ADD ONE TO START BUILDING THIS LIST.</p>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>BUSINESS</th>
+                    <th>LINK</th>
+                    <th>DETAILS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {communityBusinesses.map((business) => (
+                    <tr key={business.id}>
+                      <td><strong>{business.name}</strong></td>
+                      <td>
+                        {business.link ? (
+                          <a href={business.link} target="_blank" rel="noopener noreferrer" className="event-name-link">
+                            {business.link}
+                          </a>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td>{business.details || '-'}</td>
+                      <td className="actions-cell">
+                        <div className="actions-wrapper">
+                          <div className="main-actions">
+                            <button className="admin-btn" onClick={() => openBusinessModal(business)}>EDIT</button>
+                          </div>
+                          <div className="secondary-actions">
+                            <DeleteActionButton
+                              title="Delete Business"
+                              onClick={() => deleteBusiness(business.id)}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ))}
       </section>
       )}
 
       {shouldRender(sectionIds.credits) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
-          <div className="section-title-container">
-            <button 
-              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.credits) ? 'pinned' : ''}`}
-              onClick={() => onTogglePin(sectionIds.credits)}
-              title={pinnedSections.includes(sectionIds.credits) ? 'Unpin from top' : 'Pin to top'}
-            >
-              <PinIcon filled={pinnedSections.includes(sectionIds.credits)} />
-            </button>
-            <h2 className="section-title">COMMUNITY CREDITS (PERFORMERS & ARTISTS)</h2>
-          </div>
+          <AdminSectionHeader
+            title="COMMUNITY CREDITS (PERFORMERS, ARTISTS & VENDORS)"
+            isPinned={pinnedSections.includes(sectionIds.credits)}
+            onTogglePin={() => onTogglePin(sectionIds.credits)}
+            isCollapsed={isCollapsed(sectionIds.credits)}
+            onToggleCollapse={() => onToggleCollapse(sectionIds.credits)}
+            collapsedCount={creditCount}
+          />
 
-          {!communityTableMissing && (
+          {!isCollapsed(sectionIds.credits) && !communityTableMissing && (
             <div className="action-buttons">
               <button 
                 className="admin-btn small" 
@@ -936,7 +931,7 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
           )}
         </div>
 
-        {communityTableMissing ? (
+        {!isCollapsed(sectionIds.credits) && (communityTableMissing ? (
           <div className="setup-guide">
             <div className="guide-header">
               <span className="warning-icon">⚠️</span>
@@ -959,7 +954,7 @@ CREATE POLICY "Allow authenticated all access" ON artist_interest FOR ALL USING 
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT DEFAULT '',
-    role TEXT NOT NULL, -- 'performer' or 'artist'
+    role TEXT NOT NULL, -- 'performer', 'artist', or 'vendor'
     event_id UUID REFERENCES events(id) ON DELETE CASCADE,
     event_name TEXT,
     details TEXT,
@@ -989,16 +984,18 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                   <tr>
                     <th></th>
                     <th>EVENT</th>
-                    <th></th>
-                    <th>NAME</th>
-                    <th>EMAIL</th>
-                    <th>ROLE</th>
+                    <th>PERFORMERS</th>
+                    <th>ARTISTS</th>
+                    <th>VENDORS</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {communityEventGroups.map((group) => {
                     const isExpanded = Boolean(expandedCommunityEvents[group.key]);
+                    const performerCount = group.credits.filter((credit) => credit.role === 'performer').length;
+                    const artistCount = group.credits.filter((credit) => credit.role === 'artist').length;
+                    const vendorCount = group.credits.filter((credit) => credit.role === 'vendor').length;
                     
                     // Calculate total rows for rowSpan: 
                     // 1 (header) + credits.length + any expanded credit details
@@ -1033,13 +1030,10 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                           >
                             {group.eventName}
                           </td>
-                          <td className="community-group-summary">
-                            {group.credits.length} {group.credits.length === 1 ? 'person' : 'people'}
-                          </td>
-                          <td>-</td>
-                          <td>-</td>
-                          <td>-</td>
-                          <td className="community-group-summary">Click to view attendees</td>
+                          <td className="community-group-summary">{performerCount}</td>
+                          <td className="community-group-summary">{artistCount}</td>
+                          <td className="community-group-summary">{vendorCount}</td>
+                          <td className="community-group-summary">Click to view credits</td>
                         </tr>
                         {isExpanded && group.credits.map((credit) => {
                           const isCreditExpanded = Boolean(expandedCredits[credit.id]);
@@ -1109,26 +1103,22 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
               </table>
             )}
            </div>
-        )}
+        ))}
       </section>
       )}
 
       {shouldRender(sectionIds.mailing) && (
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
-        <div className="section-header-flex">
-          <div className="section-title-container">
-            <button 
-              className={`pin-toggle-btn ${pinnedSections.includes(sectionIds.mailing) ? 'pinned' : ''}`}
-              onClick={() => onTogglePin(sectionIds.mailing)}
-              title={pinnedSections.includes(sectionIds.mailing) ? 'Unpin from top' : 'Pin to top'}
-            >
-              <PinIcon filled={pinnedSections.includes(sectionIds.mailing)} />
-            </button>
-            <h2 className="section-title">GENERAL CONTACT LIST</h2>
-          </div>
-        </div>
+        <AdminSectionHeader
+          title="GENERAL CONTACT LIST"
+          isPinned={pinnedSections.includes(sectionIds.mailing)}
+          onTogglePin={() => onTogglePin(sectionIds.mailing)}
+          isCollapsed={isCollapsed(sectionIds.mailing)}
+          onToggleCollapse={() => onToggleCollapse(sectionIds.mailing)}
+          collapsedCount={contactCount}
+        />
         
-        {mailingListTableMissing && (
+        {!isCollapsed(sectionIds.mailing) && mailingListTableMissing && (
           <div className="setup-guide" style={{ marginBottom: '20px' }}>
             <div className="guide-header">
               <span className="warning-icon">⚠️</span>
@@ -1163,6 +1153,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
             <button className="admin-btn" onClick={fetchMailingList}>REFRESH</button>
           </div>
         )}
+        {!isCollapsed(sectionIds.mailing) && (
+        <>
         <div className="admin-stats">
           <div className="stat-item">
             <span className="stat-label">UNIQUE EMAILS</span>
@@ -1284,11 +1276,10 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
             </table>
            )}
         </div>
+        </>
+        )}
       </section>
       )}
-
-      {attendanceSection}
-
       {/* Mailing List Modal */}
       {isMailingListModalOpen && (
         <div className="admin-modal-overlay">
@@ -1342,6 +1333,57 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
         </div>
       )}
 
+      {isBusinessModalOpen && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="modal-header">
+              <h3>{editingBusiness ? 'EDIT COMMUNITY BUSINESS' : 'NEW COMMUNITY BUSINESS'}</h3>
+              <button className="close-modal" onClick={() => setIsBusinessModalOpen(false)}>×</button>
+            </div>
+
+            <form onSubmit={handleBusinessSubmit} className="modal-form">
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label>BUSINESS NAME</label>
+                  <input
+                    required
+                    type="text"
+                    value={businessForm.name}
+                    onChange={(e) => setBusinessForm({ ...businessForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>WEBSITE / SOCIAL LINK</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={businessForm.link}
+                    onChange={(e) => setBusinessForm({ ...businessForm, link: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>DETAILS / NOTES</label>
+                  <textarea
+                    rows="3"
+                    placeholder="What work did LMNL do with them?"
+                    value={businessForm.details}
+                    onChange={(e) => setBusinessForm({ ...businessForm, details: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="submit" className="admin-btn approve wide">
+                  {editingBusiness ? 'UPDATE BUSINESS' : 'SAVE BUSINESS'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* COMMUNITY MODAL */}
       {isCommunityModalOpen && (
         <div className="admin-modal-overlay">
@@ -1368,6 +1410,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                   <select value={creditForm.role} onChange={e => setCreditForm({...creditForm, role: e.target.value})}>
                     <option value="performer">PERFORMER</option>
                     <option value="artist">ARTIST / SHARED ART</option>
+                    <option value="vendor">VENDOR / BUSINESS</option>
                   </select>
                 </div>
 

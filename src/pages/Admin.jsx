@@ -17,12 +17,12 @@ const BlogTab = lazyWithRetry(() => import('../components/admin/BlogTab'));
 const DEFAULT_TAB = 'events';
 
 const TAB_DATASETS = {
-  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'serviceProducts', 'communityCredits', 'attendanceQueue', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
+  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'serviceProducts', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
   events: ['requests', 'events', 'tickets'],
   inquiries: ['serviceInquiries', 'serviceProducts'],
   contact: ['serviceInquiries'],
   shop: ['preorders', 'squareCatalog', 'events', 'tickets'],
-  community: ['communityCredits', 'attendanceQueue', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
+  community: ['communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
   blog: ['blogPosts'],
 };
 
@@ -33,9 +33,9 @@ const PINNED_SECTION_DATASETS = {
   contact_inquiries: ['serviceInquiries'],
   merch_preorders: ['preorders', 'events', 'tickets'],
   square_catalog: ['squareCatalog'],
-  attendance_queue: ['attendanceQueue'],
   artist_interest: ['artistInterest'],
   community_credits: ['communityCredits', 'events'],
+  community_businesses: ['communityBusinesses'],
   mailing_list: ['mailingList'],
   blog_posts: ['blogPosts'],
 };
@@ -87,8 +87,9 @@ export default function Admin() {
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
   const [communityTableMissing, setCommunityTableMissing] = useState(false);
-  const [attendanceQueue, setAttendanceQueue] = useState([]);
-  const [attendanceQueueLoading, setAttendanceQueueLoading] = useState(true);
+  const [communityBusinesses, setCommunityBusinesses] = useState([]);
+  const [communityBusinessesLoading, setCommunityBusinessesLoading] = useState(true);
+  const [communityBusinessesTableMissing, setCommunityBusinessesTableMissing] = useState(false);
   const [artistInterest, setArtistInterest] = useState([]);
   const [artistInterestLoading, setArtistInterestLoading] = useState(true);
   const [artistInterestTableMissing, setArtistInterestTableMissing] = useState(false);
@@ -123,6 +124,14 @@ export default function Admin() {
       return [];
     }
   });
+  const [collapsedSections, setCollapsedSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lmnl_collapsed_sections');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const togglePin = (sectionId) => {
     setPinnedSections(prev => {
@@ -130,6 +139,16 @@ export default function Admin() {
         ? prev.filter(id => id !== sectionId)
         : [...prev, sectionId];
       localStorage.setItem('lmnl_pinned_sections', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleCollapse = (sectionId) => {
+    setCollapsedSections((prev) => {
+      const next = prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId];
+      localStorage.setItem('lmnl_collapsed_sections', JSON.stringify(next));
       return next;
     });
   };
@@ -257,16 +276,18 @@ export default function Admin() {
     }
   }
 
-  async function fetchAttendanceQueue() {
-    setAttendanceQueueLoading(true);
+  async function fetchCommunityBusinesses() {
+    setCommunityBusinessesLoading(true);
     try {
-      const data = await apiGet('/api/admin-attendance-sources', { auth: true });
-      setAttendanceQueue(data?.items || []);
+      const data = await apiGet('/api/community-businesses', { auth: true });
+      setCommunityBusinessesTableMissing(false);
+      setCommunityBusinesses(data || []);
     } catch (error) {
-      console.error('Error fetching attendance queue:', error);
-      setAttendanceQueue([]);
+      console.error('Error fetching community businesses:', error);
+      if (error.message?.includes('not set up yet')) setCommunityBusinessesTableMissing(true);
+      setCommunityBusinesses([]);
     } finally {
-      setAttendanceQueueLoading(false);
+      setCommunityBusinessesLoading(false);
     }
   }
 
@@ -351,7 +372,7 @@ export default function Admin() {
         serviceInquiries: fetchServiceInquiries,
         serviceProducts: fetchServiceProducts,
         communityCredits: fetchCommunityCredits,
-        attendanceQueue: fetchAttendanceQueue,
+        communityBusinesses: fetchCommunityBusinesses,
         artistInterest: fetchArtistInterest,
         mailingList: fetchMailingList,
         blogPosts: fetchBlogPosts,
@@ -559,7 +580,7 @@ export default function Admin() {
         contentClassName="admin-content page-stack"
       >
         <section
-          className="admin-shell-panel page-panel admin-shell-panel--routed"
+          className="admin-shell-panel admin-shell-panel--routed"
           style={{ '--admin-shell-accent': activeColor }}
         >
           <div className="admin-tabs">
@@ -601,7 +622,9 @@ export default function Admin() {
                 updateStatus={updateStatus}
                 deleteRequest={deleteRequest}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
               <InquiriesTab
@@ -616,7 +639,9 @@ export default function Admin() {
                 showToast={showToast}
                 triggerConfirm={triggerConfirm}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
               <ContactTab
@@ -625,7 +650,9 @@ export default function Admin() {
                 updateStatus={updateServiceStatus}
                 deleteInquiry={deleteServiceInquiry}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
               <ShopTab
@@ -641,7 +668,9 @@ export default function Admin() {
                 tickets={tickets}
                 events={events}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
               <CommunityTab
@@ -650,9 +679,10 @@ export default function Admin() {
                 communityLoading={communityLoading}
                 communityTableMissing={communityTableMissing}
                 fetchCommunityCredits={fetchCommunityCredits}
-                attendanceQueue={attendanceQueue}
-                attendanceQueueLoading={attendanceQueueLoading}
-                fetchAttendanceQueue={fetchAttendanceQueue}
+                communityBusinesses={communityBusinesses}
+                communityBusinessesLoading={communityBusinessesLoading}
+                communityBusinessesTableMissing={communityBusinessesTableMissing}
+                fetchCommunityBusinesses={fetchCommunityBusinesses}
                 requests={requests}
                 requestsLoading={loading}
                 tickets={tickets}
@@ -672,7 +702,9 @@ export default function Admin() {
                 showToast={showToast}
                 triggerConfirm={triggerConfirm}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
               <BlogTab
@@ -683,7 +715,9 @@ export default function Admin() {
                 showToast={showToast}
                 triggerConfirm={triggerConfirm}
                 pinnedSections={pinnedSections}
+                collapsedSections={collapsedSections}
                 onTogglePin={togglePin}
+                onToggleCollapse={toggleCollapse}
                 renderMode="pinned"
               />
             </Suspense>
@@ -715,7 +749,9 @@ export default function Admin() {
               updateStatus={updateStatus}
               deleteRequest={deleteRequest}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>
@@ -735,7 +771,9 @@ export default function Admin() {
               showToast={showToast}
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>
@@ -749,7 +787,9 @@ export default function Admin() {
               updateStatus={updateServiceStatus}
               deleteInquiry={deleteServiceInquiry}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>
@@ -770,7 +810,9 @@ export default function Admin() {
               tickets={tickets}
               events={events}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>
@@ -784,9 +826,10 @@ export default function Admin() {
               communityLoading={communityLoading}
               communityTableMissing={communityTableMissing}
               fetchCommunityCredits={fetchCommunityCredits}
-              attendanceQueue={attendanceQueue}
-              attendanceQueueLoading={attendanceQueueLoading}
-              fetchAttendanceQueue={fetchAttendanceQueue}
+              communityBusinesses={communityBusinesses}
+              communityBusinessesLoading={communityBusinessesLoading}
+              communityBusinessesTableMissing={communityBusinessesTableMissing}
+              fetchCommunityBusinesses={fetchCommunityBusinesses}
               requests={requests}
               requestsLoading={loading}
               tickets={tickets}
@@ -806,7 +849,9 @@ export default function Admin() {
               showToast={showToast}
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>
@@ -822,7 +867,9 @@ export default function Admin() {
               showToast={showToast}
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
+              collapsedSections={collapsedSections}
               onTogglePin={togglePin}
+              onToggleCollapse={toggleCollapse}
               renderMode={activeTab === 'all' ? 'unpinned' : 'all'}
             />
           </Suspense>

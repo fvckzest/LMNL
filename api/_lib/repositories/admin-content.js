@@ -144,6 +144,20 @@ export async function listCommunityCredits() {
   return data || [];
 }
 
+export async function listCommunityBusinesses() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('community_businesses')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throwMissingTable(error, 'community_businesses', 'Community businesses');
+  }
+
+  return data || [];
+}
+
 export async function saveCommunityCredit(payload) {
   const supabase = getAdminSupabase();
   const { id, ...data } = payload;
@@ -196,6 +210,57 @@ export async function deleteCommunityCreditById(id) {
   return true;
 }
 
+export async function saveCommunityBusiness(payload) {
+  const supabase = getAdminSupabase();
+  const { id, ...rawData } = payload;
+  const data = {
+    name: rawData.name || '',
+    link: rawData.link || '',
+    details: rawData.details || '',
+  };
+
+  if (id) {
+    const { data: updated, error } = await supabase
+      .from('community_businesses')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throwMissingTable(error, 'community_businesses', 'Community businesses');
+    }
+
+    return updated;
+  }
+
+  const { data: inserted, error } = await supabase
+    .from('community_businesses')
+    .insert([data])
+    .select()
+    .single();
+
+  if (error) {
+    throwMissingTable(error, 'community_businesses', 'Community businesses');
+  }
+
+  return inserted;
+}
+
+export async function deleteCommunityBusinessById(id) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase
+    .from('community_businesses')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throwMissingTable(error, 'community_businesses', 'Community businesses');
+  }
+
+  return true;
+}
+
 export async function syncCommunityCreditsFromEvents() {
   const supabase = getAdminSupabase();
   const [events, existingCredits] = await Promise.all([
@@ -212,6 +277,9 @@ export async function syncCommunityCreditsFromEvents() {
       : [];
     const artists = event.metadata?.artists
       ? event.metadata.artists.split(',').map((entry) => entry.trim()).filter(Boolean)
+      : [];
+    const vendors = event.metadata?.vendors
+      ? event.metadata.vendors.split(',').map((entry) => entry.trim()).filter(Boolean)
       : [];
 
     for (const name of performers) {
@@ -271,6 +339,37 @@ export async function syncCommunityCreditsFromEvents() {
       existingCredits.push({
         name,
         role: 'artist',
+        event_id: event.id,
+        event_name: event.name,
+      });
+    }
+
+    for (const name of vendors) {
+      const exists = existingCredits.some((credit) =>
+        credit.name?.toLowerCase() === name.toLowerCase()
+        && credit.role === 'vendor'
+        && credit.event_id === event.id);
+
+      if (exists) {
+        skippedCount += 1;
+        continue;
+      }
+
+      const { error } = await supabase.from('community_credits').insert([{
+        name,
+        role: 'vendor',
+        event_id: event.id,
+        event_name: event.name,
+      }]);
+
+      if (error) {
+        throwMissingTable(error, 'community_credits', 'Community credits');
+      }
+
+      addedCount += 1;
+      existingCredits.push({
+        name,
+        role: 'vendor',
         event_id: event.id,
         event_name: event.name,
       });

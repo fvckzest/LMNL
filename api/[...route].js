@@ -43,15 +43,18 @@ import { listTickets } from './_lib/repositories/tickets.js';
 import { sendInquiryNotification, sendArtistInterestNotification } from './_lib/services/inquiries.js';
 import { getAdminAuthorizationConfig, getSupabaseConfig } from './_lib/env.js';
 import {
+  deleteCommunityBusinessById,
   deleteCommunityCreditById,
   deleteServiceProductById,
   deleteMailingListEntryById,
   listArtistInterest,
   listBlogPostsAdmin,
+  listCommunityBusinesses,
   listCommunityCredits,
   listMailingListEntries,
   listServiceProducts,
   listServiceInquiries,
+  saveCommunityBusiness,
   saveCommunityCredit,
   saveMailingListEntry,
   saveServiceProduct,
@@ -942,6 +945,32 @@ async function handleCommunityCredits(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
+async function handleCommunityBusinesses(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  if (req.method === 'GET') {
+    const data = await listCommunityBusinesses();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const body = await parseJsonBody(req);
+
+  if (body.action === 'delete') {
+    await deleteCommunityBusinessById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  const data = await saveCommunityBusiness({
+    id: body.id || null,
+    name: requireValue(body.name, 'name is required.'),
+    link: body.link || '',
+    details: body.details || '',
+  });
+
+  return sendJson(res, 200, { success: true, data });
+}
+
 async function handleMailingList(req, res) {
   allowMethods(req, ['GET', 'POST']);
   await requireAdminUser(req);
@@ -1027,6 +1056,7 @@ const handlers = {
   requests: handleRequests,
   'artist-interest': handleArtistInterest,
   'blog-posts': handleBlogPosts,
+  'community-businesses': handleCommunityBusinesses,
   'community-credits': handleCommunityCredits,
   'mailing-list': handleMailingList,
   'service-products': handleServiceProducts,
