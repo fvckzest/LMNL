@@ -103,6 +103,13 @@ export function getSupabaseConfig() {
   };
 }
 
+export function getPortfolioPreviewConfig() {
+  return {
+    storageBucket: readEnv('SUPABASE_PORTFOLIO_BUCKET') || 'portfolio-media',
+    navigationTimeoutMs: Number.parseInt(readEnv('PORTFOLIO_PREVIEW_TIMEOUT_MS'), 10) || 45000,
+  };
+}
+
 export function getAdminAuthorizationConfig() {
   const source = readEnv('ADMIN_AUTH_SOURCE') || 'auto';
   const allowedSources = new Set(['auto', 'table', 'env']);

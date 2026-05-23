@@ -56,6 +56,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```env
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_PORTFOLIO_BUCKET=portfolio-media
 SQUARE_ACCESS_TOKEN=your_square_access_token
 SQUARE_WEBHOOK_SIGNATURE_KEY=your_webhook_signature
 SITE_URL=https://lmnl.space (or your domain)
@@ -70,6 +71,7 @@ APPLE_TEAM_ID=your_apple_team_id
 APPLE_PASS_CERTIFICATE=base64_encoded_p12_contents
 APPLE_PASS_CERTIFICATE_PATH=path/to/WalletCertificate.p12
 APPLE_PASS_CERTIFICATE_PASSWORD=your_p12_export_password
+PORTFOLIO_PREVIEW_TIMEOUT_MS=45000
 ```
 
 For Apple Wallet, provide either `APPLE_PASS_CERTIFICATE` or `APPLE_PASS_CERTIFICATE_PATH`.
@@ -88,6 +90,7 @@ For Discord slash commands:
 ### Installation
 ```bash
 npm install
+npx playwright install chromium
 ```
 
 ### Local Development

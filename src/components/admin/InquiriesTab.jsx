@@ -1,19 +1,19 @@
 import { useState, Fragment } from 'react';
 import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
-import ServiceProductsPanel from './ServiceProductsPanel';
+import PortfolioTab from './PortfolioTab';
 
  export default function InquiriesTab({
    serviceInquiries,
    servicesLoading,
    updateServiceStatus,
    deleteServiceInquiry,
-   serviceProducts,
-   serviceProductsLoading,
-   serviceProductsTableMissing,
-   fetchServiceProducts,
-   showToast,
-   triggerConfirm,
+   portfolioEntries = [],
+   portfolioLoading = false,
+   portfolioTableMissing = false,
+   fetchPortfolioEntries = () => {},
+   showToast = () => {},
+   triggerConfirm = () => {},
    pinnedSections = [],
    collapsedSections = [],
    onTogglePin = () => {},
@@ -21,7 +21,6 @@ import ServiceProductsPanel from './ServiceProductsPanel';
    renderMode = 'all'
  }) {
    const sectionId = 'service_inquiries';
-   const offeringsSectionId = 'service_products';
 
    const shouldRender = () => {
      if (renderMode === 'all') return true;
@@ -35,7 +34,6 @@ import ServiceProductsPanel from './ServiceProductsPanel';
    const [showArchivedServices, setShowArchivedServices] = useState(false);
    const [expandedInquiries, setExpandedInquiries] = useState({});
    const activeInquiryCount = serviceInquiries.filter((req) => req.status !== 'archived').length;
-   const activeOfferingCount = serviceProducts.filter((item) => item.is_active !== false).length;
 
    function toggleInquiryExpansion(id) {
      setExpandedInquiries(prev => ({
@@ -45,17 +43,18 @@ import ServiceProductsPanel from './ServiceProductsPanel';
    }
 
    return shouldRender() ? (
-    <section className="admin-section" style={{ '--active-tab-color': '#6222d8' }}>
-      <AdminSectionHeader
-        title="SERVICE INQUIRIES"
-        isPinned={pinnedSections.includes(sectionId)}
-        onTogglePin={() => onTogglePin(sectionId)}
-        isCollapsed={isCollapsed(sectionId)}
-        onToggleCollapse={() => onToggleCollapse(sectionId)}
-        collapsedCount={activeInquiryCount}
-      />
-      {!isCollapsed(sectionId) && (
-        <>
+    <>
+      <section className="admin-section" style={{ '--active-tab-color': '#6222d8' }}>
+        <AdminSectionHeader
+          title="SERVICE INQUIRIES"
+          isPinned={pinnedSections.includes(sectionId)}
+          onTogglePin={() => onTogglePin(sectionId)}
+          isCollapsed={isCollapsed(sectionId)}
+          onToggleCollapse={() => onToggleCollapse(sectionId)}
+          collapsedCount={activeInquiryCount}
+        />
+        {!isCollapsed(sectionId) && (
+          <>
       <div className="admin-stats">
         <div className="stat-item">
           <span className="stat-label">TOTAL INQUIRIES</span>
@@ -204,27 +203,23 @@ import ServiceProductsPanel from './ServiceProductsPanel';
           </table>
         )}
       </div>
-        </>
-      )}
-
-      <div className="admin-subsection">
-        <AdminSectionHeader
-          title="PRODUCT TABLE OFFERINGS"
-          isCollapsed={isCollapsed(offeringsSectionId)}
-          onToggleCollapse={() => onToggleCollapse(offeringsSectionId)}
-          collapsedCount={activeOfferingCount}
-        />
-        {!isCollapsed(offeringsSectionId) && (
-          <ServiceProductsPanel
-            serviceProducts={serviceProducts}
-            serviceProductsLoading={serviceProductsLoading}
-            serviceProductsTableMissing={serviceProductsTableMissing}
-            fetchServiceProducts={fetchServiceProducts}
-            showToast={showToast}
-            triggerConfirm={triggerConfirm}
-          />
+          </>
         )}
-      </div>
-     </section>
+      </section>
+
+      <PortfolioTab
+        portfolioEntries={portfolioEntries}
+        portfolioLoading={portfolioLoading}
+        portfolioTableMissing={portfolioTableMissing}
+        fetchPortfolioEntries={fetchPortfolioEntries}
+        showToast={showToast}
+        triggerConfirm={triggerConfirm}
+        pinnedSections={pinnedSections}
+        collapsedSections={collapsedSections}
+        onTogglePin={onTogglePin}
+        onToggleCollapse={onToggleCollapse}
+        renderMode={renderMode}
+      />
+    </>
   ) : null;
 }

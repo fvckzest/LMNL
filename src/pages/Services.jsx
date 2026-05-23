@@ -92,6 +92,17 @@ export default function Services() {
       <section className="services-capabilities">
         <div className="services-capabilities__layout">
           <div className="services-capabilities__top-row">
+            <section className="services-overview-panel theme-surface theme-surface--panel">
+              <div className="services-overview theme-surface-body">
+                <p>
+                  LMNL builds across design, media, and digital execution.
+                  Browse our offerings below or head to the portfolio to see the work in action.
+                </p>
+                <Link to={buildPortfolioPath()} className="theme-button services-overview__button">
+                  PORTFOLIO
+                </Link>
+              </div>
+            </section>
             <div className="services-capabilities__grid">
               {sortedServices.map((service) => {
                 const isActive = activeService.id === service.id;

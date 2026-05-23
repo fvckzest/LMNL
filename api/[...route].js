@@ -29,6 +29,7 @@ import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { getSiteActivityHistory } from './_lib/services/site-activity.js';
 import { getSpaceTicketActivity } from './_lib/services/space-activity.js';
+import { generatePortfolioPreview } from './_lib/services/portfolio-previews.js';
 import {
   countApprovedRequestsByEventName,
   createAccessRequest,
@@ -45,6 +46,7 @@ import { getAdminAuthorizationConfig, getSupabaseConfig } from './_lib/env.js';
 import {
   deleteCommunityBusinessById,
   deleteCommunityCreditById,
+  deletePortfolioEntryById,
   deleteServiceProductById,
   deleteMailingListEntryById,
   listArtistInterest,
@@ -52,11 +54,16 @@ import {
   listCommunityBusinesses,
   listCommunityCredits,
   listMailingListEntries,
+  listPortfolioEntriesAdmin,
+  listPublishedPortfolioEntries,
   listServiceProducts,
   listServiceInquiries,
+  getPortfolioEntryById,
   saveCommunityBusiness,
   saveCommunityCredit,
   saveMailingListEntry,
+  savePortfolioEntry,
+  savePortfolioPreviewMedia,
   saveServiceProduct,
   syncCommunityCreditsFromEvents,
 } from './_lib/repositories/admin-content.js';
@@ -910,6 +917,80 @@ async function handleBlogPosts(req, res) {
   throw new Error('Unsupported blog posts action.');
 }
 
+async function handlePortfolio(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+
+  if (req.method === 'GET') {
+    const wantsAdminView = String(req.query?.view || '').toLowerCase() === 'admin';
+
+    if (wantsAdminView) {
+      await requireAdminUser(req);
+      const data = await listPortfolioEntriesAdmin();
+      return sendJson(res, 200, { success: true, data });
+    }
+
+    const data = await listPublishedPortfolioEntries();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const body = await parseJsonBody(req);
+  await requireAdminUser(req);
+
+  if (body.action === 'delete') {
+    await deletePortfolioEntryById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  if (body.action === 'create' || body.action === 'update') {
+    const data = await savePortfolioEntry({
+      id: body.action === 'update' ? requireValue(body.id, 'id is required.') : null,
+      title: requireValue(body.title, 'title is required.'),
+      slug: body.slug || '',
+      year: requireValue(body.year, 'year is required.'),
+      client_name: body.client_name || '',
+      project_type: requireValue(body.project_type, 'project_type is required.'),
+      website_url: body.website_url || '',
+      summary: body.summary || '',
+      result: body.result || '',
+      capabilities: Array.isArray(body.capabilities) ? body.capabilities : [],
+      outputs: Array.isArray(body.outputs) ? body.outputs : [],
+      focus_areas: Array.isArray(body.focus_areas) ? body.focus_areas : [],
+      featured: body.featured === true,
+      sort_order: body.sort_order ?? 0,
+      status: body.status || 'draft',
+      media: Array.isArray(body.media) ? body.media : [],
+    });
+
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'generate-preview') {
+    const entryId = requireValue(body.id, 'id is required.');
+    const entry = await getPortfolioEntryById(entryId);
+    const websiteUrl = body.website_url || entry.website_url || '';
+    const generatedPreview = await generatePortfolioPreview({
+      portfolioEntryId: entryId,
+      websiteUrl,
+      title: body.title || entry.title,
+    });
+
+    const data = await savePortfolioPreviewMedia({
+      portfolioEntryId: entryId,
+      previewUrl: generatedPreview.previewUrl,
+      websiteUrl: generatedPreview.websiteUrl,
+      altText: generatedPreview.altText,
+      caption: 'Generated website preview',
+    });
+
+    return sendJson(res, 200, {
+      success: true,
+      data,
+    });
+  }
+
+  throw new Error('Unsupported portfolio action.');
+}
+
 async function handleCommunityCredits(req, res) {
   allowMethods(req, ['GET', 'POST']);
   await requireAdminUser(req);
@@ -1056,6 +1137,7 @@ const handlers = {
   requests: handleRequests,
   'artist-interest': handleArtistInterest,
   'blog-posts': handleBlogPosts,
+  portfolio: handlePortfolio,
   'community-businesses': handleCommunityBusinesses,
   'community-credits': handleCommunityCredits,
   'mailing-list': handleMailingList,

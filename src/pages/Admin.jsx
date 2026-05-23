@@ -17,9 +17,9 @@ const BlogTab = lazyWithRetry(() => import('../components/admin/BlogTab'));
 const DEFAULT_TAB = 'events';
 
 const TAB_DATASETS = {
-  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'serviceProducts', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
+  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'portfolioEntries', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
   events: ['requests', 'events', 'tickets'],
-  inquiries: ['serviceInquiries', 'serviceProducts'],
+  inquiries: ['serviceInquiries', 'portfolioEntries'],
   contact: ['serviceInquiries'],
   shop: ['preorders', 'squareCatalog', 'events', 'tickets'],
   community: ['communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
@@ -29,7 +29,7 @@ const TAB_DATASETS = {
 const PINNED_SECTION_DATASETS = {
   events_mgmt: ['events', 'tickets'],
   invite_reqs: ['requests'],
-  service_inquiries: ['serviceInquiries', 'serviceProducts'],
+  service_inquiries: ['serviceInquiries'],
   contact_inquiries: ['serviceInquiries'],
   merch_preorders: ['preorders', 'events', 'tickets'],
   square_catalog: ['squareCatalog'],
@@ -38,6 +38,7 @@ const PINNED_SECTION_DATASETS = {
   community_businesses: ['communityBusinesses'],
   mailing_list: ['mailingList'],
   blog_posts: ['blogPosts'],
+  portfolio_entries: ['portfolioEntries'],
 };
 
 function readInitialActiveTab() {
@@ -80,9 +81,6 @@ export default function Admin() {
   const [tableMissing, setTableMissing] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
-  const [serviceProducts, setServiceProducts] = useState([]);
-  const [serviceProductsLoading, setServiceProductsLoading] = useState(true);
-  const [serviceProductsTableMissing, setServiceProductsTableMissing] = useState(false);
   const [activeTab, setActiveTab] = useState(readInitialActiveTab);
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
@@ -99,6 +97,9 @@ export default function Admin() {
   const [blogPosts, setBlogPosts] = useState([]);
   const [blogLoading, setBlogLoading] = useState(true);
   const [blogTableMissing, setBlogTableMissing] = useState(false);
+  const [portfolioEntries, setPortfolioEntries] = useState([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [portfolioTableMissing, setPortfolioTableMissing] = useState(false);
 
   // Square catalog state
   const [squareItems, setSquareItems] = useState([]);
@@ -160,7 +161,7 @@ export default function Admin() {
     shop: '#ff0000',
     community: '#ff5bb8',
     contact: '#90e937',
-    blog: '#ffde00'
+    blog: '#ffde00',
   };
 
   const tabOptions = [
@@ -246,21 +247,6 @@ export default function Admin() {
     }
   }
 
-  async function fetchServiceProducts() {
-    setServiceProductsLoading(true);
-    try {
-      const data = await apiGet('/api/service-products', { auth: true });
-      setServiceProductsTableMissing(false);
-      setServiceProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching service products:', error);
-      if (error.message?.includes('not set up yet')) setServiceProductsTableMissing(true);
-      setServiceProducts([]);
-    } finally {
-      setServiceProductsLoading(false);
-    }
-  }
-
   async function fetchCommunityCredits() {
     setCommunityLoading(true);
     try {
@@ -336,6 +322,21 @@ export default function Admin() {
     }
   }
 
+  async function fetchPortfolioEntries() {
+    setPortfolioLoading(true);
+    try {
+      const data = await apiGet('/api/portfolio?view=admin', { auth: true });
+      setPortfolioTableMissing(false);
+      setPortfolioEntries(data || []);
+    } catch (error) {
+      console.error('Error fetching portfolio entries:', error);
+      if (error.message?.includes('not set up yet')) setPortfolioTableMissing(true);
+      setPortfolioEntries([]);
+    } finally {
+      setPortfolioLoading(false);
+    }
+  }
+
   async function fetchSquareCatalog() {
     setFetchingCatalog(true);
     setSquareError(null);
@@ -370,12 +371,12 @@ export default function Admin() {
         events: fetchEvents,
         tickets: fetchTickets,
         serviceInquiries: fetchServiceInquiries,
-        serviceProducts: fetchServiceProducts,
         communityCredits: fetchCommunityCredits,
         communityBusinesses: fetchCommunityBusinesses,
         artistInterest: fetchArtistInterest,
         mailingList: fetchMailingList,
         blogPosts: fetchBlogPosts,
+        portfolioEntries: fetchPortfolioEntries,
         squareCatalog: fetchSquareCatalog,
         preorders: fetchPreorders,
       };
@@ -632,10 +633,10 @@ export default function Admin() {
                 servicesLoading={servicesLoading}
                 updateServiceStatus={updateServiceStatus}
                 deleteServiceInquiry={deleteServiceInquiry}
-                serviceProducts={serviceProducts}
-                serviceProductsLoading={serviceProductsLoading}
-                serviceProductsTableMissing={serviceProductsTableMissing}
-                fetchServiceProducts={fetchServiceProducts}
+                portfolioEntries={portfolioEntries}
+                portfolioLoading={portfolioLoading}
+                portfolioTableMissing={portfolioTableMissing}
+                fetchPortfolioEntries={fetchPortfolioEntries}
                 showToast={showToast}
                 triggerConfirm={triggerConfirm}
                 pinnedSections={pinnedSections}
@@ -675,6 +676,7 @@ export default function Admin() {
               />
               <CommunityTab
                 events={events}
+                fetchEvents={fetchEvents}
                 communityCredits={communityCredits}
                 communityLoading={communityLoading}
                 communityTableMissing={communityTableMissing}
@@ -764,10 +766,10 @@ export default function Admin() {
               servicesLoading={servicesLoading}
               updateServiceStatus={updateServiceStatus}
               deleteServiceInquiry={deleteServiceInquiry}
-              serviceProducts={serviceProducts}
-              serviceProductsLoading={serviceProductsLoading}
-              serviceProductsTableMissing={serviceProductsTableMissing}
-              fetchServiceProducts={fetchServiceProducts}
+              portfolioEntries={portfolioEntries}
+              portfolioLoading={portfolioLoading}
+              portfolioTableMissing={portfolioTableMissing}
+              fetchPortfolioEntries={fetchPortfolioEntries}
               showToast={showToast}
               triggerConfirm={triggerConfirm}
               pinnedSections={pinnedSections}
@@ -822,6 +824,7 @@ export default function Admin() {
           <Suspense fallback={<AdminTabFallback />}>
             <CommunityTab
               events={events}
+              fetchEvents={fetchEvents}
               communityCredits={communityCredits}
               communityLoading={communityLoading}
               communityTableMissing={communityTableMissing}
@@ -874,6 +877,7 @@ export default function Admin() {
             />
           </Suspense>
         )}
+
       </ContentPageShell>
 
       {/* Toast Notification */}

@@ -1,10 +1,12 @@
 import { Fragment, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { normalizeCommunityCreditRole } from '../../lib/communityCredits';
 import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 export default function CommunityTab({
   events,
+  fetchEvents = () => {},
   communityCredits,
   communityLoading,
   communityTableMissing,
@@ -58,7 +60,7 @@ export default function CommunityTab({
   const [editingMailingEntry, setEditingMailingEntry] = useState(null);
   const [editingCredit, setEditingCredit] = useState(null);
   const [editingBusiness, setEditingBusiness] = useState(null);
-  const [expandedCommunityEvents, setExpandedCommunityEvents] = useState({});
+  const [expandedCommunityEventKey, setExpandedCommunityEventKey] = useState(null);
   const [expandedArtistInterest, setExpandedArtistInterest] = useState({});
   const [expandedCredits, setExpandedCredits] = useState({});
   const [expandedContacts, setExpandedContacts] = useState({});
@@ -81,6 +83,44 @@ export default function CommunityTab({
     email: '',
     source: 'manual'
   });
+  const normalizedCommunityCredits = communityCredits.map((credit) => ({
+    ...credit,
+    role: normalizeCommunityCreditRole(credit.role),
+  }));
+
+  function getMetadataKeyForRole(role) {
+    if (role === 'performer') return 'performers';
+    if (role === 'vendor') return 'vendors';
+    return 'artists';
+  }
+
+  async function updateEventMetadataCredits(eventId, role, updater) {
+    const event = events.find((entry) => entry.id === eventId);
+
+    if (!event) {
+      throw new Error('Linked event could not be found.');
+    }
+
+    const metadataKey = getMetadataKeyForRole(role);
+    const currentValues = String(event.metadata?.[metadataKey] || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    const nextValues = updater(currentValues);
+    const nextMetadata = {
+      ...(event.metadata || {}),
+      [metadataKey]: nextValues.join(', '),
+    };
+
+    const { error } = await supabase
+      .from('events')
+      .update({ metadata: nextMetadata })
+      .eq('id', eventId);
+
+    if (error) {
+      throw error;
+    }
+  }
 
   async function handleCreditSubmit(e) {
     e.preventDefault();
@@ -95,7 +135,7 @@ export default function CommunityTab({
     const data = {
       name: creditForm.name,
       email: creditForm.email || '',
-      role: creditForm.role,
+      role: normalizeCommunityCreditRole(creditForm.role),
       event_id: creditForm.event_id || null,
       event_name: event_name || null,
       details: creditForm.details || '',
@@ -103,7 +143,25 @@ export default function CommunityTab({
     };
 
     let error;
-    if (editingCredit) {
+    if (editingCredit?.isSynced === false && editingCredit?.event_id) {
+      try {
+        const originalRole = normalizeCommunityCreditRole(editingCredit.role);
+        const normalizedOriginalName = String(editingCredit.name || '').trim().toLowerCase();
+
+        await updateEventMetadataCredits(editingCredit.event_id, originalRole, (values) =>
+          values.filter((value) => value.trim().toLowerCase() !== normalizedOriginalName)
+        );
+
+        await updateEventMetadataCredits(editingCredit.event_id, data.role, (values) => {
+          const filteredValues = values.filter((value) => value.trim().toLowerCase() !== data.name.trim().toLowerCase());
+          return [...filteredValues, data.name].filter(Boolean);
+        });
+        const { error: insertError } = await supabase.from('community_credits').insert([data]);
+        error = insertError;
+      } catch (err) {
+        error = err;
+      }
+    } else if (editingCredit?.id) {
       const { error: err } = await supabase.from('community_credits').update(data).eq('id', editingCredit.id);
       error = err;
     } else {
@@ -115,17 +173,34 @@ export default function CommunityTab({
       showToast('Error saving credit: ' + error.message, 'error');
     } else {
       setIsCommunityModalOpen(false);
+      setEditingCredit(null);
       fetchCommunityCredits();
+      fetchEvents();
       showToast('Credit saved successfully');
     }
   }
 
-  async function deleteCredit(id) {
+  async function deleteCredit(credit) {
+    if (!credit?.isSynced && credit?.event_id) {
+      triggerConfirm('Remove this credit from the event lineup?', async () => {
+        try {
+          await updateEventMetadataCredits(credit.event_id, credit.role, (values) =>
+            values.filter((value) => value.trim().toLowerCase() !== String(credit.name || '').trim().toLowerCase())
+          );
+          fetchEvents();
+          showToast('Credit removed from event metadata');
+        } catch (error) {
+          showToast('Failed to remove credit: ' + error.message, 'error');
+        }
+      });
+      return;
+    }
+
     triggerConfirm('Are you sure you want to delete this credit permanently?', async () => {
       const { error } = await supabase
         .from('community_credits')
         .delete()
-        .eq('id', id);
+        .eq('id', credit.id);
 
       if (error) {
         console.error('Error deleting credit:', error);
@@ -188,7 +263,7 @@ export default function CommunityTab({
       setCreditForm({
         name: credit.name,
         email: credit.email || '',
-        role: credit.role,
+        role: normalizeCommunityCreditRole(credit.role),
         event_id: credit.event_id || '',
         details: credit.details || '',
         link: credit.link || ''
@@ -299,7 +374,7 @@ export default function CommunityTab({
           : [];
 
         for (const name of performers) {
-          const exists = communityCredits.some(c => 
+          const exists = normalizedCommunityCredits.some(c => 
             c.name.toLowerCase() === name.toLowerCase() && 
             c.role === 'performer' && 
             c.event_id === event.id
@@ -320,7 +395,7 @@ export default function CommunityTab({
         }
 
         for (const name of artists) {
-          const exists = communityCredits.some(c => 
+          const exists = normalizedCommunityCredits.some(c => 
             c.name.toLowerCase() === name.toLowerCase() && 
             c.role === 'artist' && 
             c.event_id === event.id
@@ -345,7 +420,7 @@ export default function CommunityTab({
           : [];
 
         for (const name of vendors) {
-          const exists = communityCredits.some(c =>
+          const exists = normalizedCommunityCredits.some(c =>
             c.name.toLowerCase() === name.toLowerCase() &&
             c.role === 'vendor' &&
             c.event_id === event.id
@@ -382,10 +457,8 @@ export default function CommunityTab({
   }
 
   function toggleCommunityEvent(eventKey) {
-    setExpandedCommunityEvents(prev => ({
-      ...prev,
-      [eventKey]: !prev[eventKey]
-    }));
+    setExpandedCommunityEventKey((prev) => (prev === eventKey ? null : eventKey));
+    setExpandedCredits({});
   }
 
   function toggleCreditExpansion(creditId) {
@@ -526,7 +599,7 @@ export default function CommunityTab({
     });
   });
 
-  communityCredits.forEach((entry) => {
+  normalizedCommunityCredits.forEach((entry) => {
     if (isPlaceholderEmail(entry.email)) return;
     contactSourceTotals.communityCredits += 1;
     addContactEntry({
@@ -581,7 +654,7 @@ export default function CommunityTab({
     mailingListLoading;
   const totalEmailRecords = Object.values(contactSourceTotals).reduce((sum, count) => sum + count, 0);
 
-  const groupedCommunityCredits = communityCredits.reduce((groups, credit) => {
+  const groupedCommunityCredits = normalizedCommunityCredits.reduce((groups, credit) => {
     const eventKey = credit.event_id || `independent:${credit.event_name || 'none'}`;
     const eventLabel = credit.event_name || 'INDEPENDENT / NO EVENT';
 
@@ -598,6 +671,45 @@ export default function CommunityTab({
     return groups;
   }, {});
 
+  const eventLookup = events.reduce((lookup, event) => {
+    lookup[event.id] = event;
+    return lookup;
+  }, {});
+
+  function getMetadataCreditsForRole(group, role) {
+    const event = group.eventId ? eventLookup[group.eventId] : null;
+
+    if (!event) return [];
+
+    const metadataKey = role === 'performer'
+      ? 'performers'
+      : role === 'artist'
+        ? 'artists'
+        : 'vendors';
+
+    return String(event.metadata?.[metadataKey] || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  events.forEach((event) => {
+    const hasMetadataCredits = ['performer', 'artist', 'vendor'].some((role) =>
+      getMetadataCreditsForRole({ eventId: event.id }, role).length > 0
+    );
+
+    if (!hasMetadataCredits || groupedCommunityCredits[event.id]) {
+      return;
+    }
+
+    groupedCommunityCredits[event.id] = {
+      key: event.id,
+      eventId: event.id,
+      eventName: event.name || 'UNTITLED EVENT',
+      credits: []
+    };
+  });
+
   const communityEventGroups = Object.values(groupedCommunityCredits).sort((a, b) => {
     const aOrder = a.eventId && eventOrderLookup[a.eventId] !== undefined ? eventOrderLookup[a.eventId] : Number.MAX_SAFE_INTEGER;
     const bOrder = b.eventId && eventOrderLookup[b.eventId] !== undefined ? eventOrderLookup[b.eventId] : Number.MAX_SAFE_INTEGER;
@@ -605,9 +717,62 @@ export default function CommunityTab({
     if (aOrder !== bOrder) return aOrder - bOrder;
     return a.eventName.localeCompare(b.eventName);
   });
+
+  function getCommunityGroupCount(group, role) {
+    const normalizedNames = new Set(
+      group.credits
+        .filter((credit) => credit.role === role)
+        .map((credit) => String(credit.name || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    getMetadataCreditsForRole(group, role).forEach((name) => {
+      normalizedNames.add(name.toLowerCase());
+    });
+
+    return normalizedNames.size;
+  }
+
+  function getCommunityGroupRows(group) {
+    const rows = group.credits.map((credit) => ({
+      ...credit,
+      rowKey: String(credit.id),
+      isSynced: true,
+    }));
+    const existingRoleNames = new Set(
+      rows.map((row) => `${row.role}:${String(row.name || '').trim().toLowerCase()}`)
+    );
+
+    ['performer', 'artist', 'vendor'].forEach((role) => {
+      getMetadataCreditsForRole(group, role).forEach((name) => {
+        const normalizedName = name.toLowerCase();
+        const key = `${role}:${normalizedName}`;
+
+        if (existingRoleNames.has(key)) {
+          return;
+        }
+
+        existingRoleNames.add(key);
+        rows.push({
+          id: null,
+          name,
+          email: '',
+          role,
+          event_id: group.eventId,
+          event_name: group.eventName,
+          details: '',
+          link: '',
+          rowKey: `meta:${group.key}:${role}:${normalizedName}`,
+          isSynced: false,
+        });
+      });
+    });
+
+    return rows;
+  }
   const activeArtistInterestCount = artistInterest.filter((entry) => entry.status !== 'archived').length;
   const businessCount = communityBusinesses.length;
-  const creditCount = communityCredits.length;
+  const creditCount = normalizedCommunityCredits.length;
   const contactCount = emailContacts.length;
 
   return (
@@ -909,7 +1074,7 @@ CREATE POLICY "Allow authenticated all access" ON community_businesses FOR ALL U
       <section className="admin-section" style={{ '--active-tab-color': '#ff5bb8' }}>
         <div className="section-header-flex">
           <AdminSectionHeader
-            title="COMMUNITY CREDITS (PERFORMERS, ARTISTS & VENDORS)"
+            title="COMMUNITY CREDITS"
             isPinned={pinnedSections.includes(sectionIds.credits)}
             onTogglePin={() => onTogglePin(sectionIds.credits)}
             isCollapsed={isCollapsed(sectionIds.credits)}
@@ -976,7 +1141,7 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
           <div className="events-table-container admin-table-shell">
             {communityLoading ? (
               <p className="loading-text">RETRIEVING COMMUNITY CREDITS...</p>
-            ) : communityCredits.length === 0 ? (
+            ) : communityEventGroups.length === 0 ? (
               <p className="loading-text">NO COMMUNITY CREDITS FOUND. CLICK "SYNC FROM EVENTS" OR ADD MANUALLY.</p>
             ) : (
               <table className="admin-table">
@@ -992,25 +1157,19 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                 </thead>
                 <tbody>
                   {communityEventGroups.map((group) => {
-                    const isExpanded = Boolean(expandedCommunityEvents[group.key]);
-                    const performerCount = group.credits.filter((credit) => credit.role === 'performer').length;
-                    const artistCount = group.credits.filter((credit) => credit.role === 'artist').length;
-                    const vendorCount = group.credits.filter((credit) => credit.role === 'vendor').length;
-                    
-                    // Calculate total rows for rowSpan: 
-                    // 1 (header) + credits.length + any expanded credit details
-                    const expandedCount = isExpanded 
-                      ? group.credits.filter(c => expandedCredits[c.id]).length 
-                      : 0;
-                    const totalRows = 1 + (isExpanded ? group.credits.length + expandedCount : 0);
+                    const isExpanded = expandedCommunityEventKey === group.key;
+                    const groupRows = getCommunityGroupRows(group);
+                    const performerCount = getCommunityGroupCount(group, 'performer');
+                    const artistCount = getCommunityGroupCount(group, 'artist');
+                    const vendorCount = getCommunityGroupCount(group, 'vendor');
 
                     return (
                       <Fragment key={group.key}>
                         <tr className={isExpanded ? 'event-row-expanded' : ''}>
                           <td 
-                            className="community-event-arrow-cell"
-                            rowSpan={totalRows} 
-                            style={{ verticalAlign: 'middle' }}
+                            className="community-event-name-cell"
+                            colSpan={2}
+                            style={{ verticalAlign: 'top', fontWeight: 700 }}
                           >
                             <button
                               type="button"
@@ -1021,81 +1180,102 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
                               aria-label={isExpanded ? `Collapse ${group.eventName}` : `Expand ${group.eventName}`}
                             >
                               <span className="admin-toggle-arrow community-event-toggle-arrow">▶</span>
+                              <span>{group.eventName}</span>
                             </button>
-                          </td>
-                          <td 
-                            className="community-event-name-cell"
-                            rowSpan={totalRows} 
-                            style={{ verticalAlign: 'middle', fontWeight: 700 }}
-                          >
-                            {group.eventName}
                           </td>
                           <td className="community-group-summary">{performerCount}</td>
                           <td className="community-group-summary">{artistCount}</td>
                           <td className="community-group-summary">{vendorCount}</td>
                           <td className="community-group-summary">Click to view credits</td>
                         </tr>
-                        {isExpanded && group.credits.map((credit) => {
-                          const isCreditExpanded = Boolean(expandedCredits[credit.id]);
-                          return (
-                            <Fragment key={credit.id}>
-                              <tr className={`community-credit-row ${isCreditExpanded ? 'credit-row-expanded' : ''}`}>
-                                <td className="ticket-detail-toggle-cell">
-                                  <button
-                                    type="button"
-                                    className={`ticket-detail-toggle ${isCreditExpanded ? 'expanded' : ''}`}
-                                    onClick={() => toggleCreditExpansion(credit.id)}
-                                    aria-expanded={isCreditExpanded}
-                                    title={isCreditExpanded ? 'Hide details' : 'Show details'}
-                                    style={{ '--004ffa': '#ff5bb8' }} 
-                                  >
-                                    <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
-                                  </button>
-                                </td>
-                                <td><strong>{credit.name}</strong></td>
-                                <td>{credit.email || '-'}</td>
-                                <td>{credit.role.toUpperCase()}</td>
-                                <td className="actions-cell">
-                                  <div className="actions-wrapper">
-                                    <div className="main-actions">
-                                      <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
-                                    </div>
-                                    <div className="secondary-actions">
-                                      <DeleteActionButton
-                                        title="Delete Credit"
-                                        onClick={() => deleteCredit(credit.id)}
-                                      />
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                              {isCreditExpanded && (
-                                <tr className="credit-metadata-row">
-                                  <td colSpan="5">
-                                    <div className="credit-metadata-panel">
-                                      <div className="credit-metadata-grid">
-                                        <div className="credit-metadata-item">
-                                          <span className="credit-metadata-label">LINK</span>
-                                          {credit.link ? (
-                                            <a href={credit.link} target="_blank" rel="noopener noreferrer" className="credit-metadata-link">
-                                              {credit.link}
-                                            </a>
-                                          ) : (
-                                            <span className="credit-metadata-value" style={{ color: '#999' }}>No link provided</span>
+                        {isExpanded && (
+                          <tr className="ticket-holders-row community-credits-row">
+                            <td colSpan="6">
+                              <div className="ticket-holders-panel community-credits-panel">
+                                <div className="ticket-holders-header community-credits-header">
+                                  <span>Community Credits</span>
+                                </div>
+                                <table className="admin-table inline-issued-tickets-table community-credits-table">
+                                  <thead>
+                                    <tr>
+                                      <th style={{ width: '1%', textAlign: 'center' }}></th>
+                                      <th>NAME</th>
+                                      <th>EMAIL</th>
+                                      <th>ROLE</th>
+                                      <th>ACTIONS</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {groupRows.map((credit) => {
+                                      const isCreditExpanded = Boolean(expandedCredits[credit.rowKey]);
+
+                                      return (
+                                        <Fragment key={credit.rowKey}>
+                                          <tr className={`community-credit-row ${isCreditExpanded ? 'credit-row-expanded' : ''}`}>
+                                            <td className="ticket-detail-toggle-cell">
+                                              <button
+                                                type="button"
+                                                className={`ticket-detail-toggle ${isCreditExpanded ? 'expanded' : ''}`}
+                                                onClick={() => toggleCreditExpansion(credit.rowKey)}
+                                                aria-expanded={isCreditExpanded}
+                                                title={isCreditExpanded ? 'Hide details' : 'Show details'}
+                                                style={{ '--004ffa': '#ff5bb8' }}
+                                              >
+                                                <span className="admin-toggle-arrow ticket-toggle-arrow" style={{ color: '#ff5bb8' }}>▶</span>
+                                              </button>
+                                            </td>
+                                            <td><strong>{credit.name}</strong></td>
+                                            <td>{credit.email || '-'}</td>
+                                            <td>{credit.role.toUpperCase()}</td>
+                                            <td className="actions-cell">
+                                              <div className="actions-wrapper">
+                                                <div className="main-actions">
+                                                  <button className="admin-btn" onClick={() => openCommunityModal(credit)}>EDIT</button>
+                                                </div>
+                                                <div className="secondary-actions">
+                                                  <DeleteActionButton
+                                                    title="Delete Credit"
+                                                    onClick={() => deleteCredit(credit)}
+                                                  />
+                                                </div>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                          {isCreditExpanded && (
+                                            <tr className="credit-metadata-row">
+                                              <td colSpan="5">
+                                                <div className="credit-metadata-panel">
+                                                  <div className="credit-metadata-grid">
+                                                    <div className="credit-metadata-item">
+                                                      <span className="credit-metadata-label">LINK</span>
+                                                      {credit.link ? (
+                                                        <a href={credit.link} target="_blank" rel="noopener noreferrer" className="credit-metadata-link">
+                                                          {credit.link}
+                                                        </a>
+                                                      ) : (
+                                                        <span className="credit-metadata-value" style={{ color: '#999' }}>No link provided</span>
+                                                      )}
+                                                    </div>
+                                                    <div className="credit-metadata-item">
+                                                      <span className="credit-metadata-label">DETAILS</span>
+                                                      <p className="credit-metadata-value">
+                                                        {credit.details || (credit.isSynced ? 'No additional details' : 'This entry is currently coming from the event metadata.')}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </td>
+                                            </tr>
                                           )}
-                                        </div>
-                                        <div className="credit-metadata-item">
-                                          <span className="credit-metadata-label">DETAILS</span>
-                                          <p className="credit-metadata-value">{credit.details || 'No additional details'}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </Fragment>
-                          );
-                        })}
+                                        </Fragment>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
                       </Fragment>
                     );
                   })}

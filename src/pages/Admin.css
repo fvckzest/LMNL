@@ -459,14 +459,16 @@
   text-decoration: underline;
 }
 
-.community-event-arrow-cell {
-  width: 1%;
-  white-space: nowrap;
-}
-
 .community-event-name-cell {
   border-right: 1px solid #eee;
   padding-right: 20px !important;
+  min-width: 220px;
+}
+
+.community-event-name-cell .community-event-toggle {
+  width: 100%;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .shop-product-name-cell {
@@ -672,6 +674,18 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
 .inline-issued-tickets-table {
   background: var(--table-surface);
   border: var(--lmnl-line-width) solid var(--table-divider);
+}
+
+.community-credits-panel {
+  padding-top: 0;
+}
+
+.community-credits-header {
+  margin-bottom: 12px;
+}
+
+.community-credits-table tbody td {
+  vertical-align: top;
 }
 
 .inline-issued-tickets-table td {
@@ -979,11 +993,11 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   padding: 6px 10px;
   border: var(--lmnl-line-width) solid var(--active-tab-color, var(--terminal-line-medium));
   background: var(--active-tab-color, var(--terminal-line-medium));
-  color: var(--lmnl-color-white);
+  color: var(--lmnl-color-white) !important;
   font-size: calc(11px * 1.25);
   font-weight: 700;
   line-height: 1;
-  -webkit-text-fill-color: var(--lmnl-color-white);
+  -webkit-text-fill-color: var(--lmnl-color-white) !important;
 }
 
 .pin-toggle-btn {
@@ -1250,6 +1264,110 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   color: #ef4444;
 }
 
+.portfolio-admin-media-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.portfolio-admin-placement-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.portfolio-admin-placement-help,
+.portfolio-admin-placement-title {
+  margin: 0;
+}
+
+.portfolio-admin-placement-help {
+  color: var(--lmnl-color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.portfolio-admin-placement-list {
+  display: grid;
+  gap: 12px;
+}
+
+.portfolio-admin-placement-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg);
+}
+
+.portfolio-admin-placement-title {
+  font-family: var(--lmnl-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portfolio-admin-placement-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portfolio-admin-placement-option {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border: var(--lmnl-border-medium);
+  background: var(--lmnl-color-surface);
+  cursor: pointer;
+  font-family: var(--lmnl-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.portfolio-admin-placement-option.is-selected {
+  border-color: var(--active-tab-color, #6222d8);
+  background: color-mix(in srgb, var(--active-tab-color, #6222d8) 12%, var(--lmnl-color-surface));
+}
+
+.portfolio-admin-placement-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.portfolio-admin-media-item {
+  padding: 12px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg);
+}
+
+.portfolio-admin-media-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.portfolio-admin-media-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.portfolio-admin-media-cover {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portfolio-admin-media-cover input {
+  width: auto;
+}
+
 /* Mobile Responsive Improvements */
 @media (max-width: 768px) {
   .admin-body {
@@ -1303,6 +1421,16 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
 
   .modal-form {
     padding: 20px;
+  }
+
+  .portfolio-admin-media-grid,
+  .portfolio-admin-media-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-admin-media-actions {
+    display: grid;
+    justify-content: stretch;
   }
 
   .trait-input-row {

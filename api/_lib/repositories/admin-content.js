@@ -2,6 +2,8 @@ import { getAdminSupabase } from '../clients.js';
 import { AppError } from '../http.js';
 import { listEvents } from './events.js';
 
+export const PORTFOLIO_PREVIEW_ASSET_ROLE = 'website_preview';
+
 function isMissingTable(error, tableName) {
   return error?.code === 'PGRST205' && String(error.message || '').includes(tableName);
 }
@@ -128,6 +130,301 @@ export async function listBlogPostsAdmin() {
   }
 
   return data || [];
+}
+
+export async function listPortfolioEntriesAdmin() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('portfolio_entries')
+    .select('*, portfolio_media(*)')
+    .order('sort_order', { ascending: true })
+    .order('year', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+  }
+
+  return (data || []).map((entry) => ({
+    ...entry,
+    portfolio_media: normalizePortfolioMediaRows(entry.portfolio_media),
+  }));
+}
+
+export async function listPublishedPortfolioEntries() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('portfolio_entries')
+    .select('*, portfolio_media(*)')
+    .eq('status', 'published')
+    .order('sort_order', { ascending: true })
+    .order('year', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+  }
+
+  return (data || []).map((entry) => ({
+    ...entry,
+    portfolio_media: normalizePortfolioMediaRows(entry.portfolio_media),
+  }));
+}
+
+function normalizeStringList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function normalizeOptionalUrl(value) {
+  return String(value || '').trim();
+}
+
+function normalizePortfolioMediaList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((item, index) => ({
+      id: item?.id || null,
+      media_type: String(item?.media_type || 'image').trim().toLowerCase() || 'image',
+      asset_role: item?.asset_role === PORTFOLIO_PREVIEW_ASSET_ROLE
+        ? PORTFOLIO_PREVIEW_ASSET_ROLE
+        : 'gallery',
+      url: String(item?.url || '').trim(),
+      alt_text: String(item?.alt_text || '').trim(),
+      caption: String(item?.caption || '').trim(),
+      sort_order: Number.isFinite(Number(item?.sort_order)) ? Number(item.sort_order) : index,
+      is_cover: item?.is_cover === true,
+    }))
+    .filter((item) => item.url);
+}
+
+function normalizePortfolioMediaRows(values) {
+  return normalizePortfolioMediaList(values).sort((a, b) => {
+    if (a.asset_role !== b.asset_role) {
+      return a.asset_role === PORTFOLIO_PREVIEW_ASSET_ROLE ? -1 : 1;
+    }
+
+    if (a.is_cover !== b.is_cover) {
+      return a.is_cover ? -1 : 1;
+    }
+
+    if (a.sort_order !== b.sort_order) {
+      return a.sort_order - b.sort_order;
+    }
+
+    return 0;
+  });
+}
+
+function slugify(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function savePortfolioMediaList(supabase, portfolioEntryId, media) {
+  const normalizedMedia = normalizePortfolioMediaList(media).map((item, index) => ({
+    ...(item.id ? { id: item.id } : {}),
+    portfolio_entry_id: portfolioEntryId,
+    media_type: item.media_type,
+    asset_role: item.asset_role,
+    url: item.url,
+    alt_text: item.alt_text,
+    caption: item.caption,
+    sort_order: Number.isFinite(Number(item.sort_order)) ? Number(item.sort_order) : index,
+    is_cover: item.is_cover === true,
+  }));
+
+  const { error: deleteError } = await supabase
+    .from('portfolio_media')
+    .delete()
+    .eq('portfolio_entry_id', portfolioEntryId);
+
+  if (deleteError) {
+    throwMissingTable(deleteError, 'portfolio_media', 'Portfolio media');
+  }
+
+  if (normalizedMedia.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('portfolio_media')
+    .upsert(normalizedMedia)
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throwMissingTable(error, 'portfolio_media', 'Portfolio media');
+  }
+
+  return data || [];
+}
+
+export async function savePortfolioEntry(payload) {
+  const supabase = getAdminSupabase();
+  const { id, media = [], ...rawData } = payload;
+  const title = String(rawData.title || '').trim();
+  const slug = slugify(rawData.slug || title);
+  const year = Number.parseInt(rawData.year, 10);
+
+  const data = {
+    title,
+    slug,
+    year: Number.isFinite(year) ? year : null,
+    client_name: String(rawData.client_name || '').trim(),
+    project_type: String(rawData.project_type || '').trim(),
+    website_url: normalizeOptionalUrl(rawData.website_url),
+    summary: String(rawData.summary || '').trim(),
+    result: String(rawData.result || '').trim(),
+    capabilities: normalizeStringList(rawData.capabilities),
+    outputs: normalizeStringList(rawData.outputs),
+    focus_areas: normalizeStringList(rawData.focus_areas),
+    featured: rawData.featured === true,
+    sort_order: Number.isFinite(Number(rawData.sort_order)) ? Number(rawData.sort_order) : 0,
+    status: String(rawData.status || 'draft').trim().toLowerCase() || 'draft',
+  };
+
+  let savedEntry;
+
+  if (id) {
+    const { data: updated, error } = await supabase
+      .from('portfolio_entries')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+    }
+
+    savedEntry = updated;
+  } else {
+    const { data: inserted, error } = await supabase
+      .from('portfolio_entries')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) {
+      throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+    }
+
+    savedEntry = inserted;
+  }
+
+  const savedMedia = await savePortfolioMediaList(supabase, savedEntry.id, media);
+
+  return {
+    ...savedEntry,
+    portfolio_media: savedMedia,
+  };
+}
+
+export async function getPortfolioEntryById(id) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('portfolio_entries')
+    .select('*, portfolio_media(*)')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new AppError('Portfolio entry not found.', {
+        code: 'PORTFOLIO_NOT_FOUND',
+        status: 404,
+        expose: true,
+      });
+    }
+
+    throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+  }
+
+  return {
+    ...data,
+    portfolio_media: normalizePortfolioMediaRows(data?.portfolio_media),
+  };
+}
+
+export async function savePortfolioPreviewMedia({
+  portfolioEntryId,
+  previewUrl,
+  websiteUrl,
+  altText,
+  caption = '',
+}) {
+  const supabase = getAdminSupabase();
+  const entry = await getPortfolioEntryById(portfolioEntryId);
+  const galleryMedia = normalizePortfolioMediaRows(entry.portfolio_media)
+    .filter((item) => item.asset_role !== PORTFOLIO_PREVIEW_ASSET_ROLE)
+    .map((item, index) => ({
+      ...item,
+      is_cover: false,
+      sort_order: index + 1,
+    }));
+
+  const existingPreview = normalizePortfolioMediaRows(entry.portfolio_media)
+    .find((item) => item.asset_role === PORTFOLIO_PREVIEW_ASSET_ROLE);
+
+  const savedMedia = await savePortfolioMediaList(supabase, portfolioEntryId, [
+    {
+      id: existingPreview?.id || null,
+      media_type: 'image',
+      asset_role: PORTFOLIO_PREVIEW_ASSET_ROLE,
+      url: previewUrl,
+      alt_text: altText,
+      caption,
+      sort_order: 0,
+      is_cover: true,
+    },
+    ...galleryMedia,
+  ]);
+
+  const { data: updatedEntry, error: updateError } = await supabase
+    .from('portfolio_entries')
+    .update({
+      website_url: normalizeOptionalUrl(websiteUrl),
+    })
+    .eq('id', portfolioEntryId)
+    .select()
+    .single();
+
+  if (updateError) {
+    throwMissingTable(updateError, 'portfolio_entries', 'Portfolio entries');
+  }
+
+  return {
+    ...updatedEntry,
+    portfolio_media: normalizePortfolioMediaRows(savedMedia),
+  };
+}
+
+export async function deletePortfolioEntryById(id) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase
+    .from('portfolio_entries')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+  }
+
+  return true;
 }
 
 export async function listCommunityCredits() {

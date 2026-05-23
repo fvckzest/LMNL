@@ -22,7 +22,37 @@
 }
 
 .services-capabilities__top-row {
-  display: block;
+  display: grid;
+  gap: 12px;
+}
+
+.services-overview-panel {
+  background: var(--terminal-panel-bg);
+}
+
+.services-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 72ch) minmax(180px, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.services-overview p {
+  margin: 0;
+  color: var(--lmnl-color-text-strong);
+  font-size: 0.98rem;
+  line-height: 1.8;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.services-overview__button {
+  justify-self: center;
+  width: auto;
+  min-width: 220px;
+  padding: 16px 28px;
+  font-size: 0.98rem;
+  white-space: nowrap;
 }
 
 .services-capabilities__grid {
@@ -518,6 +548,12 @@ html[data-theme] body .services-inquiry__selection-pill {
   gap: 12px;
 }
 
+@media (max-width: 900px) {
+  .services-overview {
+    display: block;
+  }
+}
+
 .services-inquiry__textarea {
   min-height: 140px;
   resize: vertical;
@@ -544,6 +580,14 @@ html[data-theme] body .services-inquiry__selection-pill {
 }
 
 @media (max-width: 720px) {
+  .services-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .services-overview__button {
+    justify-self: start;
+  }
+
   .services-capabilities__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: stretch;
