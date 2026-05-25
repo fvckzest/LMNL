@@ -41,6 +41,7 @@ test('createCheckoutForPreorder rejects missing preorder', async () => {
 test('createCheckoutForEvent creates approved request and Square-hosted checkout link', async () => {
   const requestPayloads = [];
   const attached = [];
+  const checkoutPayloads = [];
   const result = await createCheckoutForEvent('event_1', {}, {
     getEventById: async () => ({
       id: 'event_1',
@@ -62,9 +63,12 @@ test('createCheckoutForEvent creates approved request and Square-hosted checkout
     squareClient: {
       checkout: {
         paymentLinks: {
-          create: async () => ({
-            paymentLink: { url: 'https://square.test/event', orderId: 'order_event_1' },
-          }),
+          create: async (payload) => {
+            checkoutPayloads.push(payload);
+            return {
+              paymentLink: { url: 'https://square.test/event', orderId: 'order_event_1' },
+            };
+          },
         },
       },
     },
@@ -75,10 +79,12 @@ test('createCheckoutForEvent creates approved request and Square-hosted checkout
   assert.equal(requestPayloads[0].customer_name, 'Guest');
   assert.match(requestPayloads[0].customer_email, /^guest-.*@example\.com$/);
   assert.equal(attached[0].orderId, 'order_event_1');
+  assert.equal(checkoutPayloads[0].checkoutOptions.redirectUrl, 'https://lmnl.art/success?requestId=req_1');
 });
 
 test('createCheckoutForRequest creates Square-hosted checkout link for approved invite', async () => {
   const attached = [];
+  const checkoutPayloads = [];
   const result = await createCheckoutForRequest('req_2', {
     buyer: {
       phone: '+14155550124',
@@ -106,9 +112,12 @@ test('createCheckoutForRequest creates Square-hosted checkout link for approved 
     squareClient: {
       checkout: {
         paymentLinks: {
-          create: async () => ({
-            paymentLink: { url: 'https://square.test/request', orderId: 'order_req_1' },
-          }),
+          create: async (payload) => {
+            checkoutPayloads.push(payload);
+            return {
+              paymentLink: { url: 'https://square.test/request', orderId: 'order_req_1' },
+            };
+          },
         },
       },
     },
@@ -117,6 +126,7 @@ test('createCheckoutForRequest creates Square-hosted checkout link for approved 
   assert.equal(result.checkoutUrl, 'https://square.test/request');
   assert.equal(result.requestId, 'req_2');
   assert.equal(attached[0].requestId, 'req_2');
+  assert.equal(checkoutPayloads[0].checkoutOptions.redirectUrl, 'https://lmnl.art/success?requestId=req_2');
 });
 
 test('createCheckoutForRequest reports invalid fallback ticket price clearly', async () => {

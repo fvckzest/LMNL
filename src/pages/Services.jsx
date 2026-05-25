@@ -95,12 +95,14 @@ export default function Services() {
             <section className="services-overview-panel theme-surface theme-surface--panel">
               <div className="services-overview theme-surface-body">
                 <p>
-                  LMNL builds across design, media, and digital execution.
-                  Browse our offerings below or head to the portfolio to see the work in action.
+                  LMNL builds across design, media, and digital.
+                  Browse our offerings below or head to the portfolio to see past work.
                 </p>
-                <Link to={buildPortfolioPath()} className="theme-button services-overview__button">
-                  PORTFOLIO
-                </Link>
+                <div className="services-overview__actions">
+                  <Link to={buildPortfolioPath()} className="theme-button services-overview__button">
+                    PORTFOLIO
+                  </Link>
+                </div>
               </div>
             </section>
             <div className="services-capabilities__grid">
@@ -191,7 +193,7 @@ export default function Services() {
         <SystemPanel title="SUBMIT INQUIRY">
           {inquirySent ? (
             <div className="services-inquiry__success theme-message-stack">
-              <h3 className="theme-title-md">TRANSMISSION RECEIVED.</h3>
+              <h3 className="theme-title-md">INQUIRY RECEIVED.</h3>
               <p className="theme-body-copy">We will reach out soon.</p>
               <button
                 type="button"

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 
 const distDir = path.resolve(process.cwd(), 'dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
@@ -7,7 +8,7 @@ const siteUrl = 'https://lmnl.art';
 
 // Static entry points for client-side routes that should survive direct hits
 // on Vercel without relying on a catch-all SPA rewrite.
-const routes = [
+export const routes = [
   {
     path: '',
     title: 'LMNL',
@@ -135,6 +136,15 @@ const routes = [
     changefreq: 'weekly',
     priority: '0.8',
     indexable: true,
+  },
+  {
+    path: 'success',
+    title: 'LMNL | ORDER CONFIRMATION',
+    description: 'Order confirmation and ticket delivery status.',
+    image: '/seo/events-seo.png',
+    changefreq: 'monthly',
+    priority: '0.1',
+    indexable: false,
   },
   {
     path: 'about',
@@ -323,4 +333,6 @@ ${sitemapEntries.join('\n')}
   console.log('Generated sitemap.xml');
 }
 
-generateSeoPages();
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  generateSeoPages();
+}

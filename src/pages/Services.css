@@ -46,6 +46,11 @@
   text-transform: none;
 }
 
+.services-overview__actions {
+  display: flex;
+  justify-content: center;
+}
+
 .services-overview__button {
   justify-self: center;
   width: auto;
@@ -550,7 +555,8 @@ html[data-theme] body .services-inquiry__selection-pill {
 
 @media (max-width: 900px) {
   .services-overview {
-    display: block;
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
@@ -579,15 +585,27 @@ html[data-theme] body .services-inquiry__selection-pill {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1180px) {
   .services-overview {
     grid-template-columns: 1fr;
   }
 
-  .services-overview__button {
-    justify-self: start;
+  .services-overview__actions {
+    width: 100%;
   }
 
+  .services-overview__button {
+    display: inline-flex;
+    width: fit-content;
+    min-width: 0;
+    padding: 14px 22px;
+    font-size: 0.9rem;
+    justify-self: center;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 720px) {
   .services-capabilities__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: stretch;
