@@ -3,7 +3,7 @@ import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getResendClient, getSquareClient } from '../clients.js';
 import { buildTicketEmail } from '../email-templates.js';
-import { getEventBySquareVariationIds } from '../repositories/events.js';
+import { getEventBySquareVariationIds, getLatestEventByName } from '../repositories/events.js';
 import {
   fulfillApprovedRequestById,
   fulfillApprovedRequestByOrderId,
@@ -303,6 +303,7 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const loadRequestBySquareOrderId = deps.getRequestByOrderId || getRequestByOrderId;
   const loadEventById = deps.getEventById || null;
   const loadEvent = deps.getEventBySquareVariationIds || getEventBySquareVariationIds;
+  const loadLatestEvent = deps.getLatestEventByName || getLatestEventByName;
   const loadCustomer = deps.resolveCustomer || resolveCustomer;
   const insertTicket = deps.createTicket || createTicket;
   const sendEmail = deps.sendTicketEmail || sendTicketEmail;
@@ -362,12 +363,13 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
 
   const catalogObjectIds = (order.lineItems || []).map((lineItem) => lineItem.catalogObjectId).filter(Boolean);
   const eventIdFromMetadata = order.metadata?.eventId || order.metadata?.event_id || null;
-  const [eventFromMetadata, eventFromCatalog, customer] = await Promise.all([
+  const [eventFromMetadata, eventFromCatalog, eventFromRequest, customer] = await Promise.all([
     eventIdFromMetadata && loadEventById ? loadEventById(eventIdFromMetadata) : Promise.resolve(null),
     loadEvent(catalogObjectIds),
+    lockedRequest?.event_name ? loadLatestEvent(lockedRequest.event_name) : Promise.resolve(null),
     loadCustomer(order, squareOrderId),
   ]);
-  const event = eventFromMetadata || eventFromCatalog || null;
+  const event = eventFromMetadata || eventFromCatalog || eventFromRequest || null;
 
   let ticket;
   try {

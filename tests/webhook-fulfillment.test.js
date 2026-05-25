@@ -148,6 +148,52 @@ test('processSquareOrderUpdate recovers when the request is already fulfilled bu
   assert.deepEqual(result, { success: true, ticketId: 'ticket_recover' });
 });
 
+test('processSquareOrderUpdate falls back to the approved request event name when order metadata cannot resolve the event', async () => {
+  const createdTickets = [];
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'order.updated',
+      data: { object: { order_updated: { order_id: 'order_request_event' } } },
+    },
+    {},
+    {
+      verifySignature: () => {},
+      findTicketBySquareOrderId: async () => null,
+      squareClient: {
+        orders: {
+          get: async () => ({
+            order: {
+              id: 'order_request_event',
+              state: 'COMPLETED',
+              metadata: { requestId: 'req_request_event' },
+              lineItems: [{ name: 'Mystery Access Ticket' }],
+              tenders: [{ id: 'tender_request_event' }],
+            },
+          }),
+        },
+      },
+      fulfillApprovedRequestById: async () => ({
+        id: 'req_request_event',
+        status: 'fulfilled',
+        event_name: 'Launch Night',
+      }),
+      fulfillApprovedRequestByOrderId: async () => null,
+      getEventBySquareVariationIds: async () => null,
+      getLatestEventByName: async (name) => ({ id: 'event_from_request', name }),
+      resolveCustomer: async () => ({ customerName: 'Ada', customerEmail: 'ada@example.com' }),
+      createTicket: async (payload) => {
+        createdTickets.push(payload);
+        return { id: 'ticket_request_event', ...payload };
+      },
+      sendTicketEmail: async () => {},
+    }
+  );
+
+  assert.equal(createdTickets.length, 1);
+  assert.equal(createdTickets[0].event_id, 'event_from_request');
+  assert.deepEqual(result, { success: true, ticketId: 'ticket_request_event' });
+});
+
 test('processSquareOrderUpdate fulfills completed payment.updated events', async () => {
   const createdTickets = [];
   const result = await processSquareOrderUpdate(

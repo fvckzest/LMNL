@@ -132,6 +132,7 @@ export async function createPaymentForRequest(requestId, payload = {}, deps = {}
       referenceId: String(request.id),
       metadata: {
         requestId: String(request.id),
+        eventId: String(event.id),
       },
       lineItems: event.square_variation_id
         ? [{

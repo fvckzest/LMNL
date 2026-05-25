@@ -86,6 +86,7 @@ test('createPaymentForRequest creates order, attaches request id, and returns su
 
   assert.equal(calls.orders.length, 1);
   assert.equal(calls.orders[0].order.metadata.requestId, 'req_2');
+  assert.equal(calls.orders[0].order.metadata.eventId, 'event_2');
   assert.equal(calls.attached[0].orderId, 'order_req_2');
   assert.equal(calls.payments[0].orderId, 'order_req_2');
   assert.equal(Number(calls.payments[0].amountMoney.amount), 2500);
