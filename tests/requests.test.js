@@ -103,3 +103,117 @@ test('updateRequestArchiveState persists archive flags without changing request 
     archived_at: null,
   });
 });
+
+test('updateRequestArchiveState falls back to legacy archived status when archive columns are unavailable', async () => {
+  const operations = [];
+
+  const archived = await updateRequestArchiveState('req_legacy', true, {
+    supabase: {
+      from: (table) => {
+        assert.equal(table, 'requests');
+        return {
+          update: (payload) => {
+            operations.push({ type: 'update', payload });
+
+            if (payload.is_archived === true) {
+              return {
+                eq: () => ({
+                  select: () => ({
+                    single: async () => ({
+                      data: null,
+                      error: { code: '42703', message: 'column "is_archived" does not exist' },
+                    }),
+                  }),
+                }),
+              };
+            }
+
+            assert.deepEqual(payload, { status: 'archived' });
+            return {
+              eq: () => ({
+                select: () => ({
+                  single: async () => ({
+                    data: { id: 'req_legacy', status: 'archived', square_order_id: 'sq_1' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          },
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: { id: 'req_legacy', status: 'approved', square_order_id: 'sq_1' },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      },
+    },
+  });
+
+  assert.equal(archived.status, 'archived');
+  assert.equal(operations.length, 2);
+  assert.equal(operations[0].type, 'update');
+  assert.equal(operations[0].payload.is_archived, true);
+  assert.match(operations[0].payload.archived_at, /\d{4}-\d{2}-\d{2}T/);
+  assert.deepEqual(operations[1], {
+    type: 'update',
+    payload: { status: 'archived' },
+  });
+});
+
+test('updateRequestArchiveState restores a best-effort legacy status when unarchiving without archive columns', async () => {
+  const updates = [];
+
+  const unarchived = await updateRequestArchiveState('req_legacy', false, {
+    supabase: {
+      from: () => ({
+        update: (payload) => {
+          updates.push(payload);
+
+          if (Object.prototype.hasOwnProperty.call(payload, 'is_archived')) {
+            return {
+              eq: () => ({
+                select: () => ({
+                  single: async () => ({
+                    data: null,
+                    error: { code: '42703', message: 'column "archived_at" does not exist' },
+                  }),
+                }),
+              }),
+            };
+          }
+
+          assert.deepEqual(payload, { status: 'approved' });
+          return {
+            eq: () => ({
+              select: () => ({
+                single: async () => ({
+                  data: { id: 'req_legacy', status: 'approved', square_order_id: 'sq_1' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        },
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({
+              data: { id: 'req_legacy', status: 'archived', square_order_id: 'sq_1' },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    },
+  });
+
+  assert.equal(unarchived.status, 'approved');
+  assert.deepEqual(updates[0], {
+    is_archived: false,
+    archived_at: null,
+  });
+  assert.deepEqual(updates[1], { status: 'approved' });
+});

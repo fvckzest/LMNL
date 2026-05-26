@@ -1,5 +1,14 @@
 import { getAdminSupabase } from '../clients.js';
 
+function isMissingArchiveColumnsError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes('is_archived')
+    || message.includes('archived_at')
+    || error?.code === '42703'
+  );
+}
+
 export async function createAccessRequest(payload) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
@@ -70,8 +79,44 @@ export async function updateRequestArchiveState(id, isArchived, deps = {}) {
     .eq('id', id)
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (!error) {
+    return data;
+  }
+
+  if (!isMissingArchiveColumnsError(error)) {
+    throw error;
+  }
+
+  const { data: currentRequest, error: currentRequestError } = await supabase
+    .from('requests')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (currentRequestError) throw currentRequestError;
+
+  if (isArchived) {
+    const { data: legacyArchivedRequest, error: legacyArchiveError } = await supabase
+      .from('requests')
+      .update({ status: 'archived' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (legacyArchiveError) throw legacyArchiveError;
+    return legacyArchivedRequest;
+  }
+
+  const legacyRestoredStatus = currentRequest?.square_order_id ? 'approved' : 'pending';
+  const { data: legacyRestoredRequest, error: legacyRestoreError } = await supabase
+    .from('requests')
+    .update({ status: legacyRestoredStatus })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (legacyRestoreError) throw legacyRestoreError;
+  return legacyRestoredRequest;
 }
 
 export async function deleteRequestById(id) {
