@@ -105,6 +105,8 @@ export default function Portfolio() {
   const activeCapability = getActiveCapability(searchParams);
   const sortedCapabilities = [...PORTFOLIO_CAPABILITIES]
     .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));
+  const allCapability = sortedCapabilities.find((capability) => capability.id === 'all');
+  const categoryCapabilities = sortedCapabilities.filter((capability) => capability.id !== 'all');
   const filteredProjects = filterPortfolioProjects(projects, {
     capabilityId: activeCapability,
   });
@@ -151,24 +153,36 @@ export default function Portfolio() {
     >
       <section className="portfolio-capabilities">
         <div className="portfolio-capabilities__layout">
-          <div className="portfolio-capabilities__top-row">
-            <div className="portfolio-capabilities__grid">
-              {sortedCapabilities.map((capability) => {
-                const isActive = capability.id === activeCapability;
-                return (
-                  <button
-                    type="button"
-                    key={capability.id}
-                    className={`portfolio-capability-card ${isActive ? 'is-current' : ''}`}
-                    aria-pressed={isActive}
-                    aria-current={isActive ? 'true' : undefined}
-                    onClick={() => handleCapabilitySelect(capability.id)}
-                  >
-                    <strong>{capability.label}</strong>
-                  </button>
-                );
-              })}
+          {allCapability ? (
+            <div className="portfolio-capabilities__top-row">
+              <button
+                type="button"
+                className={`portfolio-capability-card portfolio-capability-card--all ${allCapability.id === activeCapability ? 'is-current' : ''}`}
+                aria-pressed={allCapability.id === activeCapability}
+                aria-current={allCapability.id === activeCapability ? 'true' : undefined}
+                onClick={() => handleCapabilitySelect(allCapability.id)}
+              >
+                <strong>{allCapability.label}</strong>
+              </button>
             </div>
+          ) : null}
+
+          <div className="portfolio-capabilities__grid">
+            {categoryCapabilities.map((capability) => {
+              const isActive = capability.id === activeCapability;
+              return (
+                <button
+                  type="button"
+                  key={capability.id}
+                  className={`portfolio-capability-card ${isActive ? 'is-current' : ''}`}
+                  aria-pressed={isActive}
+                  aria-current={isActive ? 'true' : undefined}
+                  onClick={() => handleCapabilitySelect(capability.id)}
+                >
+                  <strong>{capability.label}</strong>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
