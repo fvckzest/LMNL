@@ -52,6 +52,28 @@ export async function updateRequestStatus(id, status) {
   return data;
 }
 
+export async function updateRequestArchiveState(id, isArchived, deps = {}) {
+  const supabase = deps.supabase || getAdminSupabase();
+  const payload = isArchived
+    ? {
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+    }
+    : {
+      is_archived: false,
+      archived_at: null,
+    };
+
+  const { data, error } = await supabase
+    .from('requests')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteRequestById(id) {
   const supabase = getAdminSupabase();
   const { error } = await supabase.from('requests').delete().eq('id', id);

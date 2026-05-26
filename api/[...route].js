@@ -35,6 +35,7 @@ import {
   createAccessRequest,
   deleteRequestById,
   listRequests,
+  updateRequestArchiveState,
   updateRequestStatus,
 } from './_lib/repositories/requests.js';
 import { approveRequestAndSendCheckout } from './_lib/services/approval.js';
@@ -659,6 +660,15 @@ async function handleRequests(req, res) {
     const request = await updateRequestStatus(
       requireValue(body.id, 'id is required.'),
       requireValue(body.status, 'status is required.'),
+    );
+    return sendJson(res, 200, { success: true, data: request });
+  }
+
+  if (body.action === 'set-archive') {
+    await requireAdminUser(req);
+    const request = await updateRequestArchiveState(
+      requireValue(body.id, 'id is required.'),
+      Boolean(body.isArchived),
     );
     return sendJson(res, 200, { success: true, data: request });
   }

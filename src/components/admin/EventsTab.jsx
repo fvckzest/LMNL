@@ -1,8 +1,8 @@
- import { Fragment, useEffect, useMemo, useState } from 'react';
- import { apiPost } from '../../lib/api';
- import { LinkIcon, TicketIcon } from './Icons';
- import AdminSectionHeader from './AdminSectionHeader';
- import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { apiPost } from '../../lib/api';
+import { LinkIcon, TicketIcon } from './Icons';
+import AdminSectionHeader from './AdminSectionHeader';
+import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
 
 const MANAGED_METADATA_KEYS = new Set([
   'event_link',
@@ -75,7 +75,7 @@ const MANAGED_METADATA_KEYS = new Set([
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [expandedTicketIds, setExpandedTicketIds] = useState({});
   const activeEventCount = events.filter((event) => event.status !== 'archived').length;
-  const activeRequestCount = requests.filter((request) => request.status !== 'archived').length;
+  const activeRequestCount = requests.filter((request) => !request.is_archived).length;
 
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -386,12 +386,8 @@ const MANAGED_METADATA_KEYS = new Set([
     );
   }, [tickets]);
 
-  function getUnarchiveRequestStatus(request) {
-    if (request?.square_order_id && issuedTicketOrderIds.has(request.square_order_id)) {
-      return 'fulfilled';
-    }
-
-    return 'pending';
+  function isArchivedRequest(request) {
+    return Boolean(request?.is_archived);
   }
 
   function hasIssuedTicketForRequest(request) {
@@ -459,6 +455,36 @@ const MANAGED_METADATA_KEYS = new Set([
         showToast('Failed to issue ticket: ' + error.message, 'error');
       }
     });
+  }
+
+  async function archiveRequest(request) {
+    try {
+      await apiPost('/api/requests', {
+        action: 'set-archive',
+        id: request.id,
+        isArchived: true,
+      }, { auth: true });
+      fetchRequests();
+      showToast(`Archived ${request.customer_name} without changing request status.`);
+    } catch (error) {
+      console.error('Error archiving request:', error);
+      showToast('Failed to archive request: ' + error.message, 'error');
+    }
+  }
+
+  async function unarchiveRequest(request) {
+    try {
+      await apiPost('/api/requests', {
+        action: 'set-archive',
+        id: request.id,
+        isArchived: false,
+      }, { auth: true });
+      fetchRequests();
+      showToast(`Unarchived ${request.customer_name} and kept status as ${request.status}.`);
+    } catch (error) {
+      console.error('Error unarchiving request:', error);
+      showToast('Failed to unarchive request: ' + error.message, 'error');
+    }
   }
 
   return (
@@ -743,7 +769,7 @@ const MANAGED_METADATA_KEYS = new Set([
                   className={`admin-btn small ${showArchivedRequests ? 'active' : ''}`}
                   onClick={() => setShowArchivedRequests(!showArchivedRequests)}
                 >
-                  {showArchivedRequests ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({requests.filter(r => r.status === 'archived').length})
+                  {showArchivedRequests ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({requests.filter((request) => isArchivedRequest(request)).length})
                 </button>
               </div>
             </div>
@@ -765,9 +791,9 @@ const MANAGED_METADATA_KEYS = new Set([
                   <th style={{ textAlign: 'center' }}>ARCHIVE</th>
                 </tr>
               </thead>
-              <tbody>
+                <tbody>
                 {requests
-                  .filter(req => showArchivedRequests ? true : req.status !== 'archived')
+                  .filter((request) => showArchivedRequests ? isArchivedRequest(request) : !isArchivedRequest(request))
                   .map((req) => (
                   <tr key={req.id} className={`status-${req.status}`}>
                     <td>{new Date(req.created_at).toLocaleDateString()}</td>
@@ -808,14 +834,6 @@ const MANAGED_METADATA_KEYS = new Set([
                               RESET
                             </button>
                           )}
-                          {req.status === 'archived' && (
-                            <button
-                              className="admin-btn reset"
-                              onClick={() => updateStatus(req.id, getUnarchiveRequestStatus(req), req)}
-                            >
-                              UNARCHIVE
-                            </button>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -853,11 +871,11 @@ const MANAGED_METADATA_KEYS = new Set([
                     <td style={{ textAlign: 'center' }}>
                       <div className="secondary-actions">
                         <ArchiveToggleButton
-                          isArchived={req.status === 'archived'}
+                          isArchived={isArchivedRequest(req)}
                           archiveTitle="Archive Request"
                           unarchiveTitle="Unarchive Request"
-                          onArchive={() => updateStatus(req.id, 'archived', req)}
-                          onUnarchive={() => updateStatus(req.id, getUnarchiveRequestStatus(req), req)}
+                          onArchive={() => archiveRequest(req)}
+                          onUnarchive={() => unarchiveRequest(req)}
                         />
                         <DeleteActionButton
                           title="Delete Request"
