@@ -426,8 +426,6 @@ export default function PortfolioTab({
                 <tbody>
                   {portfolioEntries.map((entry) => {
                     const isExpanded = Boolean(expandedEntries[entry.id]);
-                    const mediaCount = Array.isArray(entry.portfolio_media) ? entry.portfolio_media.length : 0;
-                    const previewExists = (entry.portfolio_media || []).some((item) => item.asset_role === 'website_preview');
                     return (
                       <Fragment key={entry.id}>
                         <tr className={isExpanded ? 'inquiry-row-expanded' : ''}>
@@ -445,9 +443,6 @@ export default function PortfolioTab({
                           </td>
                           <td>
                             <strong>{entry.title}</strong>
-                            <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>
-                              {mediaCount} media file{mediaCount === 1 ? '' : 's'} · {previewExists ? 'preview ready' : 'no preview'}
-                            </div>
                           </td>
                           <td>{entry.client_name || '—'}</td>
                           <td>{entry.project_type || '—'}</td>

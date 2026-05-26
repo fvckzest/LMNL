@@ -387,7 +387,28 @@ const MANAGED_METADATA_KEYS = new Set([
   }, [tickets]);
 
   function isArchivedRequest(request) {
-    return Boolean(request?.is_archived);
+    return Boolean(request?.is_archived || request?.status === 'archived');
+  }
+
+  function getRequestDisplayStatus(request) {
+    if (request?.status && request.status !== 'archived') {
+      return request.status;
+    }
+
+    if (hasIssuedTicketForRequest(request)) {
+      return 'fulfilled';
+    }
+
+    if (request?.square_order_id) {
+      return 'approved';
+    }
+
+    return 'pending';
+  }
+
+  function getRequestStatusBadgeClass(request) {
+    const displayStatus = getRequestDisplayStatus(request);
+    return displayStatus === 'fulfilled' ? 'approved' : displayStatus;
   }
 
   function hasIssuedTicketForRequest(request) {
@@ -582,16 +603,8 @@ const MANAGED_METADATA_KEYS = new Set([
                             <td>{event.location_name || 'TBD'}</td>
                             <td style={{ textAlign: 'center' }}>
                               <button
+                                className={`event-flag-toggle ${event.metadata?.is_featured ? 'is-active' : ''}`}
                                 onClick={() => toggleHighlightEvent(event)}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  fontSize: '20px',
-                                  color: event.metadata?.is_featured ? '#004ffa' : '#ccc',
-                                  padding: '5px',
-                                  transition: 'color 0.2s ease'
-                                }}
                                 title={event.metadata?.is_featured ? 'Highlighted as Upcoming' : 'Highlight this event as Upcoming'}
                               >
                                 {event.metadata?.is_featured ? '★' : '☆'}
@@ -599,16 +612,8 @@ const MANAGED_METADATA_KEYS = new Set([
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               <button
+                                className={`event-flag-toggle ${event.metadata?.is_home_notif ? 'is-active' : ''}`}
                                 onClick={() => toggleHomeNotification(event)}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  fontSize: '20px',
-                                  color: event.metadata?.is_home_notif ? '#004ffa' : '#ccc',
-                                  padding: '5px',
-                                  transition: 'color 0.2s ease'
-                                }}
                                 title={event.metadata?.is_home_notif ? 'Show on Home Page' : 'Turn on Home Notification'}
                               >
                                 {event.metadata?.is_home_notif ? '★' : '☆'}
@@ -794,8 +799,15 @@ const MANAGED_METADATA_KEYS = new Set([
                 <tbody>
                 {requests
                   .filter((request) => showArchivedRequests ? isArchivedRequest(request) : !isArchivedRequest(request))
-                  .map((req) => (
-                  <tr key={req.id} className={`status-${req.status}`}>
+                  .map((req) => {
+                    const displayStatus = getRequestDisplayStatus(req);
+                    const statusBadgeClass = getRequestStatusBadgeClass(req);
+
+                    return (
+                  <tr
+                    key={req.id}
+                    className={isArchivedRequest(req) ? 'status-archived' : `status-${statusBadgeClass}`}
+                  >
                     <td>{new Date(req.created_at).toLocaleDateString()}</td>
                     <td>
                       {req.event_name}
@@ -803,8 +815,8 @@ const MANAGED_METADATA_KEYS = new Set([
                     <td>{req.customer_name}</td>
                     <td>{req.customer_email}</td>
                     <td>
-                      <span className={`status-pill ${req.status}`}>
-                        {req.status}
+                      <span className={`status-pill ${statusBadgeClass}`}>
+                        {displayStatus}
                       </span>
                     </td>
                     <td className="actions-cell">
@@ -884,7 +896,8 @@ const MANAGED_METADATA_KEYS = new Set([
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+                  })}
               </tbody>
             </table>
           )}
