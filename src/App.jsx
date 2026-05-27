@@ -30,6 +30,7 @@ const adminAccessCache = createExpiringPromiseCache({
 });
 
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const Intake = lazyWithRetry(() => import('./pages/Intake'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
 const Space = lazyWithRetry(() => import('./pages/Space'));
 const Events = lazyWithRetry(() => import('./pages/Events'));
@@ -406,6 +407,7 @@ function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPostView />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/intake" element={<Intake />} />
               <Route path="/prsm" element={<PrsmPage />} />
             </Route>
 

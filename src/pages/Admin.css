@@ -792,6 +792,26 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   padding-left: 12px;
 }
 
+.intake-admin-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.intake-admin-detail-grid .inquiry-metadata-item--wide {
+  grid-column: 1 / -1;
+}
+
+.intake-admin-detail-grid .inquiry-metadata-value,
+.intake-admin-detail-grid .inquiry-metadata-message {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.intake-copy-brief-btn {
+  --theme-button-padding: 7px 9px;
+  --theme-button-size: 9px;
+}
+
 .inquiry-metadata-item + .inquiry-metadata-item {
   padding-top: 10px;
   border-top: var(--lmnl-border-subtle);

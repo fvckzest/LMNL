@@ -214,6 +214,15 @@ const routeSeo = [
     },
   },
   {
+    pattern: '/intake',
+    metadata: {
+      title: 'LMNL | WEBSITE INTAKE',
+      description: 'Submit a website project intake for LMNL.',
+      image: '/seo/services-seo.png',
+      robots: 'noindex, nofollow',
+    },
+  },
+  {
     pattern: '/prsm',
     metadata: {
       title: 'LMNL | PRSM',

@@ -17,9 +17,9 @@ const BlogTab = lazyWithRetry(() => import('../components/admin/BlogTab'));
 const DEFAULT_TAB = 'events';
 
 const TAB_DATASETS = {
-  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'portfolioEntries', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
+  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'websiteIntakeSubmissions', 'portfolioEntries', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
   events: ['requests', 'events', 'tickets'],
-  inquiries: ['serviceInquiries', 'portfolioEntries'],
+  inquiries: ['serviceInquiries', 'websiteIntakeSubmissions', 'portfolioEntries'],
   contact: ['serviceInquiries'],
   shop: ['preorders', 'squareCatalog', 'events', 'tickets'],
   community: ['communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
@@ -30,6 +30,7 @@ const PINNED_SECTION_DATASETS = {
   events_mgmt: ['events', 'tickets'],
   invite_reqs: ['requests'],
   service_inquiries: ['serviceInquiries'],
+  website_intake_submissions: ['websiteIntakeSubmissions'],
   contact_inquiries: ['serviceInquiries'],
   merch_preorders: ['preorders', 'events', 'tickets'],
   square_catalog: ['squareCatalog'],
@@ -81,6 +82,9 @@ export default function Admin() {
   const [tableMissing, setTableMissing] = useState(false);
   const [serviceInquiries, setServiceInquiries] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [websiteIntakeSubmissions, setWebsiteIntakeSubmissions] = useState([]);
+  const [websiteIntakeLoading, setWebsiteIntakeLoading] = useState(true);
+  const [websiteIntakeTableMissing, setWebsiteIntakeTableMissing] = useState(false);
   const [activeTab, setActiveTab] = useState(readInitialActiveTab);
   const [communityCredits, setCommunityCredits] = useState([]);
   const [communityLoading, setCommunityLoading] = useState(true);
@@ -247,6 +251,21 @@ export default function Admin() {
     }
   }
 
+  async function fetchWebsiteIntakeSubmissions() {
+    setWebsiteIntakeLoading(true);
+    try {
+      const data = await apiGet('/api/website-intake-submissions', { auth: true });
+      setWebsiteIntakeTableMissing(false);
+      setWebsiteIntakeSubmissions(data || []);
+    } catch (error) {
+      console.error('Error fetching website intake submissions:', error);
+      if (error.message?.includes('not set up yet')) setWebsiteIntakeTableMissing(true);
+      setWebsiteIntakeSubmissions([]);
+    } finally {
+      setWebsiteIntakeLoading(false);
+    }
+  }
+
   async function fetchCommunityCredits() {
     setCommunityLoading(true);
     try {
@@ -371,6 +390,7 @@ export default function Admin() {
         events: fetchEvents,
         tickets: fetchTickets,
         serviceInquiries: fetchServiceInquiries,
+        websiteIntakeSubmissions: fetchWebsiteIntakeSubmissions,
         communityCredits: fetchCommunityCredits,
         communityBusinesses: fetchCommunityBusinesses,
         artistInterest: fetchArtistInterest,
@@ -495,6 +515,28 @@ export default function Admin() {
         await apiPost('/api/service-inquiries', { action: 'delete', id }, { auth: true });
         fetchServiceInquiries();
         showToast('Inquiry removed.');
+      } catch (error) {
+        showToast('Delete failed: ' + error.message, 'error');
+      }
+    });
+  }
+
+  async function updateWebsiteIntakeStatus(id, newStatus) {
+    try {
+      await apiPost('/api/website-intake-submissions', { action: 'update', id, status: newStatus }, { auth: true });
+      fetchWebsiteIntakeSubmissions();
+      showToast(`Website intake marked as ${newStatus}`);
+    } catch (error) {
+      showToast('Failed to update: ' + error.message, 'error');
+    }
+  }
+
+  async function deleteWebsiteIntakeSubmission(id) {
+    triggerConfirm('Delete this website intake permanently?', async () => {
+      try {
+        await apiPost('/api/website-intake-submissions', { action: 'delete', id }, { auth: true });
+        fetchWebsiteIntakeSubmissions();
+        showToast('Website intake removed.');
       } catch (error) {
         showToast('Delete failed: ' + error.message, 'error');
       }
@@ -631,6 +673,11 @@ export default function Admin() {
               <InquiriesTab
                 serviceInquiries={serviceOnlyInquiries}
                 servicesLoading={servicesLoading}
+                websiteIntakeSubmissions={websiteIntakeSubmissions}
+                websiteIntakeLoading={websiteIntakeLoading}
+                websiteIntakeTableMissing={websiteIntakeTableMissing}
+                updateWebsiteIntakeStatus={updateWebsiteIntakeStatus}
+                deleteWebsiteIntakeSubmission={deleteWebsiteIntakeSubmission}
                 updateServiceStatus={updateServiceStatus}
                 deleteServiceInquiry={deleteServiceInquiry}
                 portfolioEntries={portfolioEntries}
@@ -764,6 +811,11 @@ export default function Admin() {
             <InquiriesTab
               serviceInquiries={serviceOnlyInquiries}
               servicesLoading={servicesLoading}
+              websiteIntakeSubmissions={websiteIntakeSubmissions}
+              websiteIntakeLoading={websiteIntakeLoading}
+              websiteIntakeTableMissing={websiteIntakeTableMissing}
+              updateWebsiteIntakeStatus={updateWebsiteIntakeStatus}
+              deleteWebsiteIntakeSubmission={deleteWebsiteIntakeSubmission}
               updateServiceStatus={updateServiceStatus}
               deleteServiceInquiry={deleteServiceInquiry}
               portfolioEntries={portfolioEntries}

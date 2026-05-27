@@ -1,0 +1,145 @@
+.intake-layout {
+  --theme-form-gap: 18px;
+}
+
+.intake-overview {
+  display: grid;
+  gap: 14px;
+}
+
+.intake-form-shell {
+  width: 100%;
+  display: grid;
+  gap: 18px;
+}
+
+.intake-form-shell__header {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.intake-form {
+  gap: 22px;
+}
+
+.intake-section {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg-soft);
+}
+
+.intake-section__header {
+  display: grid;
+  align-content: start;
+}
+
+.intake-section__title {
+  margin: 0;
+  color: var(--lmnl-color-text);
+  font-family: var(--lmnl-font-title);
+  font-size: clamp(1.45rem, 2.3vw, 2.2rem);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.intake-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 14px;
+}
+
+.intake-section__grid .is-full {
+  grid-column: 1 / -1;
+}
+
+.intake-form .theme-input {
+  --theme-input-bg: var(--terminal-panel-bg-soft);
+  --theme-input-focus-bg: var(--terminal-panel-bg-strong);
+  --theme-input-focus-border: var(--page-color);
+  --theme-input-focus-ring: inset 0 0 0 1px var(--page-color);
+}
+
+.intake-form textarea.theme-input {
+  min-height: 118px;
+}
+
+.intake-checkbox-group {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.intake-checkbox-group legend {
+  padding: 0;
+}
+
+.intake-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .intake-checkbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.intake-checkbox-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg-soft);
+  color: var(--lmnl-color-text);
+  cursor: pointer;
+}
+
+.intake-checkbox-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--page-color);
+}
+
+.intake-checkbox-option span {
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.intake-form-error {
+  max-width: 72ch;
+}
+
+.intake-submit-button {
+  --theme-button-font: var(--lmnl-font-mono);
+  --theme-button-padding: 14px 18px;
+  --theme-button-bg: var(--terminal-panel-bg);
+  justify-self: start;
+}
+
+.intake-success {
+  padding-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .intake-section__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intake-section {
+    padding-bottom: 20px;
+  }
+}

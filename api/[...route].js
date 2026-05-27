@@ -49,6 +49,7 @@ import {
   deleteCommunityCreditById,
   deletePortfolioEntryById,
   deleteServiceProductById,
+  deleteWebsiteIntakeSubmissionById,
   deleteMailingListEntryById,
   listArtistInterest,
   listBlogPostsAdmin,
@@ -59,6 +60,7 @@ import {
   listPublishedPortfolioEntries,
   listServiceProducts,
   listServiceInquiries,
+  listWebsiteIntakeSubmissions,
   getPortfolioEntryById,
   saveCommunityBusiness,
   saveCommunityCredit,
@@ -67,6 +69,7 @@ import {
   savePortfolioPreviewMedia,
   saveServiceProduct,
   syncCommunityCreditsFromEvents,
+  updateWebsiteIntakeSubmissionStatus,
 } from './_lib/repositories/admin-content.js';
 
 export const config = {
@@ -748,6 +751,33 @@ async function handleServiceInquiries(req, res) {
   throw new Error('Unsupported service inquiries action.');
 }
 
+async function handleWebsiteIntakeSubmissions(req, res) {
+  allowMethods(req, ['GET', 'POST']);
+  await requireAdminUser(req);
+
+  if (req.method === 'GET') {
+    const data = await listWebsiteIntakeSubmissions();
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  const body = await parseJsonBody(req);
+
+  if (body.action === 'update') {
+    const data = await updateWebsiteIntakeSubmissionStatus(
+      requireValue(body.id, 'id is required.'),
+      requireValue(body.status, 'status is required.'),
+    );
+    return sendJson(res, 200, { success: true, data });
+  }
+
+  if (body.action === 'delete') {
+    await deleteWebsiteIntakeSubmissionById(requireValue(body.id, 'id is required.'));
+    return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  throw new Error('Unsupported website intake submissions action.');
+}
+
 async function handleServiceProducts(req, res) {
   allowMethods(req, ['GET', 'POST']);
 
@@ -1153,6 +1183,7 @@ const handlers = {
   'mailing-list': handleMailingList,
   'service-products': handleServiceProducts,
   'service-inquiries': handleServiceInquiries,
+  'website-intake-submissions': handleWebsiteIntakeSubmissions,
   'square-catalog': handleSquareCatalog,
   'discord-interactions': handleDiscordInteractions,
   'square-webhook': handleSquareWebhook,

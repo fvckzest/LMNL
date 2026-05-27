@@ -174,6 +174,15 @@ export const routes = [
     indexable: true,
   },
   {
+    path: 'intake',
+    title: 'LMNL | WEBSITE INTAKE',
+    description: 'Submit a website project intake for LMNL.',
+    image: '/seo/services-seo.png',
+    changefreq: 'yearly',
+    priority: '0.1',
+    indexable: false,
+  },
+  {
     path: 'prsm',
     title: 'LMNL | PRSM',
     description: 'Explore PRSM by LMNL.',

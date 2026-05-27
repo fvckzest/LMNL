@@ -36,6 +36,50 @@ export async function listServiceInquiries() {
   return data || [];
 }
 
+export async function listWebsiteIntakeSubmissions() {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('website_intake_submissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throwMissingTable(error, 'website_intake_submissions', 'Website intake submissions');
+  }
+
+  return data || [];
+}
+
+export async function updateWebsiteIntakeSubmissionStatus(id, status) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('website_intake_submissions')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throwMissingTable(error, 'website_intake_submissions', 'Website intake submissions');
+  }
+
+  return data;
+}
+
+export async function deleteWebsiteIntakeSubmissionById(id) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase
+    .from('website_intake_submissions')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throwMissingTable(error, 'website_intake_submissions', 'Website intake submissions');
+  }
+
+  return true;
+}
+
 export async function listServiceProducts() {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
