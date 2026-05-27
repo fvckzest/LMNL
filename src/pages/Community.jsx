@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import { AppLink } from '../components/RouterAdapter';
 import CommunityMarqueeRow from '../components/community/CommunityMarqueeRow';
 import CommunityStatCard from '../components/community/CommunityStatCard';
 import { usePageColor } from '../hooks/usePageColor';
 import { fetchCommunitySnapshot } from '../lib/siteData';
-import './Community.css';
 
 function computeStableOrderValue(member, index) {
   const signature = `${member.name || ''}|${member.event || ''}|${member.link || ''}|${index}`;
@@ -255,12 +254,12 @@ export default function Community() {
               >
                 Join the Discord
               </a>
-              <Link
-                to="share"
+              <AppLink
+                to="/community/share"
                 className="community-cta-button community-cta-button-secondary theme-button"
               >
                 Enter the Network
-              </Link>
+              </AppLink>
             </div>
           </div>
 

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { AppLink } from '../components/RouterAdapter';
 import ContentPageShell from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
 import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { apiPost } from '../lib/api';
-import './Success.css';
 
 function formatDate(value) {
   if (!value) return 'TBA';
@@ -43,10 +42,27 @@ function InfoRow({ label, value }) {
   );
 }
 
-export default function Success() {
-  const [searchParams] = useSearchParams();
-  const requestId = searchParams.get('requestId');
-  const ticketId = searchParams.get('ticketId');
+function getBrowserSearchParams() {
+  if (typeof window === 'undefined') {
+    return new URLSearchParams();
+  }
+
+  return new URLSearchParams(window.location.search);
+}
+
+function getSearchParam(searchParams, key) {
+  if (typeof searchParams?.get === 'function') {
+    return searchParams.get(key);
+  }
+
+  const value = searchParams?.[key];
+  return Array.isArray(value) ? value[0] : value || null;
+}
+
+export default function Success({ searchParams: providedSearchParams } = {}) {
+  const searchParams = providedSearchParams || getBrowserSearchParams();
+  const requestId = getSearchParam(searchParams, 'requestId');
+  const ticketId = getSearchParam(searchParams, 'ticketId');
   const [state, setState] = useState({
     loading: Boolean(requestId || ticketId),
     error: requestId || ticketId ? '' : 'Missing request ID or ticket ID.',
@@ -137,17 +153,17 @@ export default function Success() {
 
             <div className="success-actions theme-action-row">
               {ticket ? (
-                <Link to={`/ticket/${ticket.id}`} className="success-primary-btn theme-button">
+                <AppLink to={`/ticket/${ticket.id}`} className="success-primary-btn theme-button">
                   VIEW TICKET
-                </Link>
+                </AppLink>
               ) : (
                 <button type="button" className="success-primary-btn theme-button disabled" disabled>
                   ISSUING TICKET...
                 </button>
               )}
-              <Link to="/events" className="success-secondary-btn theme-button">
+              <AppLink to="/events" className="success-secondary-btn theme-button">
                 BACK TO EVENTS
-              </Link>
+              </AppLink>
             </div>
           </section>
 

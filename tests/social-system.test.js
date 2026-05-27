@@ -22,17 +22,17 @@ test('social system stays disabled by default', () => {
 
 test('social system preview routes require both the main flag and preview flag', () => {
   const disabledConfig = getSocialSystemConfig({
-    VITE_SOCIAL_SYSTEM_ENABLED: 'false',
-    VITE_SOCIAL_SYSTEM_PREVIEW_ROUTES: 'true',
-    VITE_SOCIAL_SYSTEM_PHASE: 'identity',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_ENABLED: 'false',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_PREVIEW_ROUTES: 'true',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_PHASE: 'identity',
   });
 
   assert.equal(shouldExposeSocialPreviewRoutes(disabledConfig), false);
 
   const enabledConfig = getSocialSystemConfig({
-    VITE_SOCIAL_SYSTEM_ENABLED: 'true',
-    VITE_SOCIAL_SYSTEM_PREVIEW_ROUTES: 'true',
-    VITE_SOCIAL_SYSTEM_PHASE: 'identity',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_ENABLED: 'true',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_PREVIEW_ROUTES: 'true',
+    NEXT_PUBLIC_SOCIAL_SYSTEM_PHASE: 'identity',
   });
 
   assert.equal(enabledConfig.currentPhase.id, 'identity');

@@ -2,7 +2,9 @@ import { apiGet } from './api';
 import { createExpiringPromiseCache } from './expiringPromiseCache';
 import { fetchPublicRows, hasPublicDataCredentials } from './publicData';
 
-const HOME_FALLBACK_LINK = '/space';
+const SPACE_ROUTE_PATH = '/events/space';
+const LEGACY_SPACE_ROUTE_PATH = '/space';
+const HOME_FALLBACK_LINK = SPACE_ROUTE_PATH;
 const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
 const PUBLIC_DATA_CACHE_TTL_MS = 60 * 1000;
 const SPACE_ACTIVITY_LIMIT = 8;
@@ -16,6 +18,10 @@ const publicDataCache = createExpiringPromiseCache({
 const SPACE_EVENT_NAME_ALIASES = new Set([
   'space',
   'lmnl space',
+]);
+const INTERNAL_LINK_HOSTS = new Set([
+  'lmnl.art',
+  'www.lmnl.art',
 ]);
 const TIMELINE_EVENT_SELECT = [
   'id',
@@ -130,11 +136,30 @@ function normalizeSpaceEventName(value) {
     .replace(/\s+/g, ' ');
 }
 
+export function normalizeInternalLink(value) {
+  const link = String(value || '').trim();
+  if (!link) return '';
+
+  try {
+    const url = new URL(link);
+    if (INTERNAL_LINK_HOSTS.has(url.hostname.toLowerCase())) {
+      const normalizedPath = url.pathname === LEGACY_SPACE_ROUTE_PATH
+        ? SPACE_ROUTE_PATH
+        : url.pathname;
+      return `${normalizedPath}${url.search}${url.hash}` || '/';
+    }
+  } catch {
+    return link === LEGACY_SPACE_ROUTE_PATH ? SPACE_ROUTE_PATH : link;
+  }
+
+  return link;
+}
+
 function isSpaceEvent(event) {
   if (!event) return false;
 
-  const eventLink = String(event.metadata?.event_link || '').trim().toLowerCase();
-  if (eventLink === '/space') {
+  const eventLink = normalizeInternalLink(event.metadata?.event_link).toLowerCase();
+  if (eventLink === SPACE_ROUTE_PATH || eventLink === LEGACY_SPACE_ROUTE_PATH) {
     return true;
   }
 
@@ -149,7 +174,7 @@ export const fallbackEventsTimeline = [
     display: '/space-logo.png',
     image_url: '/space-logo.png',
     imageUrl: '/space-logo.png',
-    link: '/space',
+    link: SPACE_ROUTE_PATH,
     date: 'Ongoing',
     description: 'The main LMNL space. A hub for creativity, collaboration, and innovation. Join us for workshops, exhibitions, and community gatherings.',
     performers: 'LMNL Resident DJs, Special Guests',
@@ -228,7 +253,7 @@ export function normalizeEventSummary(event) {
   const title = event.title || event.name || 'Untitled event';
   const date = event.date || normalizeEventDate(event.event_date) || '';
   const location = event.location || event.location_name || 'LMNL Space, LA';
-  const link = event.link || event.rsvpLink || getEventLink(event);
+  const link = normalizeInternalLink(event.link || event.rsvpLink || getEventLink(event));
   const imageUrl = getEventImageUrl(event);
 
   return {
@@ -279,7 +304,7 @@ export async function fetchNotificationEvent() {
 
 export function getEventLink(event) {
   if (!event) return HOME_FALLBACK_LINK;
-  return event.metadata?.event_link || event.partiful_url || HOME_FALLBACK_LINK;
+  return normalizeInternalLink(event.metadata?.event_link || event.partiful_url || HOME_FALLBACK_LINK);
 }
 
 export async function fetchTimelineEvents() {

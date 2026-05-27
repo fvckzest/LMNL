@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
 const PROVIDERS = ['google', 'discord', 'apple'];
-const DEFAULT_REDIRECT_TO = 'http://127.0.0.1:4174/auth/callback?next=%2Fapp';
+const DEFAULT_REDIRECT_TO = 'http://127.0.0.1:3000/auth/callback?next=%2Fapp';
 
 function readEnvFile(pathname) {
   const text = fs.readFileSync(pathname, 'utf8');
@@ -71,12 +71,12 @@ async function verifyProvider({ supabase, provider, redirectTo }) {
 
 async function main() {
   const env = readEnvFile('.env');
-  const supabaseUrl = env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+  const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
   const redirectTo = process.env.COMMUNITY_AUTH_REDIRECT_TO || DEFAULT_REDIRECT_TO;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env.');
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY/SUPABASE_ANON_KEY in .env.');
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);

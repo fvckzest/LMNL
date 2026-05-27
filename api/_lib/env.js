@@ -82,7 +82,7 @@ export function getSquareConfig() {
 export function getSupabaseConfig() {
   requireEnv(['SUPABASE_URL'], 'supabase');
   const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
-  const anonKey = readEnv('SUPABASE_ANON_KEY') || readEnv('VITE_SUPABASE_ANON_KEY');
+  const anonKey = readEnv('SUPABASE_ANON_KEY');
 
   if (!serviceRoleKey && !anonKey) {
     throw new AppError('Supabase service credentials are missing.', {

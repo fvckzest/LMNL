@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import { AppLink } from '../components/RouterAdapter';
 import { fetchPublishedBlogPosts } from '../lib/siteData';
-import './Blog.css';
 
 export default function Blog() {
   const [posts, setPosts] = useState([]);
@@ -38,7 +37,7 @@ export default function Blog() {
         ) : (
           <div className="blog-posts-grid">
             {posts.map(post => (
-              <Link to={`/blog/${post.slug || post.id}`} key={post.id} className="blog-post-card">
+              <AppLink to={`/blog/${post.slug || post.id}`} key={post.id} className="blog-post-card">
                 <div className="post-meta">
                   <span className="post-index">TRANSMISSION</span>
                   <span className="post-date">{post.date ? new Date(post.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : new Date(post.created_at).toLocaleDateString()}</span>
@@ -51,7 +50,7 @@ export default function Blog() {
                   <span>{post.author || 'LMNL'}</span>
                   <span>OPEN RECORD ↗</span>
                 </div>
-              </Link>
+              </AppLink>
             ))}
           </div>
         )}

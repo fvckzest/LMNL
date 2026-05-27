@@ -1,14 +1,35 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePageColor } from '../hooks/usePageColor';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { AppLink, useAppLocation } from './RouterAdapter';
 import { getThemeNeutralColor, useTheme } from './ThemeProvider';
 import LmnlLogoBlack from './LmnlLogoBlack';
 import SocialLinks from './SocialLinks';
-import './TerminalShell.css';
 
 const MOBILE_SHELL_BREAKPOINT = '(max-width: 980px)';
 const TerminalSidebarPanels = lazyWithRetry(() => import('./TerminalSidebarPanels'));
+
+function readMobileViewport() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia(MOBILE_SHELL_BREAKPOINT).matches || window.innerWidth <= 980;
+}
+
+function subscribeMobileViewport(callback) {
+  if (typeof window === 'undefined') return () => {};
+
+  const mediaQuery = window.matchMedia(MOBILE_SHELL_BREAKPOINT);
+  mediaQuery.addEventListener('change', callback);
+  window.addEventListener('resize', callback);
+
+  return () => {
+    mediaQuery.removeEventListener('change', callback);
+    window.removeEventListener('resize', callback);
+  };
+}
+
+function useMobileViewport() {
+  return useSyncExternalStore(subscribeMobileViewport, readMobileViewport, () => false);
+}
 
 const NAV_ITEMS = [
   { label: 'EVENTS', index: '01', to: '/events', color: '#004ffa' },
@@ -101,23 +122,14 @@ export default function TerminalShell({
   children,
   contentClassName = '',
 }) {
-  const location = useLocation();
+  const location = useAppLocation();
   const showProfileLink = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const neutralColor = getThemeNeutralColor(theme);
-  const [isMobileViewport, setIsMobileViewport] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(MOBILE_SHELL_BREAKPOINT).matches;
-  });
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return !window.matchMedia(MOBILE_SHELL_BREAKPOINT).matches;
-  });
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return !window.matchMedia(MOBILE_SHELL_BREAKPOINT).matches;
-  });
+  const isMobileViewport = useMobileViewport();
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [sidebarDataReady, setSidebarDataReady] = useState(false);
 
   usePageColor(color);
@@ -133,22 +145,13 @@ export default function TerminalShell({
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const mediaQuery = window.matchMedia(MOBILE_SHELL_BREAKPOINT);
-    const syncSidebarState = (matchesMobile) => {
-      setIsMobileViewport(matchesMobile);
-      setLeftSidebarOpen(!matchesMobile);
-      setRightSidebarOpen(!matchesMobile);
-    };
+    const timeoutId = window.setTimeout(() => {
+      setLeftSidebarOpen(!isMobileViewport);
+      setRightSidebarOpen(!isMobileViewport);
+    }, 0);
 
-    syncSidebarState(mediaQuery.matches);
-
-    const handleChange = (event) => {
-      syncSidebarState(event.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+    return () => window.clearTimeout(timeoutId);
+  }, [isMobileViewport]);
 
   useEffect(() => {
     if (!rightSidebarOpen || sidebarDataReady || typeof window === 'undefined') {
@@ -240,12 +243,12 @@ export default function TerminalShell({
           </div>
         ) : null}
 
-        <Link to="/" className="terminal-brand">
+        <AppLink to="/" className="terminal-brand">
           <LmnlLogoBlack className="terminal-brand__logo" />
-        </Link>
+        </AppLink>
 
         <nav className="terminal-nav" aria-label="Primary">
-          <Link
+          <AppLink
             to="/"
             className={`terminal-nav__item ${location.pathname === '/' || location.pathname === '/home' ? 'is-active' : ''}`}
             style={{
@@ -258,11 +261,11 @@ export default function TerminalShell({
               <span className="terminal-nav__label">TERMINAL</span>
             </span>
             <span className="terminal-nav__index">00</span>
-          </Link>
+          </AppLink>
           {navItems.map((item) => {
             const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             return (
-              <Link
+              <AppLink
                 key={item.to}
                 to={item.to}
                 className={`terminal-nav__item ${isActive ? 'is-active' : ''}`}
@@ -276,7 +279,7 @@ export default function TerminalShell({
                   <span className="terminal-nav__label">{item.label}</span>
                 </span>
                 <span className="terminal-nav__index">{item.index}</span>
-              </Link>
+              </AppLink>
             );
           })}
         </nav>
@@ -309,8 +312,8 @@ export default function TerminalShell({
               </button>
             ) : null}
             {!leftSidebarOpen ? (
-              <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>
-            ) : <Link to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></Link>}
+              <AppLink to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></AppLink>
+            ) : <AppLink to="/"><img src="/circle.svg" alt="LMNL" width="50px" /></AppLink>}
           </div>
           <div className="terminal-shell__topbar-right">
             <button
@@ -321,14 +324,14 @@ export default function TerminalShell({
               {theme === 'light' ? 'DARK MODE' : 'LIGHT MODE'}
             </button>
             {showProfileLink ? (
-              <Link
+              <AppLink
                 to="/app"
                 className="terminal-shell__profile-link"
                 aria-label="Open profile"
                 title="Open profile"
               >
                 <ProfileIcon />
-              </Link>
+              </AppLink>
             ) : null}
             {!isMobileViewport || !rightSidebarOpen ? (
               <button
@@ -364,7 +367,7 @@ export default function TerminalShell({
           <div className="terminal-shell__footer-links">
             <SocialLinks className="terminal-shell__footer-socials" iconSize={18} />
           </div>
-          <Link to="/contact" className="terminal-shell__footer-cta theme-button">SIGNAL THE SYSTEM +</Link>
+          <AppLink to="/contact" className="terminal-shell__footer-cta theme-button">SIGNAL THE SYSTEM +</AppLink>
         </footer>
       </main>
 

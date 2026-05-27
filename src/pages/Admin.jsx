@@ -5,7 +5,6 @@ import ContentPageShell from '../components/ContentPageShell';
 import RouteStatusScreen from '../components/RouteStatusScreen';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import './Admin.css';
 
 const EventsTab = lazyWithRetry(() => import('../components/admin/EventsTab'));
 const InquiriesTab = lazyWithRetry(() => import('../components/admin/InquiriesTab'));

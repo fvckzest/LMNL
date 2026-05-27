@@ -1,9 +1,12 @@
+import { clientEnv } from './clientEnv.js';
+
 const DEFAULT_PHASE = 'foundation';
 
-const DEFAULT_ENV =
-  typeof import.meta !== 'undefined' && import.meta?.env
-    ? import.meta.env
-    : {};
+const DEFAULT_ENV = {
+  NEXT_PUBLIC_SOCIAL_SYSTEM_PHASE: clientEnv.socialSystemPhase,
+  NEXT_PUBLIC_SOCIAL_SYSTEM_ENABLED: clientEnv.socialSystemEnabled,
+  NEXT_PUBLIC_SOCIAL_SYSTEM_PREVIEW_ROUTES: clientEnv.socialSystemPreviewRoutes,
+};
 
 export const SOCIAL_SYSTEM_PRIMITIVES = Object.freeze([
   'user',
@@ -43,11 +46,11 @@ function parseBooleanFlag(value, fallback = false) {
 }
 
 export function getSocialSystemConfig(env = DEFAULT_ENV) {
-  const phase = env.VITE_SOCIAL_SYSTEM_PHASE || DEFAULT_PHASE;
+  const phase = env.NEXT_PUBLIC_SOCIAL_SYSTEM_PHASE || DEFAULT_PHASE;
 
   return {
-    enabled: parseBooleanFlag(env.VITE_SOCIAL_SYSTEM_ENABLED, false),
-    exposePreviewRoutes: parseBooleanFlag(env.VITE_SOCIAL_SYSTEM_PREVIEW_ROUTES, false),
+    enabled: parseBooleanFlag(env.NEXT_PUBLIC_SOCIAL_SYSTEM_ENABLED, false),
+    exposePreviewRoutes: parseBooleanFlag(env.NEXT_PUBLIC_SOCIAL_SYSTEM_PREVIEW_ROUTES, false),
     phase,
     currentPhase:
       SOCIAL_SYSTEM_PHASES.find((entry) => entry.id === phase) ||

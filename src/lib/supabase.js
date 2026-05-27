@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { clientEnv } from './clientEnv'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = clientEnv.supabaseUrl
+const supabaseAnonKey = clientEnv.supabaseAnonKey
 export const hasSupabaseCredentials = Boolean(supabaseUrl && supabaseAnonKey)
 
 if (!supabaseUrl || !supabaseAnonKey) {

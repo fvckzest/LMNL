@@ -54,7 +54,6 @@ test('getSupabaseConfig throws when service credentials are missing', () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   delete process.env.SUPABASE_ANON_KEY;
-  delete process.env.VITE_SUPABASE_ANON_KEY;
 
   assert.throws(() => getSupabaseConfig(), /Supabase service credentials are missing/);
 });
@@ -62,8 +61,7 @@ test('getSupabaseConfig throws when service credentials are missing', () => {
 test('getSupabaseConfig can fall back to the public anon key', () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-  delete process.env.SUPABASE_ANON_KEY;
-  process.env.VITE_SUPABASE_ANON_KEY = 'public-anon-key';
+  process.env.SUPABASE_ANON_KEY = 'public-anon-key';
 
   const config = getSupabaseConfig();
   assert.equal(config.serviceRoleKey, '');

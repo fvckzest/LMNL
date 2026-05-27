@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import LmnlLogoBlack from '../components/LmnlLogoBlack';
 import { buildApprovalEmail, buildTicketEmail } from '../../shared/emailTemplates.js';
-import './EmailLab.css';
 
 const scenarios = {
   approval: {

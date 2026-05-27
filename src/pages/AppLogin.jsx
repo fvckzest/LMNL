@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { AppNavigate, useAppLocation, useAppNavigate } from '../components/RouterAdapter';
 import ContentPageShell from '../components/ContentPageShell';
 import {
   sanitizeCommunityNextPath,
@@ -54,8 +54,8 @@ async function resolveProviderRedirectUrl(authUrl) {
 
 export default function AppLogin({ session }) {
   const neutralColor = useThemeNeutralColor();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useAppLocation();
+  const navigate = useAppNavigate();
   const [activeProvider, setActiveProvider] = useState('');
   const [error, setError] = useState('');
   const nextPath = useMemo(() => {
@@ -65,7 +65,7 @@ export default function AppLogin({ session }) {
   const hasEligibleSession = isEligibleCommunitySession(session);
 
   if (hasEligibleSession) {
-    return <Navigate to={nextPath} replace />;
+    return <AppNavigate to={nextPath} replace />;
   }
 
   async function handleResetSession() {

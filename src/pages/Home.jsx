@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
 import EventTitleDisplay from '../components/EventTitleDisplay';
+import { AppLink } from '../components/RouterAdapter';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import {
   fetchNotificationEvent,
   fetchTimelineEvents,
   normalizeEventSummary,
 } from '../lib/siteData';
-import './Events.css';
 
 function getActiveHomeEvent(notificationEvent, nextEvent) {
   if (notificationEvent) {
@@ -91,34 +90,34 @@ export default function Home() {
 
           <div className="page-panel theme-accent-panel">
             <div className="page-command-strip" aria-label="Terminal shortcuts">
-              <Link
+              <AppLink
                 to="/events"
                 className="page-command-strip__item"
                 style={{ '--command-accent': '#004ffa' }}
               >
                 <span>View programs</span>
-              </Link>
-              <Link
+              </AppLink>
+              <AppLink
                 to="/community"
                 className="page-command-strip__item"
                 style={{ '--command-accent': '#ff5bb8' }}
               >
                 <span>Enter network</span>
-              </Link>
-              <Link
+              </AppLink>
+              <AppLink
                 to="/services"
                 className="page-command-strip__item"
                 style={{ '--command-accent': '#7b52d6' }}
               >
                 <span>Explore Services</span>
-              </Link>
-              <Link
+              </AppLink>
+              <AppLink
                 to="/shop"
                 className="page-command-strip__item"
                 style={{ '--command-accent': '#ff0000' }}
               >
                 <span>View artifacts</span>
-              </Link>
+              </AppLink>
             </div>
           </div>
 

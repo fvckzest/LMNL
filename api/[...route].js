@@ -547,8 +547,6 @@ async function handleAdminRuntime(req, res) {
     supabaseUrlConfigured: Boolean(process.env.SUPABASE_URL),
     supabaseServiceRoleConfigured: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     supabaseAnonConfigured: Boolean(process.env.SUPABASE_ANON_KEY),
-    viteSupabaseUrlConfigured: Boolean(process.env.VITE_SUPABASE_URL),
-    viteSupabaseAnonConfigured: Boolean(process.env.VITE_SUPABASE_ANON_KEY),
     adminAuthSource: authConfig.source,
     adminUserIdsConfigured: authConfig.adminUserIds.length > 0,
     adminUserEmailsConfigured: authConfig.adminUserEmails.length > 0,

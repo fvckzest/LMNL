@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { AppLink } from '../components/RouterAdapter';
 import ContentPageShell, { ModuleStrip, PageStat, PageStatGrid } from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
 
@@ -49,7 +49,7 @@ const pathways = [
   {
     title: 'Attend',
     copy: 'See what is live now, request access, and enter the current event layer of LMNL.',
-    to: '/space',
+    to: '/events/space',
     label: 'View Current Program',
   },
   {
@@ -160,9 +160,9 @@ export default function About() {
               <article key={pathway.title} className="page-panel">
                 <h3 className="page-panel-title">{pathway.title}</h3>
                 <p className="page-copy">{pathway.copy}</p>
-                <Link to={pathway.to} className="theme-button theme-button-about">
+                <AppLink to={pathway.to} className="theme-button theme-button-about">
                   {pathway.label}
-                </Link>
+                </AppLink>
               </article>
             ))}
           </div>

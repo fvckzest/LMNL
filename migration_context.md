@@ -117,6 +117,17 @@ must verify:
 - form styling parity
 - admin ui parity
 
+port selection and server readiness must be verified through code or terminal evidence, not visual browser confirmation.
+
+acceptable lightweight checks include:
+- package scripts/config that define the port
+- dev/preview command output that reports the local url
+- `lsof`/process inspection for the expected port
+- a simple http status/header/body check against the expected route
+
+do not open a browser, take screenshots, or run visual tooling merely to confirm the correct port.
+use visual inspection only for actual ui parity after code-level port verification already identifies the target url.
+
 ### 8. functional parity checklist
 
 must verify:

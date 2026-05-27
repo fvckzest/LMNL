@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ContentPageShell from '../components/ContentPageShell';
+import { useAppLocation, useAppNavigate } from '../components/RouterAdapter';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
-import './Login.css';
 
 export default function Login() {
   const neutralColor = useThemeNeutralColor();
@@ -11,8 +10,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useAppNavigate();
+  const location = useAppLocation();
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get('next') || '/';

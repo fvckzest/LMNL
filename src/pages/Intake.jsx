@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
 import { hasSupabaseCredentials, supabase } from '../lib/supabase';
-import './Intake.css';
 
 const initialFormData = {
   business_name: '',

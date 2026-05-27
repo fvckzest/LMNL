@@ -8,7 +8,6 @@ import SpaceSystemPanel from '../components/space/SpaceSystemPanel';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
 import { fetchSpaceEventSnapshot, fetchSpaceTicketActivity } from '../lib/siteData';
-import './Space.css';
 
 export default function Space() {
   usePageColor('#004ffa');

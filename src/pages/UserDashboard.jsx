@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import { AppLink, AppNavigate, useAppLocation, useAppNavigate } from '../components/RouterAdapter';
 import { apiGet, apiPost } from '../lib/api';
 import {
   buildCommunityDashboardPath,
@@ -8,7 +8,6 @@ import {
   readCommunityProvider,
 } from '../lib/communityProfile';
 import { supabase } from '../lib/supabase';
-import './UserDashboard.css';
 
 function formatDate(value) {
   if (!value) {
@@ -51,9 +50,23 @@ function EmptyPanel({ label, title, copy }) {
   );
 }
 
-export default function UserDashboard({ session, profile }) {
-  const { userSlug = '' } = useParams();
-  const navigate = useNavigate();
+function readUserSlugFromPathname(pathname) {
+  const match = String(pathname || '').match(/^\/dashboard\/([^/?#]+)/);
+  if (!match) {
+    return '';
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+export default function UserDashboard({ session, profile, userSlug: userSlugProp }) {
+  const location = useAppLocation();
+  const userSlug = userSlugProp || readUserSlugFromPathname(location.pathname);
+  const navigate = useAppNavigate();
   const provider = useMemo(() => readCommunityProvider(session), [session]);
   const canonicalPath = useMemo(
     () => buildCommunityDashboardPath(profile?.profile_slug),
@@ -121,11 +134,11 @@ export default function UserDashboard({ session, profile }) {
   }
 
   if (!profile?.profile_slug) {
-    return <Navigate to={onboardingPath} replace />;
+    return <AppNavigate to={onboardingPath} replace />;
   }
 
   if (userSlug !== profile.profile_slug) {
-    return <Navigate to={canonicalPath} replace />;
+    return <AppNavigate to={canonicalPath} replace />;
   }
 
   const summary = dashboard?.summary || {
@@ -187,9 +200,9 @@ export default function UserDashboard({ session, profile }) {
             </div>
 
             <div className="user-dashboard-actions">
-              <Link to={onboardingPath} className="theme-button user-dashboard-action">
+              <AppLink to={onboardingPath} className="theme-button user-dashboard-action">
                 EDIT IDENTITY
-              </Link>
+              </AppLink>
               <button type="button" className="theme-button user-dashboard-action" onClick={handleSignOut}>
                 SIGN OUT
               </button>

@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import GenericPage from './GenericPage';
 import { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import { apiPost } from '../lib/api';
 import { fetchOpenProducts } from '../lib/siteData';
-import './Shop.css';
 
 function formatPrice(price) {
   return `$${((price || 0) / 100).toFixed(2)}`;
@@ -187,12 +185,29 @@ function PersistentProductCard({ product, onPurchase }) {
   );
 }
 
-export default function Shop() {
-  const [searchParams] = useSearchParams();
+function getBrowserSearchParams() {
+  if (typeof window === 'undefined') {
+    return new URLSearchParams();
+  }
+
+  return new URLSearchParams(window.location.search);
+}
+
+function getSearchParam(searchParams, key) {
+  if (typeof searchParams?.get === 'function') {
+    return searchParams.get(key);
+  }
+
+  const value = searchParams?.[key];
+  return Array.isArray(value) ? value[0] : value || null;
+}
+
+export default function Shop({ searchParams: providedSearchParams } = {}) {
+  const searchParams = providedSearchParams || getBrowserSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const checkoutSuccess = searchParams.get('checkout') === 'success';
+  const checkoutSuccess = getSearchParam(searchParams, 'checkout') === 'success';
   const preorderProducts = products.filter((product) => product.goal_quantity > 0);
   const persistentProducts = products.filter((product) => product.goal_quantity <= 0);
 

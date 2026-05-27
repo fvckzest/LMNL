@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import { useAppLocation } from '../components/RouterAdapter';
 import { apiGet, apiPost } from '../lib/api';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
-import './CheckIn.css';
 
 function formatTimestamp(value) {
   if (!value) {
@@ -13,8 +12,14 @@ function formatTimestamp(value) {
   return new Date(value).toLocaleString();
 }
 
-export default function CheckIn() {
-  const { token } = useParams();
+function readTokenFromPathname(pathname = '') {
+  const match = pathname.match(/^\/check-in\/([^/]+)$/);
+  return match?.[1] ? decodeURIComponent(match[1]) : '';
+}
+
+export default function CheckIn({ token: tokenProp }) {
+  const location = useAppLocation();
+  const token = tokenProp || readTokenFromPathname(location.pathname);
   const [checkInData, setCheckInData] = useState(null);
   const [loading, setLoading] = useState(() => Boolean(token));
   const [submitting, setSubmitting] = useState(false);

@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import ContentPageShell from '../components/ContentPageShell';
+import { useAppLocation, useAppNavigate } from '../components/RouterAdapter';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import { COMMUNITY_APP_PATH, deriveProfileSlug, profileNeedsOnboarding } from '../lib/communityProfile';
 import { readCommunityNextPath } from '../lib/communityAuth';
 import { supabase } from '../lib/supabase';
-import './AppOnboarding.css';
 
 function formatProvider(provider) {
   return String(provider || 'unknown').replace(/[_-]+/g, ' ').toUpperCase();
@@ -27,8 +26,8 @@ function normalizeOptionalUrl(value) {
 
 export default function AppOnboarding({ session, profile, provider }) {
   const neutralColor = useThemeNeutralColor();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useAppLocation();
+  const navigate = useAppNavigate();
   const [displayName, setDisplayName] = useState(() => profile?.display_name || '');
   const [profileSlug, setProfileSlug] = useState(() => profile?.profile_slug || deriveProfileSlug(profile?.display_name || ''));
   const [websiteUrl, setWebsiteUrl] = useState(() => profile?.website_url || '');

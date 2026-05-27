@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { AppLink } from '../components/RouterAdapter';
 import ContentPageShell, {
   ModuleStrip,
   PageEmptyState,
@@ -12,13 +12,35 @@ import {
   filterPortfolioProjects,
   getCapabilityLabel,
 } from '../lib/portfolio';
-import './Portfolio.css';
 
 function getActiveCapability(searchParams) {
   const fallbackCapability = PORTFOLIO_CAPABILITIES[0]?.id || 'all';
   const requestedCapability = searchParams.get('capability') || fallbackCapability;
   const isKnown = PORTFOLIO_CAPABILITIES.some((item) => item.id === requestedCapability);
   return isKnown ? requestedCapability : fallbackCapability;
+}
+
+function getBrowserSearchParams() {
+  if (typeof window === 'undefined') {
+    return new URLSearchParams();
+  }
+
+  return new URLSearchParams(window.location.search);
+}
+
+function normalizeSearchParams(searchParams) {
+  if (typeof searchParams?.get === 'function') {
+    return searchParams;
+  }
+
+  const params = new URLSearchParams();
+  Object.entries(searchParams || {}).forEach(([key, value]) => {
+    const normalizedValue = Array.isArray(value) ? value[0] : value;
+    if (normalizedValue) {
+      params.set(key, normalizedValue);
+    }
+  });
+  return params;
 }
 
 function PortfolioCard({ project }) {
@@ -97,12 +119,13 @@ function PortfolioCard({ project }) {
   );
 }
 
-export default function Portfolio() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+export default function Portfolio({ searchParams: providedSearchParams } = {}) {
+  const [activeSearchParams, setActiveSearchParams] = useState(() => (
+    providedSearchParams ? normalizeSearchParams(providedSearchParams) : getBrowserSearchParams()
+  ));
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const activeCapability = getActiveCapability(searchParams);
+  const activeCapability = getActiveCapability(activeSearchParams);
   const sortedCapabilities = [...PORTFOLIO_CAPABILITIES]
     .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));
   const allCapability = sortedCapabilities.find((capability) => capability.id === 'all');
@@ -110,6 +133,15 @@ export default function Portfolio() {
   const filteredProjects = filterPortfolioProjects(projects, {
     capabilityId: activeCapability,
   });
+
+  useEffect(() => {
+    function handlePopState() {
+      setActiveSearchParams(getBrowserSearchParams());
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,7 +172,13 @@ export default function Portfolio() {
   }, []);
 
   const handleCapabilitySelect = (capabilityId) => {
-    navigate(buildPortfolioPath({ capabilityId }));
+    const nextPath = buildPortfolioPath({ capabilityId });
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.history.pushState(null, '', nextPath);
+    setActiveSearchParams(getBrowserSearchParams());
   };
 
   return (
@@ -203,13 +241,13 @@ export default function Portfolio() {
 
       <section className="portfolio-actions">
         <div className="portfolio-actions__grid">
-          <Link to="/services#inquiry-form-section" className="theme-button">
+          <AppLink to="/services#inquiry-form-section" className="theme-button">
             Return to Services
-          </Link>
+          </AppLink>
 
-          <Link to="/contact" className="theme-button">
+          <AppLink to="/contact" className="theme-button">
             Open Contact
-          </Link>
+          </AppLink>
         </div>
       </section>
     </ContentPageShell>

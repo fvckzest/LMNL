@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect } from 'react';
 import TerminalShell from './TerminalShell';
-import './ContentPageShell.css';
 
 const ShellLayoutContext = createContext(null);
 
@@ -174,7 +173,6 @@ export default function ContentPageShell({
       title={title}
       color={color}
       introAccentColor={introAccentColor}
-      metaNote={null}
       introLabel={introLabel}
       introTitle={introTitle}
       introCopy={introCopy}

@@ -1,3 +1,5 @@
+import { clientEnv } from './clientEnv';
+
 function extractErrorMessage(payload, fallback) {
   return payload?.error?.message || payload?.message || fallback;
 }
@@ -84,5 +86,5 @@ export async function apiPost(path, body, options = {}) {
 }
 
 export function getTurnstileSiteKey() {
-  return import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+  return clientEnv.turnstileSiteKey || '';
 }

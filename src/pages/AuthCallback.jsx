@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useAppLocation, useAppNavigate } from '../components/RouterAdapter';
 import ContentPageShell from '../components/ContentPageShell';
 import { useThemeNeutralColor } from '../components/ThemeProvider';
 import { buildCommunityLoginPath, readCommunityNextPath } from '../lib/communityAuth';
@@ -12,8 +12,8 @@ import { hasSupabaseCredentials, supabase } from '../lib/supabase';
 
 export default function AuthCallback({ session }) {
   const neutralColor = useThemeNeutralColor();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useAppLocation();
+  const navigate = useAppNavigate();
   const [status, setStatus] = useState('working');
   const [error, setError] = useState('');
   const [hasRecoveredSession, setHasRecoveredSession] = useState(Boolean(session));

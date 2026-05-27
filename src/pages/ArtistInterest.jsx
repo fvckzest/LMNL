@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import ContentPageShell, { SignalList } from '../components/ContentPageShell';
+import { AppLink } from '../components/RouterAdapter';
 import { useTheme } from '../components/ThemeProvider';
 import Turnstile from '../components/Turnstile';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost, getTurnstileSiteKey } from '../lib/api';
-import './ArtistInterest.css';
 
 const initialForm = {
   name: '',
@@ -110,9 +109,9 @@ export default function ArtistInterest() {
                 >
                   Submit another
                 </button>
-                <Link to="/community" className="artist-interest-button artist-interest-button-secondary theme-button">
+                <AppLink to="/community" className="artist-interest-button artist-interest-button-secondary theme-button">
                   Back to community
-                </Link>
+                </AppLink>
               </div>
             </div>
           ) : (

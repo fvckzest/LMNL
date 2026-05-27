@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
+import { AppLink } from '../components/RouterAdapter';
 import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { fetchPublishedBlogPost } from '../lib/siteData';
-import './Blog.css';
 
-export default function BlogPostView() {
-  const { slug } = useParams();
+function readSlugFromPathname() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const match = window.location.pathname.match(/^\/blog\/([^/?#]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+export default function BlogPostView({ slug: providedSlug }) {
+  const slug = providedSlug || readSlugFromPathname();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,12 +73,12 @@ export default function BlogPostView() {
         ) : !post ? (
           <div className="page-panel blog-post-empty">
             <PageEmptyState>POST NOT FOUND.</PageEmptyState>
-            <Link to="/blog" className="page-inline-link blog-back-link">← BACK TO BLOG</Link>
+            <AppLink to="/blog" className="page-inline-link blog-back-link">← BACK TO BLOG</AppLink>
           </div>
         ) : (
           <article className="page-detail-pane page-detail-pane--accent blog-post-view">
             <div className="blog-post-view__topline">
-              <Link to="/blog" className="page-inline-link blog-back-link">← BACK TO BLOG</Link>
+              <AppLink to="/blog" className="page-inline-link blog-back-link">← BACK TO BLOG</AppLink>
             </div>
             <div className="post-meta post-meta--record">
               <span className="post-index">TRANSMISSION</span>

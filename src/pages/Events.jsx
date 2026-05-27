@@ -3,7 +3,6 @@ import ContentPageShell, { PageEmptyState, PageStatus } from '../components/Cont
 import EventTitleDisplay from '../components/EventTitleDisplay';
 import { usePageColor } from '../hooks/usePageColor';
 import { fetchTimelineEvents, getEventImageUrl, normalizeEventSummary } from '../lib/siteData';
-import './Events.css';
 
 export default function Events() {
   const [events, setEvents] = useState([]);

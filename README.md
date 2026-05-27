@@ -5,11 +5,11 @@ LMNL is a premium, high-contrast web platform designed for art and experience sp
 ## 1. Core Architecture
 
 ### Frontend
-- **Framework**: React 19 + Vite
+- **Framework**: Next.js App Router + React 19
 - **Styling**: Vanilla CSS (High-contrast white background, black structural elements)
 - **Typography**: [Gantari](https://fonts.google.com/specimen/Gantari) (Geometric Sans-Serif)
-- **Routing**: React Router DOM (v7+)
-- **SEO**: Custom `postbuild.js` script that parses routes and generates static Open Graph metadata.
+- **Routing**: Next.js App Router
+- **SEO**: Next metadata, sitemap, manifest, and JSON-LD routes.
 
 ### Backend & Infrastructure
 - **Hosting**: Vercel (Serverless Functions)
@@ -48,8 +48,9 @@ Create a `.env` file in the root directory. **Ensure these match your Supabase a
 
 ### Frontend
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
 ```
 
 ### Backend (Vercel)
@@ -103,14 +104,15 @@ npm run dev
 ```bash
 npm run build
 ```
-*This command runs `vite build` followed by `node scripts/postbuild.js` to ensure SEO metadata is correctly generated for all routes.*
+*This command runs `next build`.*
 
 ---
 
 ## 5. Project Structure
 
-- `api/`: Vercel Serverless Functions (webhooks, inventory checks).
-- `scripts/`: Build-time utilities (SEO generation).
+- `app/`: Next.js App Router pages, route handlers, metadata, manifest, sitemap, and service-worker retirement route.
+- `api/`: Legacy API services wrapped by the Next catch-all route handler.
+- `scripts/`: Operational scripts for Discord command management and OAuth checks.
 - `src/`:
   - `pages/`: Core views (Home, Space, Events, Community, Admin).
   - `components/`: Modular UI elements (Circle, Logo, HeaderBar).

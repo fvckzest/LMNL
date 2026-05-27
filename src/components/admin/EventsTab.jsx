@@ -577,7 +577,7 @@ const MANAGED_METADATA_KEYS = new Set([
                             <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
                             <td>
                               {event.name.toUpperCase() === 'SPACE' ? (
-                                <a href="/space" target="_blank" className="event-name-link">{event.name}</a>
+                                <a href="/events/space" target="_blank" className="event-name-link">{event.name}</a>
                               ) : (
                                 <strong>{event.name}</strong>
                               )}

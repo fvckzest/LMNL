@@ -4,7 +4,6 @@ import { useTheme } from '../components/ThemeProvider';
 import SocialLinks from '../components/SocialLinks';
 import Turnstile from '../components/Turnstile';
 import { apiPost, getTurnstileSiteKey } from '../lib/api';
-import './Contact.css';
 
 export default function Contact() {
   const { theme } = useTheme();

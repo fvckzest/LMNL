@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { fetchFeaturedTimelineEvent, fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
+import { AppLink } from './RouterAdapter';
 import SystemPanel from './SystemPanel';
 
 const SIDEBAR_HISTORY_LIMIT = 14;
@@ -102,13 +102,13 @@ function ActivityFeedCard() {
             }
 
             return (
-              <Link
+              <AppLink
                 key={item.id}
                 className={itemClassName}
                 to={item.href}
               >
                 {content}
-              </Link>
+              </AppLink>
             );
           })
           : null}
@@ -146,7 +146,7 @@ function InviteCard() {
   }, []);
 
   const eventTitle = featuredEvent?.title || 'No featured event';
-  const eventHref = featuredEvent?.link || (eventTitle === 'SPACE' || eventTitle === 'LMNL SPACE' ? '/space' : '/events');
+  const eventHref = featuredEvent?.link || (eventTitle === 'SPACE' || eventTitle === 'LMNL SPACE' ? '/events/space' : '/events');
   const eventLogoSrc = featuredEvent?.type === 'image' && typeof featuredEvent?.display === 'string' && featuredEvent.display
     ? featuredEvent.display
     : featuredEvent?.image_url || (eventTitle === 'SPACE' || eventTitle === 'LMNL SPACE' ? '/space-logo.png' : '/circle.svg');
@@ -161,15 +161,15 @@ function InviteCard() {
             view
           </a>
         ) : (
-          <Link to={eventHref} className="terminal-invite-card__button theme-button">
+          <AppLink to={eventHref} className="terminal-invite-card__button theme-button">
             view
-          </Link>
+          </AppLink>
         )
       )
       : (
-        <Link to="/events" className="terminal-invite-card__button theme-button">
+        <AppLink to="/events" className="terminal-invite-card__button theme-button">
           view
-        </Link>
+        </AppLink>
       );
 
   return (

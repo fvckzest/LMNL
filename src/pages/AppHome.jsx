@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { AppNavigate } from '../components/RouterAdapter';
 import {
   buildCommunityDashboardPath,
   COMMUNITY_ONBOARDING_PATH,
@@ -6,8 +6,8 @@ import {
 
 export default function AppHome({ profile }) {
   if (!profile?.profile_slug) {
-    return <Navigate to={COMMUNITY_ONBOARDING_PATH} replace />;
+    return <AppNavigate to={COMMUNITY_ONBOARDING_PATH} replace />;
   }
 
-  return <Navigate to={buildCommunityDashboardPath(profile.profile_slug)} replace />;
+  return <AppNavigate to={buildCommunityDashboardPath(profile.profile_slug)} replace />;
 }

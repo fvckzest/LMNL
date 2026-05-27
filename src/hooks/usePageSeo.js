@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { matchPath } from 'react-router-dom';
 
 export const SITE_URL = 'https://lmnl.art';
 export const ADMIN_SITE_URL = 'https://admin.lmnl.art';
@@ -124,7 +123,7 @@ const routeSeo = [
     },
   },
   {
-    pattern: '/space',
+    pattern: '/events/space',
     metadata: {
       title: 'LMNL | SPACE',
       description: 'Discover LMNL Space, upcoming gatherings, and creative activations.',
@@ -305,6 +304,23 @@ const routeSeo = [
   },
 ];
 
+function matchRoutePattern(pattern, pathname) {
+  if (pattern === pathname) {
+    return true;
+  }
+
+  const patternParts = pattern.split('/').filter(Boolean);
+  const pathnameParts = pathname.split('/').filter(Boolean);
+
+  if (patternParts.length !== pathnameParts.length) {
+    return false;
+  }
+
+  return patternParts.every((part, index) => (
+    part.startsWith(':') || part === pathnameParts[index]
+  ));
+}
+
 export function getRouteSeo(pathname, hostname = '') {
   const isAdminHost = hostname.startsWith('admin.');
 
@@ -320,7 +336,7 @@ export function getRouteSeo(pathname, hostname = '') {
       };
     }
 
-    if (matchPath({ path: '/check-in/:token', end: true }, pathname)) {
+    if (matchRoutePattern('/check-in/:token', pathname)) {
       return {
         title: 'LMNL | CHECK-IN',
         description: 'Private LMNL check-in interface.',
@@ -332,7 +348,7 @@ export function getRouteSeo(pathname, hostname = '') {
     }
   }
 
-  const match = routeSeo.find((entry) => matchPath({ path: entry.pattern, end: true }, pathname));
+  const match = routeSeo.find((entry) => matchRoutePattern(entry.pattern, pathname));
 
   if (match) {
     return {

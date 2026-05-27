@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { AppLink } from '../components/RouterAdapter';
 import ContentPageShell from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
 import { useTheme } from '../components/ThemeProvider';
@@ -7,7 +7,6 @@ import Turnstile from '../components/Turnstile';
 import { apiPost, getTurnstileSiteKey } from '../lib/api';
 import { buildPortfolioPath } from '../lib/portfolio';
 import { PRIMARY_SERVICES } from '../lib/serviceCatalog';
-import './Services.css';
 
 export default function Services() {
   const { theme } = useTheme();
@@ -99,9 +98,9 @@ export default function Services() {
                   Browse our offerings below or head to the portfolio to see past work.
                 </p>
                 <div className="services-overview__actions">
-                  <Link to={buildPortfolioPath()} className="theme-button services-overview__button">
+                  <AppLink to={buildPortfolioPath()} className="theme-button services-overview__button">
                     PORTFOLIO
-                  </Link>
+                  </AppLink>
                 </div>
               </div>
             </section>
@@ -168,7 +167,7 @@ export default function Services() {
                               {isSelected ? 'ADDED' : 'ADD'}
                             </button>
                           </div>
-                          <Link
+                          <AppLink
                             to={buildPortfolioPath({
                               capabilityId: activeService.id,
                               focusLabel: detail.label,
@@ -176,7 +175,7 @@ export default function Services() {
                             className="services-capability-detail__portfolio-link"
                           >
                             {detail.portfolioLabel || 'VIEW RELATED WORK'}
-                          </Link>
+                          </AppLink>
                           <p className="services-capability-detail__copy">{detail.copy}</p>
                         </div>
                       ) : null}
