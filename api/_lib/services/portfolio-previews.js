@@ -20,9 +20,12 @@ function normalizePreviewUrl(value) {
   }
 
   let parsedUrl;
+  const urlValue = /^[a-z][a-z\d+\-.]*:/i.test(rawValue)
+    ? rawValue
+    : `https://${rawValue}`;
 
   try {
-    parsedUrl = new URL(rawValue);
+    parsedUrl = new URL(urlValue);
   } catch (error) {
     throw new AppError('Website URL must be a valid http or https address.', {
       code: 'INVALID_INPUT',
@@ -41,6 +44,10 @@ function normalizePreviewUrl(value) {
   }
 
   return parsedUrl.toString();
+}
+
+function getErrorMessage(error) {
+  return error?.message ? String(error.message) : 'No additional details were returned.';
 }
 
 async function loadChromium() {
@@ -71,9 +78,21 @@ export async function generatePortfolioPreview({
   const { storageBucket, navigationTimeoutMs } = getPortfolioPreviewConfig();
   const supabase = getAdminSupabase();
 
-  const browser = await chromium.launch({
-    headless: true,
-  });
+  let browser;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  } catch (error) {
+    throw new AppError('The preview browser could not start on the server. Check the server logs for the Chromium launch error.', {
+      code: 'PREVIEW_BROWSER_LAUNCH_FAILED',
+      status: 500,
+      details: error,
+      expose: true,
+    });
+  }
 
   try {
     const page = await browser.newPage({
@@ -85,13 +104,27 @@ export async function generatePortfolioPreview({
     page.setDefaultTimeout(navigationTimeoutMs);
     await page.emulateMedia({ reducedMotion: 'reduce' });
 
-    const response = await page.goto(normalizedUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: navigationTimeoutMs,
-    });
+    let response;
+
+    try {
+      response = await page.goto(normalizedUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: navigationTimeoutMs,
+      });
+    } catch (error) {
+      throw new AppError(`The website could not be reached for preview generation: ${getErrorMessage(error)}`, {
+        code: 'PREVIEW_NAVIGATION_FAILED',
+        status: 502,
+        details: {
+          error,
+          url: normalizedUrl,
+        },
+        expose: true,
+      });
+    }
 
     if (!response || !response.ok()) {
-      throw new AppError('The website did not return a successful response for preview generation.', {
+      throw new AppError(`The website returned HTTP ${response?.status() || 'unknown'} instead of a successful response for preview generation.`, {
         code: 'PREVIEW_NAVIGATION_FAILED',
         status: 502,
         details: {
@@ -164,6 +197,6 @@ export async function generatePortfolioPreview({
       expose: true,
     });
   } finally {
-    await browser.close().catch(() => null);
+    await browser?.close().catch(() => null);
   }
 }
