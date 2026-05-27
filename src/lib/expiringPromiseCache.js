@@ -23,6 +23,10 @@ export function createExpiringPromiseCache({ ttlMs, keyFn = (key) => key }) {
     });
   }
 
+  function remove(key) {
+    entries.delete(resolveKey(key));
+  }
+
   function setPromise(key, promise) {
     const existing = read(key);
 
@@ -81,6 +85,7 @@ export function createExpiringPromiseCache({ ttlMs, keyFn = (key) => key }) {
   }
 
   return {
+    clear: remove,
     get,
     read,
     write,

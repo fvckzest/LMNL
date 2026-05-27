@@ -136,6 +136,12 @@
   background: transparent;
 }
 
+.admin-stats .stat-item--action {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .toggle-archived {
   align-self: flex-end;
 }
@@ -1414,6 +1420,77 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   width: auto;
 }
 
+.portfolio-order-modal {
+  max-width: 640px;
+}
+
+.portfolio-order-list {
+  display: grid;
+  gap: 8px;
+}
+
+.portfolio-order-item {
+  display: grid;
+  grid-template-columns: 34px 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg);
+  cursor: grab;
+}
+
+.portfolio-order-item.is-dragging {
+  opacity: 0.6;
+  border-color: var(--active-tab-color, #6222d8);
+}
+
+.portfolio-order-rank,
+.portfolio-order-grip {
+  font-family: var(--lmnl-font-mono);
+  color: var(--lmnl-color-text-muted);
+  text-align: center;
+}
+
+.portfolio-order-rank {
+  font-size: 12px;
+}
+
+.portfolio-order-grip {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.portfolio-order-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.portfolio-order-copy strong,
+.portfolio-order-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-order-copy span {
+  color: var(--lmnl-color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.portfolio-order-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.portfolio-order-actions .admin-btn.small {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
 /* Mobile Responsive Improvements */
 @media (max-width: 768px) {
   .admin-body {
@@ -1477,6 +1554,18 @@ html[data-theme='dark'] .admin-table-shell .status-pill.contact-source-pill {
   .portfolio-admin-media-actions {
     display: grid;
     justify-content: stretch;
+  }
+
+  .portfolio-order-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .portfolio-order-grip {
+    display: none;
+  }
+
+  .portfolio-order-actions {
+    grid-column: 2;
   }
 
   .trait-input-row {

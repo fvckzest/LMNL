@@ -69,6 +69,7 @@ import {
   savePortfolioPreviewMedia,
   saveServiceProduct,
   syncCommunityCreditsFromEvents,
+  updatePortfolioEntryOrder,
   updateWebsiteIntakeSubmissionStatus,
 } from './_lib/repositories/admin-content.js';
 
@@ -979,6 +980,11 @@ async function handlePortfolio(req, res) {
   if (body.action === 'delete') {
     await deletePortfolioEntryById(requireValue(body.id, 'id is required.'));
     return sendJson(res, 200, { success: true, data: { deleted: true } });
+  }
+
+  if (body.action === 'reorder') {
+    const data = await updatePortfolioEntryOrder(Array.isArray(body.entries) ? body.entries : []);
+    return sendJson(res, 200, { success: true, data });
   }
 
   if (body.action === 'create' || body.action === 'update') {

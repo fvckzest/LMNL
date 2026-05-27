@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import AdminSectionHeader from './AdminSectionHeader';
 import { DeleteActionButton } from './ActionButtons';
 import { apiPost } from '../../lib/api';
+import { clearPublishedPortfolioCache } from '../../lib/portfolio';
 import { PRIMARY_SERVICES } from '../../lib/serviceCatalog';
 
 function createEmptyMediaItem(index = 0) {
@@ -124,6 +125,17 @@ function createFormFromEntry(entry) {
   };
 }
 
+function moveItem(items, fromIndex, toIndex) {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [movedItem] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, movedItem);
+  return nextItems;
+}
+
 export default function PortfolioTab({
   portfolioEntries,
   portfolioLoading,
@@ -155,6 +167,10 @@ export default function PortfolioTab({
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [previewFeedback, setPreviewFeedback] = useState(null);
   const [expandedEntries, setExpandedEntries] = useState({});
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [orderedEntries, setOrderedEntries] = useState([]);
+  const [draggedEntryId, setDraggedEntryId] = useState(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
   const activeEntryCount = portfolioEntries.filter((entry) => entry.status !== 'archived').length;
 
   function toggleExpansion(id) {
@@ -182,6 +198,45 @@ export default function PortfolioTab({
     setEditingEntry(null);
     setFormData(createEmptyForm());
     setPreviewFeedback(null);
+  }
+
+  function openOrderModal() {
+    setOrderedEntries(portfolioEntries);
+    setDraggedEntryId(null);
+    setIsOrderModalOpen(true);
+  }
+
+  function closeOrderModal() {
+    setIsOrderModalOpen(false);
+    setOrderedEntries([]);
+    setDraggedEntryId(null);
+  }
+
+  function moveOrderedEntry(entryId, direction) {
+    setOrderedEntries((current) => {
+      const fromIndex = current.findIndex((entry) => entry.id === entryId);
+      const toIndex = fromIndex + direction;
+
+      if (toIndex < 0 || toIndex >= current.length) {
+        return current;
+      }
+
+      return moveItem(current, fromIndex, toIndex);
+    });
+  }
+
+  function handleOrderDragEnter(event, entryId) {
+    event.preventDefault();
+
+    if (!draggedEntryId || draggedEntryId === entryId) {
+      return;
+    }
+
+    setOrderedEntries((current) => {
+      const fromIndex = current.findIndex((entry) => entry.id === draggedEntryId);
+      const toIndex = current.findIndex((entry) => entry.id === entryId);
+      return moveItem(current, fromIndex, toIndex);
+    });
   }
 
   function updateMediaRow(index, key, value) {
@@ -363,6 +418,28 @@ export default function PortfolioTab({
     });
   }
 
+  async function handleSaveOrder() {
+    setIsSavingOrder(true);
+
+    try {
+      await apiPost('/api/portfolio', {
+        action: 'reorder',
+        entries: orderedEntries.map((entry, index) => ({
+          id: entry.id,
+          sort_order: index,
+        })),
+      }, { auth: true });
+      clearPublishedPortfolioCache();
+      await fetchPortfolioEntries();
+      closeOrderModal();
+      showToast('Portfolio order updated.');
+    } catch (error) {
+      showToast('Order update failed: ' + error.message, 'error');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }
+
   const placementGroups = getPlacementGroups(formData.capabilities);
   const previewMedia = findPreviewMedia(formData.media);
   const hasStoredPreview = Boolean(previewMedia?.url);
@@ -394,6 +471,14 @@ export default function PortfolioTab({
               <span className="stat-value">{portfolioEntries.filter((entry) => entry.featured).length}</span>
             </div>
             <div className="stat-item stat-item--action">
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={openOrderModal}
+                disabled={portfolioLoading || portfolioEntries.length < 2}
+              >
+                CHANGE ORDER
+              </button>
               <button className="admin-btn approve" onClick={() => openEditModal()}>
                 + ADD ENTRY
               </button>
@@ -870,6 +955,76 @@ export default function PortfolioTab({
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          ) : null}
+
+          {isOrderModalOpen ? (
+            <div className="admin-modal-overlay">
+              <div className="admin-modal portfolio-order-modal">
+                <div className="modal-header">
+                  <h3>CHANGE PORTFOLIO ORDER</h3>
+                  <button type="button" className="admin-btn" onClick={closeOrderModal}>CLOSE</button>
+                </div>
+
+                <div className="modal-form">
+                  <div className="portfolio-order-list">
+                    {orderedEntries.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className={`portfolio-order-item ${draggedEntryId === entry.id ? 'is-dragging' : ''}`}
+                        draggable
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = 'move';
+                          event.dataTransfer.setData('text/plain', entry.id);
+                          setDraggedEntryId(entry.id);
+                        }}
+                        onDragEnter={(event) => handleOrderDragEnter(event, entry.id)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setDraggedEntryId(null);
+                        }}
+                        onDragEnd={() => setDraggedEntryId(null)}
+                      >
+                        <span className="portfolio-order-rank">{index + 1}</span>
+                        <span className="portfolio-order-grip" aria-hidden="true">DRAG</span>
+                        <div className="portfolio-order-copy">
+                          <strong>{entry.title}</strong>
+                        </div>
+                        <div className="portfolio-order-actions">
+                          <button
+                            type="button"
+                            className="admin-btn small"
+                            onClick={() => moveOrderedEntry(entry.id, -1)}
+                            disabled={index === 0}
+                          >
+                            UP
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn small"
+                            onClick={() => moveOrderedEntry(entry.id, 1)}
+                            disabled={index === orderedEntries.length - 1}
+                          >
+                            DOWN
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="admin-btn approve wide"
+                      onClick={handleSaveOrder}
+                      disabled={isSavingOrder}
+                    >
+                      {isSavingOrder ? 'SAVING ORDER...' : 'SAVE ORDER'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ) : null}

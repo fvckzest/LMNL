@@ -21,6 +21,7 @@ const PORTFOLIO_CAPABILITY_ACCENTS = {
 };
 
 const PORTFOLIO_CACHE_TTL_MS = 60 * 1000;
+const PORTFOLIO_CACHE_KEY = 'portfolio:published';
 const portfolioCache = createExpiringPromiseCache({
   ttlMs: PORTFOLIO_CACHE_TTL_MS,
 });
@@ -235,7 +236,7 @@ export async function fetchPublishedPortfolioEntries(options = {}) {
   const { forceRefresh = false } = options;
 
   return portfolioCache.get(
-    'portfolio:published',
+    PORTFOLIO_CACHE_KEY,
     async () => {
       const rawEntries = hasPublicDataCredentials
         ? await fetchPublicRows('portfolio_entries', {
@@ -249,4 +250,8 @@ export async function fetchPublishedPortfolioEntries(options = {}) {
     },
     { forceRefresh, fallback: [] },
   );
+}
+
+export function clearPublishedPortfolioCache() {
+  portfolioCache.clear(PORTFOLIO_CACHE_KEY);
 }

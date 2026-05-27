@@ -215,6 +215,33 @@ export async function listPublishedPortfolioEntries() {
   }));
 }
 
+export async function updatePortfolioEntryOrder(entries) {
+  const supabase = getAdminSupabase();
+  const normalizedEntries = (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => ({
+      id: String(entry?.id || '').trim(),
+      sort_order: Number.isFinite(Number(entry?.sort_order)) ? Number(entry.sort_order) : index,
+    }))
+    .filter((entry) => entry.id);
+
+  if (normalizedEntries.length === 0) {
+    return [];
+  }
+
+  await Promise.all(normalizedEntries.map(async (entry) => {
+    const { error } = await supabase
+      .from('portfolio_entries')
+      .update({ sort_order: entry.sort_order })
+      .eq('id', entry.id);
+
+    if (error) {
+      throwMissingTable(error, 'portfolio_entries', 'Portfolio entries');
+    }
+  }));
+
+  return listPortfolioEntriesAdmin();
+}
+
 function normalizeStringList(values) {
   if (!Array.isArray(values)) {
     return [];
