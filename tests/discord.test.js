@@ -4,9 +4,7 @@ import {
   buildArtistInterestDiscordEmbed,
   buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
-  extractInviteRequestIdFromDiscordMessage,
   getRemainingTicketCount,
-  handleDiscordInviteRequestReply,
   sendDiscordIntakeNotification,
   sendDiscordTicketNotification,
 } from '../api/_lib/services/discord.js';
@@ -144,7 +142,7 @@ test('buildInviteRequestDiscordEmbed maps invite requests into an embed payload'
   });
   assert.deepEqual(embed.fields[4], {
     name: 'Action',
-    value: 'Reply "approve" or "deny".',
+    value: 'Use `/approve request_id:req_1` or `/deny request_id:req_1`.',
     inline: false,
   });
   assert.equal(embed.footer.text, 'Invite Request ID: req_1');
@@ -206,91 +204,4 @@ test('sendDiscordIntakeNotification times out when Discord does not respond', as
     ),
     (error) => error?.code === 'DISCORD_BOT_MESSAGE_TIMEOUT',
   );
-});
-
-test('extractInviteRequestIdFromDiscordMessage reads invite request embed footers', () => {
-  assert.equal(
-    extractInviteRequestIdFromDiscordMessage({
-      embeds: [{ footer: { text: 'Invite Request ID: req_123' } }],
-    }),
-    'req_123',
-  );
-});
-
-test('handleDiscordInviteRequestReply approves referenced invite request notifications', async () => {
-  const calls = [];
-
-  const result = await handleDiscordInviteRequestReply(
-    {
-      id: 'reply_1',
-      channel_id: 'channel_1',
-      content: 'approve',
-    },
-    {
-      referencedMessage: {
-        id: 'notification_1',
-        embeds: [{ footer: { text: 'Invite Request ID: req_approve' } }],
-      },
-      approveRequestAndSendCheckout: async (requestId) => {
-        calls.push(['approve', requestId]);
-        return { status: 'approved', checkoutUrl: 'https://checkout.example.com' };
-      },
-      postDiscordMessage: async (channelId, body) => {
-        calls.push(['post', channelId, body.content, body.message_reference.message_id]);
-      },
-    },
-  );
-
-  assert.equal(result.success, true);
-  assert.equal(result.action, 'approve');
-  assert.equal(result.requestId, 'req_approve');
-  assert.deepEqual(calls, [
-    ['approve', 'req_approve'],
-    ['post', 'channel_1', 'Approved invite request req_approve.', 'reply_1'],
-  ]);
-});
-
-test('handleDiscordInviteRequestReply denies referenced invite request notifications', async () => {
-  const calls = [];
-
-  const result = await handleDiscordInviteRequestReply(
-    {
-      id: 'reply_2',
-      channel_id: 'channel_1',
-      content: 'deny',
-    },
-    {
-      referencedMessage: {
-        id: 'notification_2',
-        embeds: [{ footer: { text: 'Invite Request ID: req_deny' } }],
-      },
-      updateRequestStatus: async (requestId, status) => {
-        calls.push(['update', requestId, status]);
-        return { id: requestId, status };
-      },
-      postDiscordMessage: async (channelId, body) => {
-        calls.push(['post', channelId, body.content, body.message_reference.message_id]);
-      },
-    },
-  );
-
-  assert.equal(result.success, true);
-  assert.equal(result.action, 'deny');
-  assert.equal(result.requestId, 'req_deny');
-  assert.deepEqual(calls, [
-    ['update', 'req_deny', 'rejected'],
-    ['post', 'channel_1', 'Denied invite request req_deny.', 'reply_2'],
-  ]);
-});
-
-test('handleDiscordInviteRequestReply ignores non approval replies', async () => {
-  const result = await handleDiscordInviteRequestReply({
-    id: 'reply_3',
-    content: 'maybe',
-    referenced_message: {
-      embeds: [{ footer: { text: 'Invite Request ID: req_skip' } }],
-    },
-  });
-
-  assert.equal(result.skipped, true);
 });

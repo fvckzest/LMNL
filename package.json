@@ -7,7 +7,6 @@
     "clear:discord-global-commands": "node scripts/clear-discord-global-commands.mjs",
     "dev": "vite",
     "build": "vite build && node scripts/postbuild.js",
-    "discord:reply-worker": "node scripts/discord-reply-worker.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "register:discord-commands": "node scripts/register-discord-commands.mjs",

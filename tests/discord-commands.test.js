@@ -27,8 +27,12 @@ test('verifyDiscordInteractionSignature accepts a valid Ed25519 signature', () =
 test('discord command definitions include the default LMNL slash commands', () => {
   assert.deepEqual(
     discordCommandDefinitions.map((command) => command.name),
-    ['ping', 'help', 'rate', 'tickets-left', 'ticket', 'test-intake'],
+    ['ping', 'help', 'rate', 'tickets-left', 'ticket', 'test-intake', 'approve', 'deny'],
   );
+
+  const approveCommand = discordCommandDefinitions.find((command) => command.name === 'approve');
+  assert.equal(approveCommand.default_member_permissions, '32');
+  assert.equal(approveCommand.dm_permission, false);
 });
 
 test('handleDiscordInteraction responds to ping commands', async () => {
@@ -51,6 +55,8 @@ test('handleDiscordInteraction lists commands in help', async () => {
   assert.match(response.data.content, /\/rate/);
   assert.match(response.data.content, /\/tickets-left/);
   assert.match(response.data.content, /\/ticket/);
+  assert.match(response.data.content, /\/approve/);
+  assert.match(response.data.content, /\/deny/);
 });
 
 test('handleDiscordInteraction rates a tagged user with a random number', async () => {
@@ -107,6 +113,54 @@ test('handleDiscordInteraction resolves tickets sold for an event title', async 
 
   assert.equal(response.type, 4);
   assert.match(response.data.content, /Launch: 34 tickets sold/);
+});
+
+test('handleDiscordInteraction approves invite requests by id', async () => {
+  const calls = [];
+  const response = await handleDiscordInteraction(
+    {
+      type: 2,
+      data: {
+        name: 'approve',
+        options: [{ name: 'request_id', value: 'req_approve' }],
+      },
+    },
+    {
+      approveRequestAndSendCheckout: async (requestId) => {
+        calls.push(requestId);
+        return { status: 'approved', checkoutUrl: 'https://checkout.example.com' };
+      },
+    },
+  );
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.content, 'Approved invite request req_approve.');
+  assert.deepEqual(calls, ['req_approve']);
+});
+
+test('handleDiscordInteraction denies invite requests by id', async () => {
+  const calls = [];
+  const response = await handleDiscordInteraction(
+    {
+      type: 2,
+      data: {
+        name: 'deny',
+        options: [{ name: 'request_id', value: 'req_deny' }],
+      },
+    },
+    {
+      updateRequestStatus: async (requestId, status) => {
+        calls.push([requestId, status]);
+        return { id: requestId, status };
+      },
+    },
+  );
+
+  assert.equal(response.type, 4);
+  assert.equal(response.data.flags, 64);
+  assert.equal(response.data.content, 'Denied invite request req_deny.');
+  assert.deepEqual(calls, [['req_deny', 'rejected']]);
 });
 
 test('handleDiscordInteraction previews the contact intake embed', async () => {

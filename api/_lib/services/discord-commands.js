@@ -2,7 +2,9 @@ import crypto from 'crypto';
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getLatestEventByName } from '../repositories/events.js';
+import { updateRequestStatus } from '../repositories/requests.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
+import { approveRequestAndSendCheckout } from './approval.js';
 import {
   buildArtistInterestDiscordEmbed,
   buildInviteRequestDiscordEmbed,
@@ -11,6 +13,7 @@ import {
 } from './discord.js';
 
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+const MANAGE_GUILD_PERMISSION = '32';
 
 export const discordCommandDefinitions = [
   {
@@ -81,6 +84,36 @@ export const discordCommandDefinitions = [
       },
     ],
   },
+  {
+    name: 'approve',
+    description: 'Approve an LMNL invite request by request ID.',
+    type: 1,
+    default_member_permissions: MANAGE_GUILD_PERMISSION,
+    dm_permission: false,
+    options: [
+      {
+        type: 3,
+        name: 'request_id',
+        description: 'The invite request ID from the Discord notification.',
+        required: true,
+      },
+    ],
+  },
+  {
+    name: 'deny',
+    description: 'Deny an LMNL invite request by request ID.',
+    type: 1,
+    default_member_permissions: MANAGE_GUILD_PERMISSION,
+    dm_permission: false,
+    options: [
+      {
+        type: 3,
+        name: 'request_id',
+        description: 'The invite request ID from the Discord notification.',
+        required: true,
+      },
+    ],
+  },
 ];
 
 function toPublicKeyObject(publicKeyHex) {
@@ -112,11 +145,12 @@ function getOptionUserMention(interaction, optionName) {
   return `<@${userId}>`;
 }
 
-function createMessageResponse(content) {
+function createMessageResponse(content, ephemeral = false) {
   return {
     type: 4,
     data: {
       content,
+      ...(ephemeral ? { flags: 64 } : {}),
     },
   };
 }
@@ -159,6 +193,8 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
   const loadEventByName = deps.getLatestEventByName || getLatestEventByName;
   const loadRemainingTicketCount = deps.getRemainingTicketCount || getRemainingTicketCount;
   const loadTicketsSoldCount = deps.countTicketsByEventId || countTicketsByEventId;
+  const approveInviteRequest = deps.approveRequestAndSendCheckout || approveRequestAndSendCheckout;
+  const setRequestStatus = deps.updateRequestStatus || updateRequestStatus;
   const randomImpl = deps.randomImpl || Math.random;
 
   if (commandName === 'ping') {
@@ -215,6 +251,27 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
 
     const ticketsSold = await loadTicketsSoldCount(event.id);
     return createMessageResponse(`${event.name}: ${ticketsSold} ticket${ticketsSold === 1 ? '' : 's'} sold.`);
+  }
+
+  if (commandName === 'approve') {
+    const requestId = String(getOptionValue(interaction, 'request_id') || '').trim();
+    if (!requestId) {
+      return createMessageResponse('Please provide an invite request ID.', true);
+    }
+
+    const result = await approveInviteRequest(requestId, deps);
+    const warning = result?.warning ? ` ${result.warning}` : '';
+    return createMessageResponse(`Approved invite request ${requestId}.${warning}`, true);
+  }
+
+  if (commandName === 'deny') {
+    const requestId = String(getOptionValue(interaction, 'request_id') || '').trim();
+    if (!requestId) {
+      return createMessageResponse('Please provide an invite request ID.', true);
+    }
+
+    await setRequestStatus(requestId, 'rejected');
+    return createMessageResponse(`Denied invite request ${requestId}.`, true);
   }
 
   if (commandName === 'test-intake') {
