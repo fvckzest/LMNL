@@ -212,6 +212,43 @@ test('deferred approve failures include safe app error messages', async () => {
   );
 });
 
+test('deferred approve recovers when the request was approved before an error', async () => {
+  const requests = [];
+  const interaction = {
+    application_id: 'app_1',
+    token: 'token_1',
+    type: 2,
+    data: {
+      name: 'approve',
+      options: [{ name: 'request_id', value: 'req_approved' }],
+    },
+  };
+
+  await completeDeferredDiscordInteraction(interaction, {
+    approveRequestAndSendCheckout: async () => {
+      throw new AppError('Discord response update failed.', {
+        status: 502,
+        expose: true,
+      });
+    },
+    getRequestById: async (requestId) => ({
+      id: requestId,
+      status: 'approved',
+      customer_name: 'Jordan Ellis',
+    }),
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(
+    JSON.parse(requests[0].options.body).content,
+    'Approved Jordan Ellis.',
+  );
+});
+
 test('handleDiscordInteraction denies invite requests by id', async () => {
   const calls = [];
   const response = await handleDiscordInteraction(

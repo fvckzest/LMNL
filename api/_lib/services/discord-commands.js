@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getBaseConfig } from '../env.js';
 import { AppError, asAppError } from '../errors.js';
 import { getLatestEventByName } from '../repositories/events.js';
-import { updateRequestStatus } from '../repositories/requests.js';
+import { getRequestById, updateRequestStatus } from '../repositories/requests.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
 import { approveRequestAndSendCheckout } from './approval.js';
 import {
@@ -140,6 +140,15 @@ function getOptionValue(interaction, optionName) {
   return option?.value;
 }
 
+function getInviteRequestIdOption(interaction) {
+  return String(getOptionValue(interaction, 'request_id') || '').trim();
+}
+
+function formatRequestLabel(request, requestId) {
+  const requesterName = String(request?.customer_name || '').trim();
+  return requesterName || `request ${requestId}`;
+}
+
 function getOptionUserMention(interaction, optionName) {
   const userId = String(getOptionValue(interaction, optionName) || '').trim();
   if (!userId) return '';
@@ -236,6 +245,25 @@ export async function completeDeferredDiscordInteraction(interaction, deps = {})
   } catch (error) {
     const appError = asAppError(error, 'Approval failed.');
     console.error('[discord-interactions] deferred command failed', appError);
+
+    if (interaction?.data?.name === 'approve') {
+      const requestId = getInviteRequestIdOption(interaction);
+      const loadRequest = deps.getRequestById || getRequestById;
+      try {
+        const request = requestId ? await loadRequest(requestId) : null;
+        if (request?.status === 'approved' || request?.status === 'fulfilled') {
+          await editOriginalInteractionResponse(
+            interaction,
+            createMessageResponse(`Approved ${formatRequestLabel(request, requestId)}.`),
+            deps,
+          );
+          return;
+        }
+      } catch (lookupError) {
+        console.error('[discord-interactions] approved request recovery lookup failed', lookupError);
+      }
+    }
+
     const errorDetail = appError.expose ? ` ${appError.message}` : '';
     await editOriginalInteractionResponse(
       interaction,
@@ -333,27 +361,25 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
   }
 
   if (commandName === 'approve') {
-    const requestId = String(getOptionValue(interaction, 'request_id') || '').trim();
+    const requestId = getInviteRequestIdOption(interaction);
     if (!requestId) {
       return createMessageResponse('Please provide an invite request ID.', true);
     }
 
     const result = await approveInviteRequest(requestId, deps);
-    const requesterName = String(result?.request?.customer_name || result?.customer_name || '').trim();
-    const requestLabel = requesterName || `request ${requestId}`;
+    const requestLabel = formatRequestLabel(result?.request || result, requestId);
     const warning = result?.warning ? ` ${result.warning}` : '';
     return createMessageResponse(`Approved ${requestLabel}.${warning}`);
   }
 
   if (commandName === 'deny') {
-    const requestId = String(getOptionValue(interaction, 'request_id') || '').trim();
+    const requestId = getInviteRequestIdOption(interaction);
     if (!requestId) {
       return createMessageResponse('Please provide an invite request ID.', true);
     }
 
     const updatedRequest = await setRequestStatus(requestId, 'rejected');
-    const requesterName = String(updatedRequest?.customer_name || '').trim();
-    const requestLabel = requesterName || `request ${requestId}`;
+    const requestLabel = formatRequestLabel(updatedRequest, requestId);
     return createMessageResponse(`Denied ${requestLabel}.`, true);
   }
 
