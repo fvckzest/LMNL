@@ -14,6 +14,7 @@ import {
 
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 const MANAGE_GUILD_PERMISSION = '32';
+const EPHEMERAL_FLAG = 64;
 
 export const discordCommandDefinitions = [
   {
@@ -150,7 +151,7 @@ function createMessageResponse(content, ephemeral = false) {
     type: 4,
     data: {
       content,
-      ...(ephemeral ? { flags: 64 } : {}),
+      ...(ephemeral ? { flags: EPHEMERAL_FLAG } : {}),
     },
   };
 }
@@ -161,9 +162,85 @@ function createEmbedResponse(embed, content = 'Previewing the current intake emb
     data: {
       content,
       embeds: [embed],
-      ...(ephemeral ? { flags: 64 } : {}),
+      ...(ephemeral ? { flags: EPHEMERAL_FLAG } : {}),
     },
   };
+}
+
+export function shouldDeferDiscordInteraction(interaction) {
+  return interaction?.type === 2 && interaction?.data?.name === 'approve';
+}
+
+export function createDeferredDiscordResponse(ephemeral = false) {
+  return {
+    type: 5,
+    ...(ephemeral ? { data: { flags: EPHEMERAL_FLAG } } : {}),
+  };
+}
+
+async function editOriginalInteractionResponse(interaction, response, deps = {}) {
+  const applicationId = interaction?.application_id || deps.applicationId || getBaseConfig().discordApplicationId;
+  const interactionToken = interaction?.token;
+
+  if (!applicationId || !interactionToken) {
+    throw new AppError('Discord interaction token is missing.', {
+      code: 'DISCORD_INTERACTION_TOKEN_MISSING',
+      status: 500,
+      expose: true,
+    });
+  }
+
+  const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== 'function') {
+    throw new AppError('Fetch is unavailable in this runtime.', {
+      code: 'FETCH_UNAVAILABLE',
+      status: 500,
+      expose: true,
+    });
+  }
+
+  const apiBaseUrl = String(deps.discordApiBaseUrl || 'https://discord.com/api/v10').replace(/\/$/, '');
+  const payload = {
+    content: response?.data?.content || 'Done.',
+  };
+
+  if (Array.isArray(response?.data?.embeds)) {
+    payload.embeds = response.data.embeds;
+  }
+
+  const discordResponse = await fetchImpl(
+    `${apiBaseUrl}/webhooks/${encodeURIComponent(applicationId)}/${encodeURIComponent(interactionToken)}/messages/@original`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!discordResponse.ok) {
+    throw new AppError('Discord interaction response update failed.', {
+      code: 'DISCORD_INTERACTION_UPDATE_FAILED',
+      status: 502,
+      details: { status: discordResponse.status },
+      expose: true,
+    });
+  }
+}
+
+export async function completeDeferredDiscordInteraction(interaction, deps = {}) {
+  try {
+    const response = await handleDiscordInteraction(interaction, deps);
+    await editOriginalInteractionResponse(interaction, response, deps);
+  } catch (error) {
+    console.error('[discord-interactions] deferred command failed', error);
+    await editOriginalInteractionResponse(
+      interaction,
+      createMessageResponse('Approval failed. Please try again or approve from the admin dashboard.'),
+      deps,
+    );
+  }
 }
 
 export function verifyDiscordInteractionSignature({ signature, timestamp, rawBody, publicKey }) {

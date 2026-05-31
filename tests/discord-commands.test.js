@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
 import {
+  completeDeferredDiscordInteraction,
+  createDeferredDiscordResponse,
   discordCommandDefinitions,
   handleDiscordInteraction,
+  shouldDeferDiscordInteraction,
   verifyDiscordInteractionSignature,
 } from '../api/_lib/services/discord-commands.js';
 
@@ -141,6 +144,39 @@ test('handleDiscordInteraction approves invite requests by id', async () => {
   assert.equal(response.data.flags, undefined);
   assert.equal(response.data.content, 'Approved Jordan Ellis.');
   assert.deepEqual(calls, ['req_approve']);
+});
+
+test('approve commands are deferred and update the original Discord response', async () => {
+  const requests = [];
+  const interaction = {
+    application_id: 'app_1',
+    token: 'token_1',
+    type: 2,
+    data: {
+      name: 'approve',
+      options: [{ name: 'request_id', value: 'req_approve' }],
+    },
+  };
+
+  assert.equal(shouldDeferDiscordInteraction(interaction), true);
+  assert.deepEqual(createDeferredDiscordResponse(), { type: 5 });
+
+  await completeDeferredDiscordInteraction(interaction, {
+    approveRequestAndSendCheckout: async () => ({
+      status: 'approved',
+      request: { customer_name: 'Jordan Ellis' },
+    }),
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, 'https://discord.com/api/v10/webhooks/app_1/token_1/messages/@original');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {
+    content: 'Approved Jordan Ellis.',
+  });
 });
 
 test('handleDiscordInteraction denies invite requests by id', async () => {

@@ -1,7 +1,10 @@
 import { withHandler, allowMethods, readRawBody, sendJson, AppError } from './_lib/http.js';
 import {
+  completeDeferredDiscordInteraction,
+  createDeferredDiscordResponse,
   getDiscordInteractionConfig,
   handleDiscordInteraction,
+  shouldDeferDiscordInteraction,
   verifyDiscordInteractionSignature,
 } from './_lib/services/discord-commands.js';
 
@@ -54,6 +57,12 @@ async function handler(req, res) {
       expose: true,
       details: error,
     });
+  }
+
+  if (shouldDeferDiscordInteraction(interaction)) {
+    sendJson(res, 200, createDeferredDiscordResponse());
+    await completeDeferredDiscordInteraction(interaction);
+    return;
   }
 
   const response = await handleDiscordInteraction(interaction);
