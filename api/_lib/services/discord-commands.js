@@ -260,8 +260,10 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
     }
 
     const result = await approveInviteRequest(requestId, deps);
+    const requesterName = String(result?.request?.customer_name || result?.customer_name || '').trim();
+    const requestLabel = requesterName || `request ${requestId}`;
     const warning = result?.warning ? ` ${result.warning}` : '';
-    return createMessageResponse(`Approved invite request ${requestId}.${warning}`, true);
+    return createMessageResponse(`Approved ${requestLabel}.${warning}`);
   }
 
   if (commandName === 'deny') {
@@ -270,8 +272,10 @@ export async function handleDiscordInteraction(interaction, deps = {}) {
       return createMessageResponse('Please provide an invite request ID.', true);
     }
 
-    await setRequestStatus(requestId, 'rejected');
-    return createMessageResponse(`Denied invite request ${requestId}.`, true);
+    const updatedRequest = await setRequestStatus(requestId, 'rejected');
+    const requesterName = String(updatedRequest?.customer_name || '').trim();
+    const requestLabel = requesterName || `request ${requestId}`;
+    return createMessageResponse(`Denied ${requestLabel}.`, true);
   }
 
   if (commandName === 'test-intake') {

@@ -124,5 +124,6 @@ export async function approveRequestAndSendCheckout(requestId, deps = {}) {
     orderId: checkout.orderId || updatedRequest.square_order_id || null,
     emailSent: !warning,
     warning,
+    request: updatedRequest,
   };
 }

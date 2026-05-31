@@ -128,14 +128,18 @@ test('handleDiscordInteraction approves invite requests by id', async () => {
     {
       approveRequestAndSendCheckout: async (requestId) => {
         calls.push(requestId);
-        return { status: 'approved', checkoutUrl: 'https://checkout.example.com' };
+        return {
+          status: 'approved',
+          checkoutUrl: 'https://checkout.example.com',
+          request: { customer_name: 'Jordan Ellis' },
+        };
       },
     },
   );
 
   assert.equal(response.type, 4);
-  assert.equal(response.data.flags, 64);
-  assert.equal(response.data.content, 'Approved invite request req_approve.');
+  assert.equal(response.data.flags, undefined);
+  assert.equal(response.data.content, 'Approved Jordan Ellis.');
   assert.deepEqual(calls, ['req_approve']);
 });
 
@@ -152,14 +156,14 @@ test('handleDiscordInteraction denies invite requests by id', async () => {
     {
       updateRequestStatus: async (requestId, status) => {
         calls.push([requestId, status]);
-        return { id: requestId, status };
+        return { id: requestId, status, customer_name: 'Maya Chen' };
       },
     },
   );
 
   assert.equal(response.type, 4);
   assert.equal(response.data.flags, 64);
-  assert.equal(response.data.content, 'Denied invite request req_deny.');
+  assert.equal(response.data.content, 'Denied Maya Chen.');
   assert.deepEqual(calls, [['req_deny', 'rejected']]);
 });
 
