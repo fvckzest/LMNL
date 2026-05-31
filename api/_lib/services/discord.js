@@ -1,6 +1,8 @@
 import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
+import { updateRequestStatus } from '../repositories/requests.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
+import { approveRequestAndSendCheckout } from './approval.js';
 import { getVariationInventory } from './inventory.js';
 
 const DISCORD_EMBED_LIMITS = {
@@ -123,6 +125,81 @@ async function postDiscordMessage(channelId, body, deps = {}) {
   return { success: true };
 }
 
+function normalizeInviteReplyAction(content) {
+  const normalized = String(content || '').trim().toLowerCase();
+  if (/^approve[.!]?$/i.test(normalized)) return 'approve';
+  if (/^deny[.!]?$/i.test(normalized)) return 'deny';
+  return null;
+}
+
+export function extractInviteRequestIdFromDiscordMessage(message) {
+  const embeds = Array.isArray(message?.embeds) ? message.embeds : [];
+
+  for (const embed of embeds) {
+    const footerText = String(embed?.footer?.text || '').trim();
+    const match = footerText.match(/\bInvite Request ID:\s*([^\s]+)/i);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return '';
+}
+
+export async function handleDiscordInviteRequestReply(message, deps = {}) {
+  const action = normalizeInviteReplyAction(message?.content);
+  if (!action) {
+    return { skipped: true, reason: 'Message is not an invite approval reply.' };
+  }
+
+  const referencedMessage = message?.referenced_message || deps.referencedMessage;
+  const requestId = extractInviteRequestIdFromDiscordMessage(referencedMessage);
+  if (!requestId) {
+    return { skipped: true, reason: 'Reply did not reference an invite request notification.' };
+  }
+
+  const channelId = message?.channel_id || referencedMessage?.channel_id;
+  const replyToMessageId = message?.id || referencedMessage?.id;
+  const decideApproval = deps.approveRequestAndSendCheckout || approveRequestAndSendCheckout;
+  const setRequestStatus = deps.updateRequestStatus || updateRequestStatus;
+  const postMessage = deps.postDiscordMessage || postDiscordMessage;
+
+  if (action === 'approve') {
+    const result = await decideApproval(requestId, deps);
+    const warning = result?.warning ? ` ${result.warning}` : '';
+
+    if (channelId) {
+      await postMessage(channelId, {
+        content: `Approved invite request ${requestId}.${warning}`,
+        ...(replyToMessageId ? { message_reference: { message_id: replyToMessageId } } : {}),
+      }, deps);
+    }
+
+    return {
+      success: true,
+      action,
+      requestId,
+      data: result,
+    };
+  }
+
+  const updatedRequest = await setRequestStatus(requestId, 'rejected');
+
+  if (channelId) {
+    await postMessage(channelId, {
+      content: `Denied invite request ${requestId}.`,
+      ...(replyToMessageId ? { message_reference: { message_id: replyToMessageId } } : {}),
+    }, deps);
+  }
+
+  return {
+    success: true,
+    action,
+    requestId,
+    data: updatedRequest,
+  };
+}
+
 export async function sendDiscordTicketNotification(ticket, event, customerName, deps = {}) {
   const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
   const channelId = config.discordTicketChannelId;
@@ -196,6 +273,7 @@ export function buildInviteRequestDiscordEmbed(request) {
       { name: 'Email', value: request?.customer_email, inline: true },
       { name: 'Event', value: request?.event_name || '—', inline: true },
       { name: 'Status', value: request?.status || 'pending', inline: true },
+      { name: 'Action', value: 'Reply "approve" or "deny".' },
     ].map(sanitizeField).filter(Boolean),
     footer: {
       text: truncate(`Invite Request ID: ${request?.id || 'pending'}`, DISCORD_EMBED_LIMITS.footer),

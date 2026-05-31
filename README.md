@@ -83,6 +83,11 @@ For Discord slash commands:
 - Register commands with `npm run register:discord-commands`.
 - Use `/test-intake form:contact`, `/test-intake form:service`, `/test-intake form:artist`, or `/test-intake form:invite` in Discord to preview the current intake embeds privately before testing live form submissions.
 
+For Discord invite request replies:
+- Enable the bot's Message Content Intent in the Discord developer portal.
+- Run `npm run discord:reply-worker` somewhere persistent with `DISCORD_BOT_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, Square, and Resend env vars available.
+- Reply directly to a "New Event Invite Request" notification with `approve` to approve and email the checkout link, or `deny` to mark the request as rejected.
+
 ---
 
 ## 4. Development & Build
