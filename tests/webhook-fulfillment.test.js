@@ -61,6 +61,66 @@ test('processSquareOrderUpdate creates ticket when order is fulfillable', async 
   assert.deepEqual(result, { success: true, ticketId: 'ticket_new' });
 });
 
+test('processSquareOrderUpdate treats concurrent duplicate ticket inserts as replays', async () => {
+  let emailSent = false;
+  let discordSent = false;
+  let lookupCount = 0;
+  const result = await processSquareOrderUpdate(
+    {
+      type: 'payment.updated',
+      data: {
+        object: {
+          payment: {
+            order_id: 'order_race',
+            status: 'COMPLETED',
+          },
+        },
+      },
+    },
+    {},
+    {
+      verifySignature: () => {},
+      findTicketBySquareOrderId: async () => {
+        lookupCount += 1;
+        return lookupCount === 1 ? null : { id: 'ticket_existing' };
+      },
+      squareClient: {
+        orders: {
+          get: async () => ({
+            order: {
+              id: 'order_race',
+              state: 'COMPLETED',
+              metadata: { requestId: 'req_race' },
+              lineItems: [{ catalogObjectId: 'var_race' }],
+              tenders: [{ id: 'tender_race' }],
+            },
+          }),
+        },
+      },
+      fulfillApprovedRequestById: async () => ({ id: 'req_race' }),
+      fulfillApprovedRequestByOrderId: async () => null,
+      getEventBySquareVariationIds: async () => ({ id: 'event_race', name: 'Race' }),
+      resolveCustomer: async () => ({ customerName: 'Ada', customerEmail: 'ada@example.com' }),
+      createTicket: async () => {
+        const error = new Error('duplicate key value violates unique constraint');
+        error.code = '23505';
+        throw error;
+      },
+      sendTicketEmail: async () => {
+        emailSent = true;
+      },
+      sendDiscordTicketNotification: async () => {
+        discordSent = true;
+      },
+    }
+  );
+
+  assert.deepEqual(result, { replay: true, ticketId: 'ticket_existing' });
+  assert.equal(lookupCount, 2);
+  assert.equal(emailSent, false);
+  assert.equal(discordSent, false);
+});
+
 test('processSquareOrderUpdate prefers order metadata event ID when catalog variation lookup is unavailable', async () => {
   const createdTickets = [];
   const result = await processSquareOrderUpdate(
