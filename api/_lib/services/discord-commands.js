@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { getBaseConfig } from '../env.js';
-import { AppError } from '../errors.js';
+import { AppError, asAppError } from '../errors.js';
 import { getLatestEventByName } from '../repositories/events.js';
 import { updateRequestStatus } from '../repositories/requests.js';
 import { countTicketsByEventId } from '../repositories/tickets.js';
@@ -234,10 +234,12 @@ export async function completeDeferredDiscordInteraction(interaction, deps = {})
     const response = await handleDiscordInteraction(interaction, deps);
     await editOriginalInteractionResponse(interaction, response, deps);
   } catch (error) {
-    console.error('[discord-interactions] deferred command failed', error);
+    const appError = asAppError(error, 'Approval failed.');
+    console.error('[discord-interactions] deferred command failed', appError);
+    const errorDetail = appError.expose ? ` ${appError.message}` : '';
     await editOriginalInteractionResponse(
       interaction,
-      createMessageResponse('Approval failed. Please try again or approve from the admin dashboard.'),
+      createMessageResponse(`Approval failed.${errorDetail} Please try again or approve from the admin dashboard.`),
       deps,
     );
   }

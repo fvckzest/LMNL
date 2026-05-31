@@ -13,8 +13,8 @@ import { createPaymentForRequest, getRequestCheckoutView } from './_lib/services
 import { createPaymentForEvent, getEventCheckoutView } from './_lib/services/event-checkout.js';
 import {
   buildArtistInterestDiscordEmbed,
-  buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
+  sendDiscordInviteRequestNotification,
   sendDiscordIntakeNotification,
 } from './_lib/services/discord.js';
 import {
@@ -636,7 +636,7 @@ async function handleRequests(req, res) {
     await settleNotificationTasks([
       {
         label: 'Discord invite request notification',
-        task: () => sendDiscordIntakeNotification(buildInviteRequestDiscordEmbed(created)),
+        task: () => sendDiscordInviteRequestNotification(created),
       },
     ]);
 

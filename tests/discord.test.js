@@ -5,6 +5,7 @@ import {
   buildInviteRequestDiscordEmbed,
   buildInquiryDiscordEmbed,
   getRemainingTicketCount,
+  sendDiscordInviteRequestNotification,
   sendDiscordIntakeNotification,
   sendDiscordTicketNotification,
 } from '../api/_lib/services/discord.js';
@@ -181,6 +182,41 @@ test('sendDiscordIntakeNotification posts embeds through the configured intake c
   assert.equal(payload.embeds[0].title, 'New Service Inquiry');
   assert.equal(payload.embeds[0].fields[0].name, 'Name');
   assert.equal(payload.embeds[0].footer.text, 'Inquiry ID: inq_1');
+});
+
+test('sendDiscordInviteRequestNotification posts an embed and plain text request id', async () => {
+  const requests = [];
+
+  const result = await sendDiscordInviteRequestNotification(
+    {
+      id: 'req_123',
+      customer_name: 'Jordan',
+      customer_email: 'jordan@example.com',
+      event_name: 'SPACE',
+      status: 'pending',
+      created_at: '2026-05-21T18:00:00.000Z',
+    },
+    {
+      getBaseConfig: () => ({
+        discordBotToken: 'bot-token-123',
+        discordIntakeChannelId: 'channel-999',
+      }),
+      fetchImpl: async (url, options) => {
+        requests.push({ url, options });
+        return { ok: true, status: 200 };
+      },
+    },
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.requestIdMessageSent, true);
+  assert.equal(requests.length, 2);
+
+  const embedPayload = JSON.parse(requests[0].options.body);
+  assert.equal(embedPayload.embeds[0].title, 'New Event Invite Request');
+
+  const idPayload = JSON.parse(requests[1].options.body);
+  assert.equal(idPayload.content, 'Invite request ID: req_123');
 });
 
 test('sendDiscordIntakeNotification times out when Discord does not respond', async () => {

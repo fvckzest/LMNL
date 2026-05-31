@@ -231,3 +231,30 @@ export async function sendDiscordIntakeNotification(embed, deps = {}) {
     channelId,
   };
 }
+
+export async function sendDiscordInviteRequestNotification(request, deps = {}) {
+  const embed = buildInviteRequestDiscordEmbed(request);
+  const result = await sendDiscordIntakeNotification(embed, deps);
+
+  if (result?.skipped) {
+    return result;
+  }
+
+  const requestId = String(request?.id || '').trim();
+  if (!requestId) {
+    return {
+      ...result,
+      requestIdMessageSent: false,
+    };
+  }
+
+  const config = deps.getBaseConfig ? deps.getBaseConfig() : getBaseConfig();
+  await postDiscordMessage(config.discordIntakeChannelId, {
+    content: `Invite request ID: ${requestId}`,
+  }, deps);
+
+  return {
+    ...result,
+    requestIdMessageSent: true,
+  };
+}

@@ -9,6 +9,7 @@ import {
   shouldDeferDiscordInteraction,
   verifyDiscordInteractionSignature,
 } from '../api/_lib/services/discord-commands.js';
+import { AppError } from '../api/_lib/errors.js';
 
 test('verifyDiscordInteractionSignature accepts a valid Ed25519 signature', () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
@@ -177,6 +178,38 @@ test('approve commands are deferred and update the original Discord response', a
   assert.deepEqual(JSON.parse(requests[0].options.body), {
     content: 'Approved Jordan Ellis.',
   });
+});
+
+test('deferred approve failures include safe app error messages', async () => {
+  const requests = [];
+  const interaction = {
+    application_id: 'app_1',
+    token: 'token_1',
+    type: 2,
+    data: {
+      name: 'approve',
+      options: [{ name: 'request_id', value: 'missing_request' }],
+    },
+  };
+
+  await completeDeferredDiscordInteraction(interaction, {
+    approveRequestAndSendCheckout: async () => {
+      throw new AppError('Request not found.', {
+        status: 404,
+        expose: true,
+      });
+    },
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(
+    JSON.parse(requests[0].options.body).content,
+    'Approval failed. Request not found. Please try again or approve from the admin dashboard.',
+  );
 });
 
 test('handleDiscordInteraction denies invite requests by id', async () => {
