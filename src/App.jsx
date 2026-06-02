@@ -37,6 +37,7 @@ const Events = lazyWithRetry(() => import('./pages/Events'));
 const Admin = lazyWithRetry(() => import('./pages/Admin'));
 const CheckIn = lazyWithRetry(() => import('./pages/CheckIn'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
+const PasswordReset = lazyWithRetry(() => import('./pages/PasswordReset'));
 const Ticket = lazyWithRetry(() => import('./pages/Ticket'));
 const Success = lazyWithRetry(() => import('./pages/Success'));
 const Services = lazyWithRetry(() => import('./pages/Services'));
@@ -114,6 +115,25 @@ function CommunityRouteError({ message, nextPath }) {
       </div>
     </ContentPageShell>
   );
+}
+
+function hasPasswordRecoveryMarker(location) {
+  const hashParams = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const searchParams = new URLSearchParams(location.search || '');
+
+  return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+}
+
+function buildPasswordRecoveryRedirectLocation(location) {
+  return `/reset-password${location.search || ''}${location.hash || ''}`;
+}
+
+function navigateToPasswordRecovery(navigate, location) {
+  navigate(buildPasswordRecoveryRedirectLocation(location), { replace: true });
+}
+
+function PasswordRecoveryNavigate({ location }) {
+  return <Navigate to={buildPasswordRecoveryRedirectLocation(location)} replace />;
 }
 
 function ProtectedRoute({ children, requireAdmin = false }) {
@@ -202,6 +222,10 @@ function ProtectedRoute({ children, requireAdmin = false }) {
       cancelled = true;
     };
   }, [requireAdmin, session]);
+
+  if (hasPasswordRecoveryMarker(location)) {
+    return <PasswordRecoveryNavigate location={location} />;
+  }
 
   if (session === undefined) return <RouteGateFallback />;
 
@@ -378,6 +402,46 @@ function RouteSeoManager() {
   return null;
 }
 
+function PasswordRecoveryRedirector() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isRecoveryUrl = hasPasswordRecoveryMarker(location);
+
+  useEffect(() => {
+    let unsubscribe = () => {};
+
+    async function listenForPasswordRecovery() {
+      const { supabase } = await import('./lib/supabase');
+
+      if (isRecoveryUrl && location.pathname !== '/reset-password') {
+        navigateToPasswordRecovery(navigate, location);
+      }
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/reset-password') {
+          navigateToPasswordRecovery(navigate, location);
+        }
+      });
+
+      unsubscribe = () => subscription.unsubscribe();
+    }
+
+    listenForPasswordRecovery();
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isRecoveryUrl, location, navigate]);
+
+  if (isRecoveryUrl && location.pathname !== '/reset-password') {
+    return <PasswordRecoveryNavigate location={location} />;
+  }
+
+  return null;
+}
+
 function App() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -390,6 +454,7 @@ function App() {
     <ThemeProvider>
       <Router>
         <RouteSeoManager />
+        <PasswordRecoveryRedirector />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route element={<PersistentShellLayout />}>
@@ -427,6 +492,7 @@ function App() {
                   <Route path="/home" element={<Home />} />
                 </Route>
                 <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<PasswordReset />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
                 {showCommunityApp ? <Route path="/auth/callback" element={<SessionAwareAuthCallback />} /> : null}
               </>
@@ -437,6 +503,7 @@ function App() {
                 </Route>
                 <Route path="/admin" element={<Navigate to="/" />} />
                 <Route path="/login" element={<Navigate to="/" />} />
+                <Route path="/reset-password" element={<PasswordReset />} />
                 {isLocal ? <Route path="/email-lab" element={<EmailLab />} /> : null}
                 <Route path="/auth/callback" element={<SessionAwareAuthCallback />} />
               </>

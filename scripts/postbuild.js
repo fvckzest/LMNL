@@ -28,6 +28,15 @@ export const routes = [
     indexable: false,
   },
   {
+    path: 'reset-password',
+    title: 'LMNL | RESET PASSWORD',
+    description: 'Reset password access for LMNL accounts.',
+    image: '/seo/home-seo.png',
+    changefreq: 'yearly',
+    priority: '0.1',
+    indexable: false,
+  },
+  {
     path: 'home',
     title: 'LMNL',
     description: 'LMNL is a Tacoma, Washington art and culture platform producing events, creative services, media, design systems, and community experiences.',

@@ -11,7 +11,8 @@
 
 .login-header h1,
 .login-input-group label,
-.login-error { margin: 0; }
+.login-error,
+.login-status { margin: 0; }
 
 .login-header h1 {
   color: var(--page-color);
@@ -32,6 +33,32 @@
   letter-spacing: 0.12em;
 }
 
+.login-status {
+  color: var(--page-color);
+  font-size: calc(11px * 1.25);
+  letter-spacing: 0.12em;
+}
+
 .login-btn {
   --theme-button-font: var(--lmnl-font-mono);
+}
+
+.login-link-button {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lmnl-color-text-muted);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.login-link-button:hover,
+.login-link-button:focus-visible {
+  color: var(--page-color);
+  outline: none;
 }

@@ -11,4 +11,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Export a dummy client if keys are missing to prevent total crash
 export const supabase = hasSupabaseCredentials
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : { auth: { getSession: async () => ({ data: { session: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) } };
+  : {
+      auth: {
+        getSession: async () => ({ data: { session: null } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        resetPasswordForEmail: async () => ({ error: new Error('Supabase credentials missing.') }),
+        signOut: async () => ({ error: null }),
+        updateUser: async () => ({ error: new Error('Supabase credentials missing.') }),
+      },
+    };
