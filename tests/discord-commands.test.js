@@ -180,6 +180,67 @@ test('approve commands are deferred and update the original Discord response', a
   });
 });
 
+test('tickets-left commands are deferred and update the original Discord response', async () => {
+  const requests = [];
+  const interaction = {
+    application_id: 'app_1',
+    token: 'token_1',
+    type: 2,
+    data: {
+      name: 'tickets-left',
+      options: [{ name: 'event', value: 'Launch' }],
+    },
+  };
+
+  assert.equal(shouldDeferDiscordInteraction(interaction), true);
+
+  await completeDeferredDiscordInteraction(interaction, {
+    getLatestEventByName: async () => ({ id: 'event_1', name: 'Launch' }),
+    getRemainingTicketCount: async () => 12,
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.deepEqual(JSON.parse(requests[0].options.body), {
+    content: 'Launch: 12 tickets left.',
+  });
+});
+
+test('deferred tickets-left failures include generic retry copy', async () => {
+  const requests = [];
+  const interaction = {
+    application_id: 'app_1',
+    token: 'token_1',
+    type: 2,
+    data: {
+      name: 'tickets-left',
+      options: [{ name: 'event', value: 'Launch' }],
+    },
+  };
+
+  await completeDeferredDiscordInteraction(interaction, {
+    getLatestEventByName: async () => {
+      throw new AppError('Ticket lookup timed out.', {
+        status: 504,
+        expose: true,
+      });
+    },
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(
+    JSON.parse(requests[0].options.body).content,
+    'Command failed. Ticket lookup timed out. Please try again.',
+  );
+});
+
 test('deferred approve failures include safe app error messages', async () => {
   const requests = [];
   const interaction = {

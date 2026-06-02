@@ -177,7 +177,8 @@ function createEmbedResponse(embed, content = 'Previewing the current intake emb
 }
 
 export function shouldDeferDiscordInteraction(interaction) {
-  return interaction?.type === 2 && interaction?.data?.name === 'approve';
+  if (interaction?.type !== 2) return false;
+  return ['approve', 'tickets-left'].includes(interaction?.data?.name);
 }
 
 export function createDeferredDiscordResponse(ephemeral = false) {
@@ -243,10 +244,15 @@ export async function completeDeferredDiscordInteraction(interaction, deps = {})
     const response = await handleDiscordInteraction(interaction, deps);
     await editOriginalInteractionResponse(interaction, response, deps);
   } catch (error) {
-    const appError = asAppError(error, 'Approval failed.');
+    const commandName = interaction?.data?.name;
+    const failureLabel = commandName === 'approve' ? 'Approval failed.' : 'Command failed.';
+    const retryMessage = commandName === 'approve'
+      ? 'Please try again or approve from the admin dashboard.'
+      : 'Please try again.';
+    const appError = asAppError(error, failureLabel);
     console.error('[discord-interactions] deferred command failed', appError);
 
-    if (interaction?.data?.name === 'approve') {
+    if (commandName === 'approve') {
       const requestId = getInviteRequestIdOption(interaction);
       const loadRequest = deps.getRequestById || getRequestById;
       try {
@@ -267,7 +273,7 @@ export async function completeDeferredDiscordInteraction(interaction, deps = {})
     const errorDetail = appError.expose ? ` ${appError.message}` : '';
     await editOriginalInteractionResponse(
       interaction,
-      createMessageResponse(`Approval failed.${errorDetail} Please try again or approve from the admin dashboard.`),
+      createMessageResponse(`${failureLabel}${errorDetail} ${retryMessage}`),
       deps,
     );
   }

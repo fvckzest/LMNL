@@ -8,6 +8,23 @@ import {
   verifyDiscordInteractionSignature,
 } from './_lib/services/discord-commands.js';
 
+export function scheduleDeferredDiscordInteractionCompletion(req, interaction, deps = {}) {
+  const completeInteraction = deps.completeDeferredDiscordInteraction || completeDeferredDiscordInteraction;
+  const task = Promise.resolve()
+    .then(() => completeInteraction(interaction))
+    .catch((error) => {
+      console.error('[discord-interactions] deferred completion task failed', error);
+    });
+
+  if (typeof req?.waitUntil === 'function') {
+    req.waitUntil(task);
+  } else if (typeof globalThis.waitUntil === 'function') {
+    globalThis.waitUntil(task);
+  }
+
+  return task;
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -61,7 +78,7 @@ async function handler(req, res) {
 
   if (shouldDeferDiscordInteraction(interaction)) {
     sendJson(res, 200, createDeferredDiscordResponse());
-    await completeDeferredDiscordInteraction(interaction);
+    scheduleDeferredDiscordInteractionCompletion(req, interaction);
     return;
   }
 
