@@ -27,16 +27,16 @@ export async function getRemainingTicketCount(event, deps = {}) {
   const loadVariationInventory = deps.getVariationInventory || getVariationInventory;
   const loadTicketCountByEventId = deps.countTicketsByEventId || countTicketsByEventId;
 
+  if (Number.isFinite(Number(event.capacity))) {
+    const soldTicketCount = await loadTicketCountByEventId(event.id);
+    return Math.max(0, Number(event.capacity) - soldTicketCount);
+  }
+
   if (event.square_variation_id) {
     const inventory = await loadVariationInventory(event.square_variation_id);
     if (typeof inventory?.available === 'number') {
       return Math.max(0, inventory.available);
     }
-  }
-
-  if (Number.isFinite(Number(event.capacity))) {
-    const soldTicketCount = await loadTicketCountByEventId(event.id);
-    return Math.max(0, Number(event.capacity) - soldTicketCount);
   }
 
   return null;
