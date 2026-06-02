@@ -10,6 +10,34 @@ import { apiPost } from '../lib/api';
 import { fetchSpaceEventSnapshot, fetchSpaceTicketActivity } from '../lib/siteData';
 import './Space.css';
 
+const ACTIVITY_LIMIT = 12;
+const LOCAL_ACTIVITY_PREFIX = 'local-horse-feed';
+
+function createHorseFeedActivity() {
+  return {
+    id: `${LOCAL_ACTIVITY_PREFIX}-${Date.now()}`,
+    customerName: 'Anonymous supporter',
+    activityLabel: 'horse fed',
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function mergeActivityItems(remoteItems, currentItems = []) {
+  const localItems = currentItems.filter((item) => String(item?.id || '').startsWith(LOCAL_ACTIVITY_PREFIX));
+  const seenIds = new Set(localItems.map((item) => item.id));
+  const mergedItems = [...localItems];
+
+  for (const item of remoteItems) {
+    if (!item?.id || seenIds.has(item.id)) continue;
+    seenIds.add(item.id);
+    mergedItems.push(item);
+  }
+
+  return mergedItems
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, ACTIVITY_LIMIT);
+}
+
 export default function Space() {
   usePageColor('#004ffa');
 
@@ -52,7 +80,10 @@ export default function Space() {
         const snapshot = await fetchSpaceEventSnapshot();
         if (snapshot) {
           setEventData(snapshot);
-          setActivityItems(Array.isArray(snapshot.activity) ? snapshot.activity : []);
+          setActivityItems((currentItems) => mergeActivityItems(
+            Array.isArray(snapshot.activity) ? snapshot.activity : [],
+            currentItems
+          ));
           setActivityLive(snapshot.activity_live === true);
           setActivityBootstrapped(Array.isArray(snapshot.activity));
         }
@@ -76,7 +107,7 @@ export default function Space() {
         const response = await fetchSpaceTicketActivity(eventData.id);
         if (!isMounted) return;
 
-        setActivityItems(response.activity);
+        setActivityItems((currentItems) => mergeActivityItems(response.activity, currentItems));
         setActivityLive(true);
         setEventData((current) => ({
           ...current,
@@ -181,6 +212,15 @@ export default function Space() {
     }
   };
 
+  const handleDonate = () => {
+    setActivityItems((currentItems) => mergeActivityItems([], [
+      createHorseFeedActivity(),
+      ...currentItems,
+    ]));
+    setActivityLive(true);
+    setShowDonationModal(true);
+  };
+
   return (
     <ContentPageShell
       title={eventData.name || 'SPACE'}
@@ -231,7 +271,7 @@ export default function Space() {
               eventId={eventData.id}
               onInvite={() => setShowRequestForm(true)}
               onPurchase={handlePurchase}
-              onDonate={() => setShowDonationModal(true)}
+              onDonate={handleDonate}
             />
             {purchaseStatus === 'error' && (
               <p className="error-message">Unable to open checkout right now. Please try again.</p>

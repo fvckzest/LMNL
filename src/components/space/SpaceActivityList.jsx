@@ -53,7 +53,7 @@ export default function SpaceActivityList({ items = [], isLive = false }) {
           {items.map((item) => (
             <div key={item.id} className="space-activity-item" role="listitem">
               <p className="space-activity-title">{item.customerName}</p>
-              <p className="space-activity-meta">ticket purchased</p>
+              <p className="space-activity-meta">{item.activityLabel || 'ticket purchased'}</p>
               <p className="space-activity-time">
                 {formatActivityTimeAgo(item.createdAt, nowTick || new Date(item.createdAt).getTime())}
               </p>
