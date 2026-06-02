@@ -43,7 +43,7 @@ export default function SpaceSystemPanel({ totalRaised, totalGoal, totalPct, cur
       </div>
 
       <div className="space-system-nodes">
-        {rows.map((row, index) => {
+        {rows.map((row) => {
           const pct = row.goal > 0 ? Math.round((row.raised / row.goal) * 100) : 0;
           const isTooltipActive = tooltip?.name === row.name;
           const isRowOpen = openRow === row.name;
@@ -98,7 +98,7 @@ export default function SpaceSystemPanel({ totalRaised, totalGoal, totalPct, cur
                     </span>
                   </span>
                   <span className="space-node-status">
-                    {row.isOnline && index === 0 ? <span className="space-pulse-dot" /> : null}
+                    {row.isOnline ? <span className="space-pulse-dot" aria-hidden="true" /> : null}
                     {row.isOnline ? 'ONLINE' : currency(row.goal)}
                   </span>
                 </div>

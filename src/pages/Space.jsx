@@ -117,7 +117,9 @@ export default function Space() {
     { name: 'POWER', goal: 500, detail: 'Distribution, cabling, load support, and technical reliability across the room.' },
     { name: 'STAGE', goal: 700, detail: 'Platform buildout, sightlines, risers, and performance flow.' },
     { name: 'DESIGN', goal: 650, detail: 'Spatial treatment, visual identity, and finishing touches that shape the atmosphere.' },
-  ].map((row, index) => {
+  ];
+
+  const fundedGoalRows = goalRows.map((row, index) => {
     if (index === 0) {
       return {
         ...row,
@@ -126,7 +128,9 @@ export default function Space() {
       };
     }
 
-    const raisedBeforeRow = (index - 1) * row.goal;
+    const raisedBeforeRow = goalRows
+      .slice(1, index)
+      .reduce((sum, previousRow) => sum + previousRow.goal, 0);
     const rowRaised = Math.min(Math.max(ticketRaised - raisedBeforeRow, 0), row.goal);
 
     return {
@@ -200,7 +204,7 @@ export default function Space() {
             totalGoal={totalGoal}
             totalPct={totalPct}
             currency={currency}
-            rows={goalRows}
+            rows={fundedGoalRows}
           />
         </div>
 
