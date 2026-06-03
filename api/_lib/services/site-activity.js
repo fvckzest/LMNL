@@ -1,4 +1,5 @@
 import { getAdminSupabase } from '../clients.js';
+import { buildSpaceDonationSiteHistoryItem, getSpaceDonationActivity } from './space-donations.js';
 
 const SITE_ACTIVITY_CACHE_TTL_MS = 60 * 1000;
 const siteActivityCache = new Map();
@@ -133,7 +134,7 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
   const safeLimit = Math.max(Number(limit) || 6, 1);
   const supabase = deps.supabase || getAdminSupabase();
 
-  const [eventsResult, postsResult, productsResult, ticketsResult] = await Promise.all([
+  const [eventsResult, postsResult, productsResult, ticketsResult, donationsResult] = await Promise.all([
     supabase
       .from('events')
       .select('id,name,event_date,created_at,metadata,partiful_url')
@@ -156,6 +157,9 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
       .select('id,event_id,created_at')
       .order('created_at', { ascending: false })
       .limit(Math.max(safeLimit, 6)),
+    (deps.getSpaceDonationActivity || getSpaceDonationActivity)(Math.max(safeLimit, 6), deps)
+      .then((data) => ({ data, error: null }))
+      .catch((error) => ({ data: [], error })),
   ]);
 
   if (eventsResult.error) throw eventsResult.error;
@@ -167,6 +171,7 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
   const posts = postsResult.data || [];
   const products = productsResult.data || [];
   const tickets = ticketsResult.data || [];
+  const donations = donationsResult.data || [];
 
   const missingEventIds = [...new Set(
     tickets
@@ -226,6 +231,7 @@ async function loadSiteActivityHistory(limit = 6, deps = {}) {
       accent: '#004ffa',
       meta: 'Ticket purchased',
     })),
+    ...donations.map((donation) => buildActivityItem(buildSpaceDonationSiteHistoryItem(donation))),
   ]
     .filter((item) => parseActivityDate(item.date))
     .sort((a, b) => parseActivityDate(b.date).getTime() - parseActivityDate(a.date).getTime())

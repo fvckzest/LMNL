@@ -339,8 +339,15 @@ export async function fetchSpaceEventSnapshot() {
   const inventoryPromise = event.square_variation_id
     ? apiGet(`/api/check-inventory?variationId=${event.square_variation_id}`).catch(() => null)
     : Promise.resolve(null);
-  const activityPromise = fetchSpaceTicketActivity(event.id, SPACE_ACTIVITY_LIMIT)
-    .then((data) => ({ ...data, isLive: true }))
+  const activityPromise = Promise.all([
+    fetchSpaceTicketActivity(event.id, SPACE_ACTIVITY_LIMIT),
+    fetchSpaceDonationActivity(SPACE_ACTIVITY_LIMIT).catch(() => ({ activity: [] })),
+  ])
+    .then(([ticketData, donationData]) => ({
+      ...ticketData,
+      activity: mergeSpaceActivity(ticketData.activity, donationData.activity, SPACE_ACTIVITY_LIMIT),
+      isLive: true,
+    }))
     .catch(() => ({ soldTickets: 0, activity: [], isLive: false }));
 
   const [inventory, activity] = await Promise.all([inventoryPromise, activityPromise]);
@@ -383,6 +390,30 @@ export async function fetchSpaceTicketActivity(eventId, limit = 8) {
     soldTickets: Number.isFinite(response?.soldTickets) ? response.soldTickets : null,
     activity: Array.isArray(response?.activity) ? response.activity : [],
   };
+}
+
+export async function fetchSpaceDonationActivity(limit = 8) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+
+  const response = await apiGet(`/api/space-donations?${params.toString()}`);
+  return {
+    activity: Array.isArray(response?.activity) ? response.activity : [],
+  };
+}
+
+export function mergeSpaceActivity(ticketActivity = [], donationActivity = [], limit = 8) {
+  const seenIds = new Set();
+
+  return [...ticketActivity, ...donationActivity]
+    .filter((item) => {
+      if (!item?.id || seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, limit);
 }
 
 export async function fetchOpenProducts() {

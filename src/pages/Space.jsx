@@ -7,7 +7,13 @@ import SpacePriceCard from '../components/space/SpacePriceCard';
 import SpaceSystemPanel from '../components/space/SpaceSystemPanel';
 import { usePageColor } from '../hooks/usePageColor';
 import { apiPost } from '../lib/api';
-import { fetchSpaceEventSnapshot, fetchSpaceTicketActivity } from '../lib/siteData';
+import {
+  fetchSpaceDonationActivity,
+  fetchSpaceEventSnapshot,
+  fetchSpaceTicketActivity,
+  mergeSpaceActivity,
+} from '../lib/siteData';
+import { createHorseFeedSiteHistoryItem, publishSiteHistoryActivity } from '../lib/siteHistoryEvents';
 import './Space.css';
 
 const ACTIVITY_LIMIT = 12;
@@ -104,10 +110,16 @@ export default function Space() {
 
     async function loadActivity() {
       try {
-        const response = await fetchSpaceTicketActivity(eventData.id);
+        const [response, donations] = await Promise.all([
+          fetchSpaceTicketActivity(eventData.id),
+          fetchSpaceDonationActivity(ACTIVITY_LIMIT).catch(() => ({ activity: [] })),
+        ]);
         if (!isMounted) return;
 
-        setActivityItems((currentItems) => mergeActivityItems(response.activity, currentItems));
+        setActivityItems((currentItems) => mergeActivityItems(
+          mergeSpaceActivity(response.activity, donations.activity, ACTIVITY_LIMIT),
+          currentItems
+        ));
         setActivityLive(true);
         setEventData((current) => ({
           ...current,
@@ -213,10 +225,13 @@ export default function Space() {
   };
 
   const handleDonate = () => {
+    const horseFeedActivity = createHorseFeedActivity();
+
     setActivityItems((currentItems) => mergeActivityItems([], [
-      createHorseFeedActivity(),
+      horseFeedActivity,
       ...currentItems,
     ]));
+    publishSiteHistoryActivity(createHorseFeedSiteHistoryItem(horseFeedActivity));
     setActivityLive(true);
     setShowDonationModal(true);
   };

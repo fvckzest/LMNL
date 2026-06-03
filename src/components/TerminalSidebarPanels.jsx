@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchFeaturedTimelineEvent, fetchSiteActivityHistory, getCachedSiteActivityHistory } from '../lib/siteData';
+import { getLocalSiteHistoryActivity, subscribeSiteHistoryActivity } from '../lib/siteHistoryEvents';
 import SystemPanel from './SystemPanel';
 
 const SIDEBAR_HISTORY_LIMIT = 14;
 
+function mergeSiteHistoryActivity(activity = [], localActivity = getLocalSiteHistoryActivity(SIDEBAR_HISTORY_LIMIT)) {
+  const seenIds = new Set();
+
+  return [...localActivity, ...activity]
+    .filter((item) => {
+      if (!item?.id || seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, SIDEBAR_HISTORY_LIMIT);
+}
+
 function ActivityFeedCard() {
-  const [activity, setActivity] = useState(() => getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT) || []);
+  const [activity, setActivity] = useState(() => (
+    mergeSiteHistoryActivity(getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT) || [])
+  ));
   const [status, setStatus] = useState(() => {
-    const cachedActivity = getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT);
-    if (!cachedActivity) return 'loading';
-    return cachedActivity.length > 0 ? 'ready' : 'empty';
+    const cachedActivity = mergeSiteHistoryActivity(getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT) || []);
+    if (cachedActivity.length > 0) return 'ready';
+    if (!getCachedSiteActivityHistory(SIDEBAR_HISTORY_LIMIT)) return 'loading';
+    return 'empty';
   });
 
   useEffect(() => {
@@ -24,8 +41,9 @@ function ActivityFeedCard() {
       try {
         const nextActivity = await fetchSiteActivityHistory(SIDEBAR_HISTORY_LIMIT);
         if (!isCancelled) {
-          setActivity(nextActivity);
-          setStatus(nextActivity.length > 0 ? 'ready' : 'empty');
+          const mergedActivity = mergeSiteHistoryActivity(nextActivity);
+          setActivity(mergedActivity);
+          setStatus(mergedActivity.length > 0 ? 'ready' : 'empty');
         }
       } catch (error) {
         if (!isCancelled) {
@@ -42,6 +60,13 @@ function ActivityFeedCard() {
       isCancelled = true;
     };
   }, []);
+
+  useEffect(() => subscribeSiteHistoryActivity((item) => {
+    setActivity((currentActivity) => {
+      return mergeSiteHistoryActivity(currentActivity, [item]);
+    });
+    setStatus('ready');
+  }), []);
 
   return (
     <SystemPanel title="SITE HISTORY" className="system-panel--history">

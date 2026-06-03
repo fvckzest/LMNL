@@ -28,6 +28,7 @@ import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_li
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { getSiteActivityHistory } from './_lib/services/site-activity.js';
+import { getSpaceDonationActivity } from './_lib/services/space-donations.js';
 import { getSpaceTicketActivity } from './_lib/services/space-activity.js';
 import { generatePortfolioPreview } from './_lib/services/portfolio-previews.js';
 import {
@@ -270,6 +271,14 @@ async function handleSpaceActivity(req, res) {
     limit,
   });
   return sendJson(res, 200, { success: true, data });
+}
+
+async function handleSpaceDonations(req, res) {
+  allowMethods(req, ['GET']);
+  const rawLimit = Number(req.query?.limit);
+  const limit = Number.isFinite(rawLimit) ? rawLimit : 8;
+  const activity = await getSpaceDonationActivity(limit);
+  return sendJson(res, 200, { success: true, data: { activity } });
 }
 
 async function handlePayRequest(req, res) {
@@ -1165,6 +1174,7 @@ const handlers = {
   'event-stats': handleEventStats,
   'site-activity': handleSiteActivity,
   'space-activity': handleSpaceActivity,
+  'space-donations': handleSpaceDonations,
   'event-checkout': handleGetEventCheckout,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,

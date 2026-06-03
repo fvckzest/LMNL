@@ -57,3 +57,39 @@ test('getSiteActivityHistory excludes draft shop products', async () => {
   assert.equal(activity[0].id, 'product-prod_open');
   assert.equal(activity[0].type, 'SHOP');
 });
+
+test('getSiteActivityHistory includes feed the horse donations', async () => {
+  const calls = [];
+  const datasets = {
+    events: [],
+    blog_posts: [],
+    merch_preorders: [],
+    tickets: [],
+  };
+
+  const supabase = {
+    from(table) {
+      calls.push({ type: 'from', table });
+      return createQuery(datasets[table] || [], calls);
+    },
+  };
+
+  const activity = await getSiteActivityHistory(7, {
+    supabase,
+    getSpaceDonationActivity: async () => ([
+      {
+        id: 'square-donation-order_feed_10',
+        customerName: 'Anonymous supporter',
+        activityLabel: 'horse fed $10',
+        createdAt: '2026-05-31T20:00:00.000Z',
+      },
+    ]),
+  });
+
+  assert.equal(activity.length, 1);
+  assert.equal(activity[0].id, 'square-donation-order_feed_10');
+  assert.equal(activity[0].type, 'SPACE');
+  assert.equal(activity[0].title, 'SPACE');
+  assert.equal(activity[0].meta, 'Horse fed');
+  assert.equal(activity[0].href, '/space');
+});
