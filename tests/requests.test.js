@@ -169,44 +169,63 @@ test('updateRequestArchiveState restores a best-effort legacy status when unarch
 
   const unarchived = await updateRequestArchiveState('req_legacy', false, {
     supabase: {
-      from: () => ({
-        update: (payload) => {
-          updates.push(payload);
+      from: (table) => {
+        if (table === 'tickets') {
+          return {
+            select: (columns) => {
+              assert.equal(columns, 'id');
+              return {
+                eq: (column, value) => {
+                  assert.equal(column, 'square_order_id');
+                  assert.equal(value, 'sq_1');
+                  return {
+                    maybeSingle: async () => ({ data: null, error: null }),
+                  };
+                },
+              };
+            },
+          };
+        }
 
-          if (Object.prototype.hasOwnProperty.call(payload, 'is_archived')) {
+        return {
+          update: (payload) => {
+            updates.push(payload);
+
+            if (Object.prototype.hasOwnProperty.call(payload, 'is_archived')) {
+              return {
+                eq: () => ({
+                  select: () => ({
+                    single: async () => ({
+                      data: null,
+                      error: { code: '42703', message: 'column "archived_at" does not exist' },
+                    }),
+                  }),
+                }),
+              };
+            }
+
+            assert.deepEqual(payload, { status: 'approved' });
             return {
               eq: () => ({
                 select: () => ({
                   single: async () => ({
-                    data: null,
-                    error: { code: '42703', message: 'column "archived_at" does not exist' },
+                    data: { id: 'req_legacy', status: 'approved', square_order_id: 'sq_1' },
+                    error: null,
                   }),
                 }),
               }),
             };
-          }
-
-          assert.deepEqual(payload, { status: 'approved' });
-          return {
+          },
+          select: () => ({
             eq: () => ({
-              select: () => ({
-                single: async () => ({
-                  data: { id: 'req_legacy', status: 'approved', square_order_id: 'sq_1' },
-                  error: null,
-                }),
+              maybeSingle: async () => ({
+                data: { id: 'req_legacy', status: 'archived', square_order_id: 'sq_1' },
+                error: null,
               }),
             }),
-          };
-        },
-        select: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({
-              data: { id: 'req_legacy', status: 'archived', square_order_id: 'sq_1' },
-              error: null,
-            }),
           }),
-        }),
-      }),
+        };
+      },
     },
   });
 
@@ -216,4 +235,77 @@ test('updateRequestArchiveState restores a best-effort legacy status when unarch
     archived_at: null,
   });
   assert.deepEqual(updates[1], { status: 'approved' });
+});
+
+test('updateRequestArchiveState restores legacy fulfilled status when an issued ticket exists', async () => {
+  const updates = [];
+
+  const unarchived = await updateRequestArchiveState('req_fulfilled', false, {
+    supabase: {
+      from: (table) => {
+        if (table === 'tickets') {
+          return {
+            select: (columns) => {
+              assert.equal(columns, 'id');
+              return {
+                eq: (column, value) => {
+                  assert.equal(column, 'square_order_id');
+                  assert.equal(value, 'sq_done');
+                  return {
+                    maybeSingle: async () => ({ data: { id: 'ticket_1' }, error: null }),
+                  };
+                },
+              };
+            },
+          };
+        }
+
+        return {
+          update: (payload) => {
+            updates.push(payload);
+
+            if (Object.prototype.hasOwnProperty.call(payload, 'is_archived')) {
+              return {
+                eq: () => ({
+                  select: () => ({
+                    single: async () => ({
+                      data: null,
+                      error: { code: '42703', message: 'column "archived_at" does not exist' },
+                    }),
+                  }),
+                }),
+              };
+            }
+
+            assert.deepEqual(payload, { status: 'fulfilled' });
+            return {
+              eq: () => ({
+                select: () => ({
+                  single: async () => ({
+                    data: { id: 'req_fulfilled', status: 'fulfilled', square_order_id: 'sq_done' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          },
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: { id: 'req_fulfilled', status: 'archived', square_order_id: 'sq_done' },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      },
+    },
+  });
+
+  assert.equal(unarchived.status, 'fulfilled');
+  assert.deepEqual(updates[0], {
+    is_archived: false,
+    archived_at: null,
+  });
+  assert.deepEqual(updates[1], { status: 'fulfilled' });
 });

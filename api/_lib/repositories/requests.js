@@ -107,7 +107,18 @@ export async function updateRequestArchiveState(id, isArchived, deps = {}) {
     return legacyArchivedRequest;
   }
 
-  const legacyRestoredStatus = currentRequest?.square_order_id ? 'approved' : 'pending';
+  let legacyRestoredStatus = 'pending';
+  if (currentRequest?.square_order_id) {
+    const { data: issuedTicket, error: issuedTicketError } = await supabase
+      .from('tickets')
+      .select('id')
+      .eq('square_order_id', currentRequest.square_order_id)
+      .maybeSingle();
+
+    if (issuedTicketError) throw issuedTicketError;
+    legacyRestoredStatus = issuedTicket ? 'fulfilled' : 'approved';
+  }
+
   const { data: legacyRestoredRequest, error: legacyRestoreError } = await supabase
     .from('requests')
     .update({ status: legacyRestoredStatus })
