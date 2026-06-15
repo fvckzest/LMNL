@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiPost } from '../../lib/api';
 import { LinkIcon, TicketIcon } from './Icons';
 import AdminSectionHeader from './AdminSectionHeader';
@@ -577,7 +578,7 @@ const MANAGED_METADATA_KEYS = new Set([
                             <td><span className={`status-pill ${event.status}`}>{event.status}</span></td>
                             <td>
                               {event.name.toUpperCase() === 'SPACE' ? (
-                                <a href="/space" target="_blank" className="event-name-link">{event.name}</a>
+                                <Link to="/space" className="event-name-link">{event.name}</Link>
                               ) : (
                                 <strong>{event.name}</strong>
                               )}
