@@ -119,11 +119,11 @@ $$;
 
 do $$
 begin
-  if to_regclass('public.mailing_list') is not null then
-    execute 'alter table public.mailing_list enable row level security';
-    execute 'drop policy if exists "mailing_list_admin_only" on public.mailing_list';
+  if to_regclass('public.emails') is not null then
+    execute 'alter table public.emails enable row level security';
+    execute 'drop policy if exists "emails_admin_only" on public.emails';
     execute '' ||
-      'create policy "mailing_list_admin_only" on public.mailing_list ' ||
+      'create policy "emails_admin_only" on public.emails ' ||
       'for all to authenticated using (public.is_admin_user()) with check (public.is_admin_user())';
   end if;
 end

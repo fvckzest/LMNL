@@ -747,21 +747,21 @@ export async function syncCommunityCreditsFromEvents() {
   return { addedCount, skippedCount };
 }
 
-export async function listMailingListEntries() {
+export async function listEmailEntries() {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
-    .from('mailing_list')
+    .from('emails')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
-    throwMissingTable(error, 'mailing_list', 'Mailing list');
+    throwMissingTable(error, 'emails', 'Emails');
   }
 
   return data || [];
 }
 
-export async function saveMailingListEntry(payload) {
+export async function saveEmailEntry(payload) {
   const supabase = getAdminSupabase();
   const { id, ...rawData } = payload;
   const data = {
@@ -769,45 +769,125 @@ export async function saveMailingListEntry(payload) {
     name: rawData.name || '',
     email: normalizeEmail(rawData.email),
     source: rawData.source || 'manual',
+    sources: Array.isArray(rawData.sources) ? rawData.sources : [rawData.source || 'manual'],
+    record_count: Number.isFinite(Number(rawData.recordCount)) ? Number(rawData.recordCount) : 1,
+    latest_seen_at: rawData.latestSeenAt || new Date().toISOString(),
   };
 
   if (id) {
     const { data: updated, error } = await supabase
-      .from('mailing_list')
+      .from('emails')
       .update(data)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      throwMissingTable(error, 'mailing_list', 'Mailing list');
+      throwMissingTable(error, 'emails', 'Emails');
     }
 
     return updated;
   }
 
   const { data: inserted, error } = await supabase
-    .from('mailing_list')
+    .from('emails')
     .insert([data])
     .select()
     .single();
 
   if (error) {
-    throwMissingTable(error, 'mailing_list', 'Mailing list');
+    throwMissingTable(error, 'emails', 'Emails');
   }
 
   return inserted;
 }
 
-export async function deleteMailingListEntryById(id) {
+export async function syncEmailEntries(entries = []) {
+  const supabase = getAdminSupabase();
+  const normalizedEntries = entries
+    .map((entry) => ({
+      name: entry.name || '',
+      email: normalizeEmail(entry.email),
+      source: entry.source || 'aggregate',
+      sources: Array.isArray(entry.sources) ? entry.sources.filter(Boolean) : [],
+      record_count: Number.isFinite(Number(entry.recordCount)) ? Number(entry.recordCount) : 1,
+      latest_seen_at: entry.latestSeenAt || null,
+    }))
+    .filter((entry) => entry.email);
+
+  if (normalizedEntries.length === 0) {
+    return { insertedCount: 0 };
+  }
+
+  const uniqueEntriesByEmail = new Map();
+  normalizedEntries.forEach((entry) => {
+    if (!uniqueEntriesByEmail.has(entry.email)) {
+      uniqueEntriesByEmail.set(entry.email, entry);
+    }
+  });
+
+  const uniqueEntries = [...uniqueEntriesByEmail.values()];
+  const { data: existingRows, error: existingError } = await supabase
+    .from('emails')
+    .select('email')
+    .in('email', uniqueEntries.map((entry) => entry.email));
+
+  if (existingError) {
+    throwMissingTable(existingError, 'emails', 'Emails');
+  }
+
+  const existingEmails = new Set((existingRows || []).map((row) => normalizeEmail(row.email)));
+  const missingEntries = uniqueEntries.filter((entry) => !existingEmails.has(entry.email));
+  const existingEntries = uniqueEntries.filter((entry) => existingEmails.has(entry.email));
+  const metadataUpdates = existingEntries.map((entry) => ({
+    email: entry.email,
+    sources: entry.sources,
+    record_count: entry.record_count,
+    latest_seen_at: entry.latest_seen_at,
+  }));
+
+  if (metadataUpdates.length > 0) {
+    const updateResults = await Promise.all(metadataUpdates.map((entry) => (
+      supabase
+        .from('emails')
+        .update({
+          sources: entry.sources,
+          record_count: entry.record_count,
+          latest_seen_at: entry.latest_seen_at,
+        })
+        .eq('email', entry.email)
+    )));
+
+    const updateError = updateResults.find((result) => result.error)?.error;
+    if (updateError) {
+      throwMissingTable(updateError, 'emails', 'Emails');
+    }
+  }
+
+  if (missingEntries.length === 0) {
+    return { insertedCount: 0, updatedCount: metadataUpdates.length };
+  }
+
+  const { error } = await supabase
+    .from('emails')
+    .insert(missingEntries);
+
+  if (error) {
+    throwMissingTable(error, 'emails', 'Emails');
+  }
+
+  return { insertedCount: missingEntries.length, updatedCount: metadataUpdates.length };
+}
+
+export async function deleteEmailEntryById(id) {
   const supabase = getAdminSupabase();
   const { error } = await supabase
-    .from('mailing_list')
+    .from('emails')
     .delete()
     .eq('id', id);
 
   if (error) {
-    throwMissingTable(error, 'mailing_list', 'Mailing list');
+    throwMissingTable(error, 'emails', 'Emails');
   }
 
   return true;

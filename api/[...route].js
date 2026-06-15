@@ -51,12 +51,12 @@ import {
   deletePortfolioEntryById,
   deleteServiceProductById,
   deleteWebsiteIntakeSubmissionById,
-  deleteMailingListEntryById,
+  deleteEmailEntryById,
   listArtistInterest,
   listBlogPostsAdmin,
   listCommunityBusinesses,
   listCommunityCredits,
-  listMailingListEntries,
+  listEmailEntries,
   listPortfolioEntriesAdmin,
   listPublishedPortfolioEntries,
   listServiceProducts,
@@ -65,11 +65,12 @@ import {
   getPortfolioEntryById,
   saveCommunityBusiness,
   saveCommunityCredit,
-  saveMailingListEntry,
+  saveEmailEntry,
   savePortfolioEntry,
   savePortfolioPreviewMedia,
   saveServiceProduct,
   syncCommunityCreditsFromEvents,
+  syncEmailEntries,
   updatePortfolioEntryOrder,
   updateWebsiteIntakeSubmissionStatus,
 } from './_lib/repositories/admin-content.js';
@@ -1107,23 +1108,28 @@ async function handleCommunityBusinesses(req, res) {
   return sendJson(res, 200, { success: true, data });
 }
 
-async function handleMailingList(req, res) {
+async function handleEmails(req, res) {
   allowMethods(req, ['GET', 'POST']);
   await requireAdminUser(req);
 
   if (req.method === 'GET') {
-    const data = await listMailingListEntries();
+    const data = await listEmailEntries();
     return sendJson(res, 200, { success: true, data });
   }
 
   const body = await parseJsonBody(req);
 
+  if (body.action === 'sync') {
+    const data = await syncEmailEntries(Array.isArray(body.entries) ? body.entries : []);
+    return sendJson(res, 200, { success: true, data });
+  }
+
   if (body.action === 'delete') {
-    await deleteMailingListEntryById(requireValue(body.id, 'id is required.'));
+    await deleteEmailEntryById(requireValue(body.id, 'id is required.'));
     return sendJson(res, 200, { success: true, data: { deleted: true } });
   }
 
-  const data = await saveMailingListEntry({
+  const data = await saveEmailEntry({
     id: body.id || null,
     name: body.name || '',
     email: requireValue(body.email, 'email is required.'),
@@ -1196,7 +1202,8 @@ const handlers = {
   portfolio: handlePortfolio,
   'community-businesses': handleCommunityBusinesses,
   'community-credits': handleCommunityCredits,
-  'mailing-list': handleMailingList,
+  emails: handleEmails,
+  'mailing-list': handleEmails,
   'service-products': handleServiceProducts,
   'service-inquiries': handleServiceInquiries,
   'website-intake-submissions': handleWebsiteIntakeSubmissions,

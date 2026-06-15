@@ -17,12 +17,12 @@ const BlogTab = lazyWithRetry(() => import('../components/admin/BlogTab'));
 const DEFAULT_TAB = 'events';
 
 const TAB_DATASETS = {
-  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'websiteIntakeSubmissions', 'portfolioEntries', 'communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'blogPosts', 'preorders', 'squareCatalog'],
+  all: ['requests', 'events', 'tickets', 'serviceInquiries', 'websiteIntakeSubmissions', 'portfolioEntries', 'communityCredits', 'communityBusinesses', 'artistInterest', 'emails', 'blogPosts', 'preorders', 'squareCatalog'],
   events: ['requests', 'events', 'tickets'],
   inquiries: ['serviceInquiries', 'websiteIntakeSubmissions', 'portfolioEntries'],
   contact: ['serviceInquiries'],
   shop: ['preorders', 'squareCatalog', 'events', 'tickets'],
-  community: ['communityCredits', 'communityBusinesses', 'artistInterest', 'mailingList', 'events', 'requests', 'tickets', 'serviceInquiries'],
+  community: ['communityCredits', 'communityBusinesses', 'artistInterest', 'emails', 'events', 'requests', 'tickets', 'serviceInquiries'],
   blog: ['blogPosts'],
 };
 
@@ -37,7 +37,8 @@ const PINNED_SECTION_DATASETS = {
   artist_interest: ['artistInterest'],
   community_credits: ['communityCredits', 'events'],
   community_businesses: ['communityBusinesses'],
-  mailing_list: ['mailingList'],
+  mailing_list: ['emails'],
+  emails: ['emails'],
   blog_posts: ['blogPosts'],
   portfolio_entries: ['portfolioEntries'],
 };
@@ -95,9 +96,9 @@ export default function Admin() {
   const [artistInterest, setArtistInterest] = useState([]);
   const [artistInterestLoading, setArtistInterestLoading] = useState(true);
   const [artistInterestTableMissing, setArtistInterestTableMissing] = useState(false);
-  const [mailingList, setMailingList] = useState([]);
-  const [mailingListLoading, setMailingListLoading] = useState(true);
-  const [mailingListTableMissing, setMailingListTableMissing] = useState(false);
+  const [emails, setEmails] = useState([]);
+  const [emailsLoading, setEmailsLoading] = useState(true);
+  const [emailsTableMissing, setEmailsTableMissing] = useState(false);
   const [blogPosts, setBlogPosts] = useState([]);
   const [blogLoading, setBlogLoading] = useState(true);
   const [blogTableMissing, setBlogTableMissing] = useState(false);
@@ -311,18 +312,18 @@ export default function Admin() {
     }
   }
 
-  async function fetchMailingList() {
-    setMailingListLoading(true);
+  async function fetchEmails() {
+    setEmailsLoading(true);
     try {
-      const data = await apiGet('/api/mailing-list', { auth: true });
-      setMailingListTableMissing(false);
-      setMailingList(data || []);
+      const data = await apiGet('/api/emails', { auth: true });
+      setEmailsTableMissing(false);
+      setEmails(data || []);
     } catch (error) {
-      console.error('Error fetching mailing list:', error);
-      if (error.message?.includes('not set up yet')) setMailingListTableMissing(true);
-      setMailingList([]);
+      console.error('Error fetching emails:', error);
+      if (error.message?.includes('not set up yet')) setEmailsTableMissing(true);
+      setEmails([]);
     } finally {
-      setMailingListLoading(false);
+      setEmailsLoading(false);
     }
   }
 
@@ -394,7 +395,7 @@ export default function Admin() {
         communityCredits: fetchCommunityCredits,
         communityBusinesses: fetchCommunityBusinesses,
         artistInterest: fetchArtistInterest,
-        mailingList: fetchMailingList,
+        emails: fetchEmails,
         blogPosts: fetchBlogPosts,
         portfolioEntries: fetchPortfolioEntries,
         squareCatalog: fetchSquareCatalog,
@@ -742,10 +743,10 @@ export default function Admin() {
                 artistInterestLoading={artistInterestLoading}
                 artistInterestTableMissing={artistInterestTableMissing}
                 fetchArtistInterest={fetchArtistInterest}
-                mailingList={mailingList}
-                mailingListLoading={mailingListLoading}
-                mailingListTableMissing={mailingListTableMissing}
-                fetchMailingList={fetchMailingList}
+                emails={emails}
+                emailsLoading={emailsLoading}
+                emailsTableMissing={emailsTableMissing}
+                fetchEmails={fetchEmails}
                 updateArtistInterestStatus={updateArtistInterestStatus}
                 deleteArtistInterest={deleteArtistInterest}
                 showToast={showToast}
@@ -895,10 +896,10 @@ export default function Admin() {
               artistInterestLoading={artistInterestLoading}
               artistInterestTableMissing={artistInterestTableMissing}
               fetchArtistInterest={fetchArtistInterest}
-              mailingList={mailingList}
-              mailingListLoading={mailingListLoading}
-              mailingListTableMissing={mailingListTableMissing}
-              fetchMailingList={fetchMailingList}
+              emails={emails}
+              emailsLoading={emailsLoading}
+              emailsTableMissing={emailsTableMissing}
+              fetchEmails={fetchEmails}
               updateArtistInterestStatus={updateArtistInterestStatus}
               deleteArtistInterest={deleteArtistInterest}
               showToast={showToast}

@@ -1,5 +1,6 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { apiPost } from '../../lib/api';
 import { normalizeCommunityCreditRole } from '../../lib/communityCredits';
 import AdminSectionHeader from './AdminSectionHeader';
 import { ArchiveToggleButton, DeleteActionButton } from './ActionButtons';
@@ -25,10 +26,10 @@ export default function CommunityTab({
   artistInterestLoading,
   artistInterestTableMissing,
   fetchArtistInterest,
-  mailingList = [],
-  mailingListLoading = false,
-  mailingListTableMissing = false,
-  fetchMailingList,
+  emails = [],
+  emailsLoading = false,
+  emailsTableMissing = false,
+  fetchEmails = () => {},
   updateArtistInterestStatus,
   deleteArtistInterest,
    showToast,
@@ -43,7 +44,7 @@ export default function CommunityTab({
     artist: 'artist_interest',
     credits: 'community_credits',
     businesses: 'community_businesses',
-    mailing: 'mailing_list'
+    mailing: 'emails'
   };
 
   const shouldRender = (sectionId) => {
@@ -56,8 +57,9 @@ export default function CommunityTab({
   const isCollapsed = (sectionId) => collapsedSections.includes(sectionId);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
-  const [isMailingListModalOpen, setIsMailingListModalOpen] = useState(false);
-  const [editingMailingEntry, setEditingMailingEntry] = useState(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [editingEmailEntry, setEditingEmailEntry] = useState(null);
+  const lastEmailSyncSignatureRef = useRef('');
   const [editingCredit, setEditingCredit] = useState(null);
   const [editingBusiness, setEditingBusiness] = useState(null);
   const [expandedCommunityEventKey, setExpandedCommunityEventKey] = useState(null);
@@ -78,7 +80,7 @@ export default function CommunityTab({
     details: ''
   });
 
-  const [mailingForm, setMailingForm] = useState({
+  const [emailForm, setEmailForm] = useState({
     name: '',
     email: '',
     source: 'manual'
@@ -301,61 +303,53 @@ export default function CommunityTab({
     setIsBusinessModalOpen(true);
   }
 
-  function openMailingListModal(entry = null) {
+  function openEmailModal(entry = null) {
     if (entry) {
-      setEditingMailingEntry(entry);
-      setMailingForm({
+      setEditingEmailEntry(entry);
+      setEmailForm({
         name: entry.name || '',
         email: entry.email,
         source: entry.source || 'manual'
       });
     } else {
-      setEditingMailingEntry(null);
-      setMailingForm({
+      setEditingEmailEntry(null);
+      setEmailForm({
         name: '',
         email: '',
         source: 'manual'
       });
     }
-    setIsMailingListModalOpen(true);
+    setIsEmailModalOpen(true);
   }
 
-  async function handleMailingListSubmit(e) {
+  async function handleEmailSubmit(e) {
     e.preventDefault();
-    if (!mailingForm.email) return showToast('Email is required', 'error');
+    if (!emailForm.email) return showToast('Email is required', 'error');
 
     const data = {
-      name: mailingForm.name,
-      email: normalizeEmail(mailingForm.email),
-      source: mailingForm.source || 'manual'
+      name: emailForm.name,
+      email: normalizeEmail(emailForm.email),
+      source: emailForm.source || 'manual'
     };
 
-    let error;
-    if (editingMailingEntry) {
-      const { error: err } = await supabase.from('mailing_list').update(data).eq('id', editingMailingEntry.id);
-      error = err;
-    } else {
-      const { error: err } = await supabase.from('mailing_list').insert([data]);
-      error = err;
-    }
-
-    if (error) {
-      showToast('Error saving contact: ' + error.message, 'error');
-    } else {
-      setIsMailingListModalOpen(false);
-      fetchMailingList();
+    try {
+      await apiPost('/api/emails', { id: editingEmailEntry?.id || null, ...data }, { auth: true });
+      setIsEmailModalOpen(false);
+      fetchEmails();
       showToast('Contact saved successfully');
+    } catch (error) {
+      showToast('Error saving contact: ' + error.message, 'error');
     }
   }
 
-  async function deleteMailingEntry(id) {
+  async function deleteEmailEntry(id) {
     triggerConfirm('Delete this manual entry?', async () => {
-      const { error } = await supabase.from('mailing_list').delete().eq('id', id);
-      if (error) {
-        showToast('Error deleting: ' + error.message, 'error');
-      } else {
-        fetchMailingList();
+      try {
+        await apiPost('/api/emails', { action: 'delete', id }, { auth: true });
+        fetchEmails();
         showToast('Contact removed');
+      } catch (error) {
+        showToast('Error deleting: ' + error.message, 'error');
       }
     });
   }
@@ -497,7 +491,7 @@ export default function CommunityTab({
     contactInquiries: 0,
     artistInterest: 0,
     communityCredits: 0,
-    mailingList: 0
+    emails: 0
   };
 
   function addContactEntry({
@@ -610,14 +604,16 @@ export default function CommunityTab({
     });
   });
 
-  mailingList.forEach((entry) => {
+  emails.forEach((entry) => {
     if (isPlaceholderEmail(entry.email)) return;
-    contactSourceTotals.mailingList += 1;
+    const entrySource = String(entry.source || '').trim();
+    const isManualEntry = !entrySource || entrySource === 'manual';
+    contactSourceTotals.emails += 1;
     addContactEntry({
-      id: entry.id,
+      id: isManualEntry ? entry.id : null,
       email: entry.email,
       name: entry.name,
-      source: 'Manual Entry',
+      source: isManualEntry ? 'Manual Entry' : entrySource,
       createdAt: entry.created_at
     });
   });
@@ -630,6 +626,19 @@ export default function CommunityTab({
     if (b.latestCreatedAt) return 1;
     return a.email.localeCompare(b.email);
   });
+
+  const aggregateEmailSyncEntries = emailContacts.map((contact) => ({
+    email: contact.email,
+    name: contact.names[0] || '',
+    source: contact.sources.filter((source) => source !== 'Manual Entry').join(', ') || 'aggregate',
+    sources: contact.sources.filter((source) => source !== 'Manual Entry'),
+    recordCount: contact.recordCount,
+    latestSeenAt: contact.latestCreatedAt || null
+  }));
+
+  const aggregateEmailSyncSignature = aggregateEmailSyncEntries
+    .map((entry) => `${entry.email}:${entry.name}:${entry.source}:${entry.recordCount}:${entry.latestSeenAt || ''}`)
+    .join('|');
 
   const getSourceColor = (source) => {
     switch(source) {
@@ -651,8 +660,19 @@ export default function CommunityTab({
     servicesLoading ||
     artistInterestLoading ||
     communityLoading ||
-    mailingListLoading;
+    emailsLoading;
   const totalEmailRecords = Object.values(contactSourceTotals).reduce((sum, count) => sum + count, 0);
+
+  useEffect(() => {
+    if (contactListLoading || emailsTableMissing || aggregateEmailSyncEntries.length === 0) return;
+    if (lastEmailSyncSignatureRef.current === aggregateEmailSyncSignature) return;
+
+    lastEmailSyncSignatureRef.current = aggregateEmailSyncSignature;
+    apiPost('/api/emails', { action: 'sync', entries: aggregateEmailSyncEntries }, { auth: true })
+      .catch((error) => {
+        console.error('Error syncing aggregate emails:', error);
+      });
+  }, [aggregateEmailSyncEntries, aggregateEmailSyncSignature, contactListLoading, emailsTableMissing]);
 
   const groupedCommunityCredits = normalizedCommunityCredits.reduce((groups, credit) => {
     const eventKey = credit.event_id || `independent:${credit.event_name || 'none'}`;
@@ -1298,13 +1318,13 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
           collapsedCount={contactCount}
         />
         
-        {!isCollapsed(sectionIds.mailing) && mailingListTableMissing && (
+        {!isCollapsed(sectionIds.mailing) && emailsTableMissing && (
           <div className="setup-guide" style={{ marginBottom: '20px' }}>
             <div className="guide-header">
               <span className="warning-icon">⚠️</span>
-              <h3>MAILING LIST TABLE REQUIRED</h3>
+              <h3>EMAILS TABLE REQUIRED</h3>
             </div>
-            <p>Please create the <code>mailing_list</code> table in your Supabase SQL Editor.</p>
+            <p>Please create the <code>emails</code> table in your Supabase SQL Editor.</p>
             <pre style={{ 
               background: '#111', 
               color: '#fff', 
@@ -1317,20 +1337,31 @@ CREATE POLICY "Allow authenticated all access" ON community_credits FOR ALL USIN
               marginBottom: '20px',
               fontFamily: 'var(--lmnl-font-mono)'
             }}>
-{`CREATE TABLE IF NOT EXISTS mailing_list (
+{`CREATE TABLE IF NOT EXISTS emails (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT,
     email TEXT NOT NULL UNIQUE,
     source TEXT DEFAULT 'manual',
+    sources JSONB DEFAULT '[]'::jsonb,
+    record_count INTEGER DEFAULT 1,
+    latest_seen_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-ALTER TABLE mailing_list ENABLE ROW LEVEL SECURITY;
+ALTER TABLE emails ADD COLUMN IF NOT EXISTS sources JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE emails ADD COLUMN IF NOT EXISTS record_count INTEGER DEFAULT 1;
+ALTER TABLE emails ADD COLUMN IF NOT EXISTS latest_seen_at TIMESTAMP WITH TIME ZONE;
 
-CREATE POLICY "Allow authenticated read access" ON mailing_list FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (auth.role() = 'authenticated');`}
+ALTER TABLE emails ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "emails_admin_only"
+ON emails
+FOR ALL
+TO authenticated
+USING (public.is_admin_user())
+WITH CHECK (public.is_admin_user());`}
             </pre>
-            <button className="admin-btn" onClick={fetchMailingList}>REFRESH</button>
+            <button className="admin-btn" onClick={fetchEmails}>REFRESH</button>
           </div>
         )}
         {!isCollapsed(sectionIds.mailing) && (
@@ -1345,7 +1376,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
             <span className="stat-value">{totalEmailRecords}</span>
           </div>
           <div className="stat-item toggle-archived">
-             <button className="admin-btn approve" onClick={() => openMailingListModal()}>+ ADD MANUAL ENTRY</button>
+             <button className="admin-btn approve" onClick={() => openEmailModal()}>+ ADD MANUAL ENTRY</button>
           </div>
         </div>
 
@@ -1396,8 +1427,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                             <button 
                               className="admin-btn small" 
                               onClick={() => {
-                                const entry = mailingList.find(m => m.email === contact.email);
-                                openMailingListModal(entry || { email: contact.email, name: contact.names[0] });
+                                const entry = emails.find(m => m.email === contact.email);
+                                openEmailModal(entry || { email: contact.email, name: contact.names[0] });
                               }}
                             >
                               EDIT
@@ -1407,7 +1438,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                               variant={contact.manualEntryId ? 'danger' : 'muted'}
                               onClick={() => {
                                 if (contact.manualEntryId) {
-                                  deleteMailingEntry(contact.manualEntryId);
+                                  deleteEmailEntry(contact.manualEntryId);
                                 } else {
                                   showToast('Only manual entries can be deleted from this view. Source records (tickets/requests) must be managed in their respective tabs.', 'error');
                                 }
@@ -1460,23 +1491,23 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
         )}
       </section>
       )}
-      {/* Mailing List Modal */}
-      {isMailingListModalOpen && (
+      {/* Email Modal */}
+      {isEmailModalOpen && (
         <div className="admin-modal-overlay">
           <div className="admin-modal">
             <div className="modal-header">
-              <h3>{editingMailingEntry ? 'EDIT CONTACT' : 'ADD MANUAL CONTACT'}</h3>
-              <button className="close-modal" onClick={() => setIsMailingListModalOpen(false)}>×</button>
+              <h3>{editingEmailEntry ? 'EDIT CONTACT' : 'ADD MANUAL CONTACT'}</h3>
+              <button className="close-modal" onClick={() => setIsEmailModalOpen(false)}>×</button>
             </div>
             
-            <form onSubmit={handleMailingListSubmit} className="modal-form">
+            <form onSubmit={handleEmailSubmit} className="modal-form">
               <div className="form-grid">
                 <div className="form-group full">
                   <label>NAME (OPTIONAL)</label>
                   <input
                     type="text"
-                    value={mailingForm.name}
-                    onChange={(e) => setMailingForm({ ...mailingForm, name: e.target.value })}
+                    value={emailForm.name}
+                    onChange={(e) => setEmailForm({ ...emailForm, name: e.target.value })}
                     placeholder="Full Name"
                   />
                 </div>
@@ -1485,8 +1516,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                   <label>EMAIL ADDRESS</label>
                   <input
                     type="email"
-                    value={mailingForm.email}
-                    onChange={(e) => setMailingForm({ ...mailingForm, email: e.target.value })}
+                    value={emailForm.email}
+                    onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })}
                     placeholder="email@example.com"
                     required
                   />
@@ -1496,8 +1527,8 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
                   <label>SOURCE</label>
                   <input
                     type="text"
-                    value={mailingForm.source}
-                    onChange={(e) => setMailingForm({ ...mailingForm, source: e.target.value })}
+                    value={emailForm.source}
+                    onChange={(e) => setEmailForm({ ...emailForm, source: e.target.value })}
                     placeholder="e.g. manual, outreach, etc."
                   />
                 </div>
@@ -1505,7 +1536,7 @@ CREATE POLICY "Allow authenticated all access" ON mailing_list FOR ALL USING (au
 
               <div className="modal-actions">
                 <button type="submit" className="admin-btn approve wide">
-                  {editingMailingEntry ? 'UPDATE CONTACT' : 'SAVE CONTACT'}
+                  {editingEmailEntry ? 'UPDATE CONTACT' : 'SAVE CONTACT'}
                 </button>
               </div>
             </form>

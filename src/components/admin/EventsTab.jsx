@@ -391,12 +391,12 @@ const MANAGED_METADATA_KEYS = new Set([
   }
 
   function getRequestDisplayStatus(request) {
-    if (request?.status && request.status !== 'archived') {
-      return request.status;
-    }
-
     if (hasIssuedTicketForRequest(request)) {
       return 'fulfilled';
+    }
+
+    if (request?.status && request.status !== 'archived') {
+      return request.status;
     }
 
     if (request?.square_order_id) {
@@ -838,7 +838,7 @@ const MANAGED_METADATA_KEYS = new Set([
                               </button>
                             </div>
                           )}
-                          {(req.status === 'approved' || req.status === 'rejected') && (
+                          {(displayStatus === 'approved' || displayStatus === 'rejected') && (
                             <button
                               className="admin-btn reset"
                               onClick={() => updateStatus(req.id, 'pending', req)}
