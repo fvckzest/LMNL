@@ -78,6 +78,7 @@ html[data-theme='dark'] .space-page-title-logo__image {
 .space-system-container,
 .space-price-container,
 .space-description,
+.space-performers,
 .space-activity-container {
   padding: 18px;
   border: var(--lmnl-border-medium);
@@ -89,6 +90,7 @@ html[data-theme='dark'] .space-page-title-logo__image {
 .space-occupancy-label,
 .space-price-label,
 .description-label,
+.space-performers-label,
 .space-activity-label,
 .space-activity-status,
 .space-time-label,
@@ -119,12 +121,32 @@ html[data-theme='dark'] .space-page-title-logo__image {
 
 .space-system-container,
 .space-description,
+.space-performers,
 .space-activity-container,
 .space-price-content,
 .space-occupancy-content {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.space-performers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.space-performer-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: var(--lmnl-border-medium);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(12px * 1.25);
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .space-system-container {

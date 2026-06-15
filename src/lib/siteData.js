@@ -352,8 +352,11 @@ export async function fetchSpaceEventSnapshot() {
 
   const [inventory, activity] = await Promise.all([inventoryPromise, activityPromise]);
 
+  const normalizedEvent = mapEventToTimelineItem(event);
   const nextEvent = {
     ...event,
+    performers: normalizedEvent.performers,
+    artists: normalizedEvent.artists,
     sold_tickets: Number.isFinite(activity?.soldTickets) ? activity.soldTickets : 0,
     activity: Array.isArray(activity?.activity) ? activity.activity : [],
     activity_live: activity?.isLive === true,

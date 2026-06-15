@@ -44,6 +44,19 @@ function mergeActivityItems(remoteItems, currentItems = []) {
     .slice(0, ACTIVITY_LIMIT);
 }
 
+function getPerformerList(eventData) {
+  const rawPerformers = eventData?.metadata?.performers || eventData?.performers || '';
+
+  if (Array.isArray(rawPerformers)) {
+    return rawPerformers.map((performer) => String(performer).trim()).filter(Boolean);
+  }
+
+  return String(rawPerformers)
+    .split(',')
+    .map((performer) => performer.trim())
+    .filter(Boolean);
+}
+
 export default function Space() {
   usePageColor('#004ffa');
 
@@ -154,6 +167,7 @@ export default function Space() {
   const ticketRaised = soldTickets * ticketPrice;
   const totalRaised = sourcedSoundAmount + ticketRaised;
   const totalPct = Math.min((totalRaised / totalGoal) * 100, 100);
+  const performers = getPerformerList(eventData);
 
   const goalRows = [
     { name: 'SOUND', goal: sourcedSoundAmount, detail: 'PA, DJ monitoring, room tuning, and playback infrastructure.' },
@@ -293,6 +307,17 @@ export default function Space() {
             )}
           </div>
         </div>
+
+        {performers.length > 0 && (
+          <div className="space-performers">
+            <p className="space-performers-label">lineup</p>
+            <div className="space-performers-list">
+              {performers.map((performer) => (
+                <span key={performer} className="space-performer-name">{performer}</span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="space-disclaimer">
           <span>this is a private event on private property.</span>
