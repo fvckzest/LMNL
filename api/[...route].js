@@ -415,6 +415,7 @@ async function handleEvents(req, res) {
   }
 
   const event = await upsertEvent(body);
+  await syncCommunityCreditsFromEvents();
   return sendJson(res, 200, { success: true, data: event });
 }
 
