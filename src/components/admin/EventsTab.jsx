@@ -38,6 +38,26 @@ function isPlaceholderEmail(email) {
   return !normalized || normalized.endsWith('@example.com');
 }
 
+function formatCsvValue(value) {
+  const stringValue = value == null ? '' : String(value);
+  return `"${stringValue.replaceAll('"', '""')}"`;
+}
+
+function formatCsvDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString();
+}
+
+function toCsvFilenamePart(value) {
+  return String(value || 'ticket-holders')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'ticket-holders';
+}
+
  export default function EventsTab({
    events,
    tickets,
@@ -91,6 +111,7 @@ function isPlaceholderEmail(email) {
     subject: '',
     content: '',
     plainTextOnly: false,
+    skipDirectRecipients: false,
   });
   const activeEventCount = events.filter((event) => event.status !== 'archived').length;
   const activeRequestCount = requests.filter((request) => !request.is_archived).length;
@@ -474,8 +495,17 @@ function isPlaceholderEmail(email) {
   const ticketRecipientCountsByEventId = useMemo(() => {
     return ticketRecords.reduce((acc, ticket) => {
       if (!ticket.resolvedEventId || isPlaceholderEmail(ticket.customer_email)) return acc;
-      if (!acc[ticket.resolvedEventId]) acc[ticket.resolvedEventId] = new Set();
-      acc[ticket.resolvedEventId].add(normalizeEmail(ticket.customer_email));
+      if (!acc[ticket.resolvedEventId]) {
+        acc[ticket.resolvedEventId] = {
+          all: new Set(),
+          direct: new Set(),
+        };
+      }
+      const email = normalizeEmail(ticket.customer_email);
+      acc[ticket.resolvedEventId].all.add(email);
+      if (ticket.event_id === ticket.resolvedEventId) {
+        acc[ticket.resolvedEventId].direct.add(email);
+      }
       return acc;
     }, {});
   }, [ticketRecords]);
@@ -485,8 +515,68 @@ function isPlaceholderEmail(email) {
   }, [events, ticketEmailForm.eventId]);
 
   const selectedEmailRecipientCount = ticketEmailForm.eventId
-    ? ticketRecipientCountsByEventId[ticketEmailForm.eventId]?.size || 0
+    ? ticketRecipientCountsByEventId[ticketEmailForm.eventId]?.all.size || 0
     : 0;
+  const selectedDirectRecipientCount = ticketEmailForm.eventId
+    ? ticketRecipientCountsByEventId[ticketEmailForm.eventId]?.direct.size || 0
+    : 0;
+  const selectedEstimatedSendCount = ticketEmailForm.skipDirectRecipients
+    ? Math.max(selectedEmailRecipientCount - selectedDirectRecipientCount, 0)
+    : selectedEmailRecipientCount;
+
+  function downloadTicketHoldersCsv(rows, filename) {
+    if (!rows.length) {
+      showToast('No ticket holders to export.', 'error');
+      return;
+    }
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const headers = [
+      'event',
+      'guest_name',
+      'email',
+      'status',
+      'issued_at',
+      'used_at',
+      'ticket_id',
+      'order_id',
+      'ticket_url',
+    ];
+    const csvRows = rows.map((ticket) => {
+      const ticketPath = `/ticket/${ticket.id}`;
+      return [
+        ticket.resolvedEventName,
+        ticket.customer_name || 'Guest',
+        ticket.customer_email || '',
+        ticket.is_used ? 'used' : 'valid',
+        formatCsvDate(ticket.created_at),
+        formatCsvDate(ticket.used_at),
+        ticket.id,
+        ticket.square_order_id || '',
+        origin ? `${origin}${ticketPath}` : ticketPath,
+      ].map(formatCsvValue).join(',');
+    });
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${rows.length} ticket holder${rows.length === 1 ? '' : 's'}.`, 'success');
+  }
+
+  function downloadAllTicketHoldersCsv() {
+    downloadTicketHoldersCsv(ticketRecords, 'lmnl-ticket-holders.csv');
+  }
+
+  function downloadEventTicketHoldersCsv(event, eventTickets) {
+    const filename = `lmnl-${toCsvFilenamePart(event.name)}-ticket-holders.csv`;
+    downloadTicketHoldersCsv(eventTickets, filename);
+  }
 
   function openTicketEmailModal(event = null) {
     const initialEvent = event || (events || []).find((entry) => entry.status !== 'archived') || events?.[0] || null;
@@ -495,6 +585,7 @@ function isPlaceholderEmail(email) {
       subject: initialEvent ? `Update for ${initialEvent.name}` : '',
       content: '',
       plainTextOnly: false,
+      skipDirectRecipients: false,
     });
     setIsEmailModalOpen(true);
   }
@@ -517,12 +608,14 @@ function isPlaceholderEmail(email) {
       return;
     }
 
-    triggerConfirm(`Send this email to ${selectedEmailRecipientCount} ticket holder${selectedEmailRecipientCount === 1 ? '' : 's'} for ${selectedEmailEvent?.name || 'this event'}?`, async () => {
+    triggerConfirm(`Send this email to about ${selectedEstimatedSendCount} ticket holder${selectedEstimatedSendCount === 1 ? '' : 's'} for ${selectedEmailEvent?.name || 'this event'}? Previously logged sends will be skipped automatically.`, async () => {
       setEmailSending(true);
       try {
         const result = await apiPost('/api/email-ticket-holders', ticketEmailForm, { auth: true });
         setIsEmailModalOpen(false);
-        showToast(`Email sent to ${result.sentCount} ticket holder${result.sentCount === 1 ? '' : 's'}.`);
+        const skippedCount = (result.skippedPreviouslySentCount || 0) + (result.skippedDirectRecoveryCount || 0);
+        const failedCount = result.failedCount || 0;
+        showToast(`Email sent to ${result.sentCount} ticket holder${result.sentCount === 1 ? '' : 's'}${skippedCount ? `; skipped ${skippedCount} already covered` : ''}${failedCount ? `; ${failedCount} failed and can be retried` : ''}.`, failedCount ? 'error' : 'success');
       } catch (error) {
         console.error('Error emailing ticket holders:', error);
         showToast('Failed to send email: ' + error.message, 'error');
@@ -608,6 +701,14 @@ function isPlaceholderEmail(email) {
                   style={{ marginRight: '10px' }}
                 >
                   {showArchivedEvents ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({events.filter(e => e.status === 'archived').length})
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn"
+                  onClick={downloadAllTicketHoldersCsv}
+                  disabled={ticketsLoading || ticketRecords.length === 0}
+                >
+                  DOWNLOAD CSV
                 </button>
                 <button
                   type="button"
@@ -733,9 +834,18 @@ function isPlaceholderEmail(email) {
                                 <div className="ticket-holders-panel">
                                   <div className="ticket-holders-header">
                                     <span>Issued Tickets</span>
-                                    <button className="admin-btn small" onClick={fetchTickets} disabled={ticketsLoading}>
-                                      {ticketsLoading ? 'LOADING...' : 'REFRESH'}
-                                    </button>
+                                    <div className="action-buttons">
+                                      <button
+                                        className="admin-btn small"
+                                        onClick={() => downloadEventTicketHoldersCsv(event, eventTickets)}
+                                        disabled={ticketsLoading || eventTickets.length === 0}
+                                      >
+                                        DOWNLOAD CSV
+                                      </button>
+                                      <button className="admin-btn small" onClick={fetchTickets} disabled={ticketsLoading}>
+                                        {ticketsLoading ? 'LOADING...' : 'REFRESH'}
+                                      </button>
+                                    </div>
                                   </div>
                                   <table className="admin-table issued-tickets-table inline-issued-tickets-table">
                                     <thead>
@@ -1355,7 +1465,7 @@ function isPlaceholderEmail(email) {
                   >
                     <option value="">-- SELECT EVENT --</option>
                     {events.map((event) => {
-                      const recipientCount = ticketRecipientCountsByEventId[event.id]?.size || 0;
+                      const recipientCount = ticketRecipientCountsByEventId[event.id]?.all.size || 0;
                       return (
                         <option key={event.id} value={event.id}>
                           {event.name} ({recipientCount} email{recipientCount === 1 ? '' : 's'})
@@ -1365,7 +1475,7 @@ function isPlaceholderEmail(email) {
                   </select>
                   <p className="form-help">
                     {ticketEmailForm.eventId
-                      ? `${selectedEmailRecipientCount} unique ticket holder email${selectedEmailRecipientCount === 1 ? '' : 's'} found.`
+                      ? `${selectedEmailRecipientCount} unique ticket holder email${selectedEmailRecipientCount === 1 ? '' : 's'} found. ${selectedDirectRecipientCount} direct ticket recipient${selectedDirectRecipientCount === 1 ? '' : 's'} can be skipped for the first-send recovery.`
                       : 'Choose the event whose ticket holders should receive this.'}
                   </p>
                 </div>
@@ -1400,15 +1510,25 @@ function isPlaceholderEmail(email) {
                   />
                   <label htmlFor="plain_text_ticket_email">PLAIN TEXT ONLY</label>
                 </div>
+
+                <div className="form-group checkbox">
+                  <input
+                    type="checkbox"
+                    id="skip_direct_ticket_email"
+                    checked={ticketEmailForm.skipDirectRecipients}
+                    onChange={(e) => setTicketEmailForm({ ...ticketEmailForm, skipDirectRecipients: e.target.checked })}
+                  />
+                  <label htmlFor="skip_direct_ticket_email">RECOVERY: SKIP DIRECT TICKET RECIPIENTS</label>
+                </div>
               </div>
 
               <div className="modal-actions">
                 <button
                   type="submit"
                   className="admin-btn approve wide"
-                  disabled={emailSending || selectedEmailRecipientCount === 0}
+                  disabled={emailSending || selectedEstimatedSendCount === 0}
                 >
-                  {emailSending ? 'SENDING...' : `SEND TO ${selectedEmailRecipientCount} TICKET HOLDER${selectedEmailRecipientCount === 1 ? '' : 'S'}`}
+                  {emailSending ? 'SENDING...' : `SEND TO ${selectedEstimatedSendCount} TICKET HOLDER${selectedEstimatedSendCount === 1 ? '' : 'S'}`}
                 </button>
               </div>
             </form>

@@ -103,15 +103,24 @@ function toTicketHolderRecipients(tickets = []) {
   const recipientsByEmail = new Map();
   tickets.forEach((ticket) => {
     const email = normalizeEmail(ticket.customer_email);
-    if (isPlaceholderEmail(email) || recipientsByEmail.has(email)) return;
+    if (isPlaceholderEmail(email)) return;
+    if (recipientsByEmail.has(email)) {
+      const existing = recipientsByEmail.get(email);
+      ticket.sources.forEach((source) => existing.sources.add(source));
+      return;
+    }
     recipientsByEmail.set(email, {
       email,
       name: ticket.customer_name || 'Guest',
       ticketId: ticket.id,
+      sources: new Set(ticket.sources),
     });
   });
 
-  return [...recipientsByEmail.values()];
+  return [...recipientsByEmail.values()].map((recipient) => ({
+    ...recipient,
+    sources: [...recipient.sources],
+  }));
 }
 
 export async function listTicketHolderEmailRecipientsByEvent(event) {
@@ -126,7 +135,10 @@ export async function listTicketHolderEmailRecipientsByEvent(event) {
 
   const eventName = String(event?.name || '').trim();
   if (!eventName) {
-    return toTicketHolderRecipients(directTickets);
+    return toTicketHolderRecipients((directTickets || []).map((ticket) => ({
+      ...ticket,
+      sources: ['direct'],
+    })));
   }
 
   const { data: linkedRequests, error: requestError } = await supabase
@@ -143,7 +155,10 @@ export async function listTicketHolderEmailRecipientsByEvent(event) {
     .filter((orderId) => orderId && !directOrderIds.has(orderId));
 
   if (linkedOrderIds.length === 0) {
-    return toTicketHolderRecipients(directTickets);
+    return toTicketHolderRecipients((directTickets || []).map((ticket) => ({
+      ...ticket,
+      sources: ['direct'],
+    })));
   }
 
   const { data: linkedTickets, error: linkedError } = await supabase
@@ -154,7 +169,16 @@ export async function listTicketHolderEmailRecipientsByEvent(event) {
 
   if (linkedError) throw linkedError;
 
-  return toTicketHolderRecipients([...(directTickets || []), ...(linkedTickets || [])]);
+  return toTicketHolderRecipients([
+    ...(directTickets || []).map((ticket) => ({
+      ...ticket,
+      sources: ['direct'],
+    })),
+    ...(linkedTickets || []).map((ticket) => ({
+      ...ticket,
+      sources: ['linked_request'],
+    })),
+  ]);
 }
 
 export async function listTicketHolderEmailRecipientsByEventId(eventId) {
