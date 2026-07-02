@@ -99,18 +99,9 @@ function isPlaceholderEmail(email) {
   return !normalized || normalized.endsWith('@example.com');
 }
 
-export async function listTicketHolderEmailRecipientsByEventId(eventId) {
-  const supabase = getAdminSupabase();
-  const { data, error } = await supabase
-    .from('tickets')
-    .select('id,event_id,customer_name,customer_email,created_at')
-    .eq('event_id', eventId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-
+function toTicketHolderRecipients(tickets = []) {
   const recipientsByEmail = new Map();
-  (data || []).forEach((ticket) => {
+  tickets.forEach((ticket) => {
     const email = normalizeEmail(ticket.customer_email);
     if (isPlaceholderEmail(email) || recipientsByEmail.has(email)) return;
     recipientsByEmail.set(email, {
@@ -121,6 +112,53 @@ export async function listTicketHolderEmailRecipientsByEventId(eventId) {
   });
 
   return [...recipientsByEmail.values()];
+}
+
+export async function listTicketHolderEmailRecipientsByEvent(event) {
+  const supabase = getAdminSupabase();
+  const { data: directTickets, error: directError } = await supabase
+    .from('tickets')
+    .select('id,event_id,square_order_id,customer_name,customer_email,created_at')
+    .eq('event_id', event.id)
+    .order('created_at', { ascending: false });
+
+  if (directError) throw directError;
+
+  const eventName = String(event?.name || '').trim();
+  if (!eventName) {
+    return toTicketHolderRecipients(directTickets);
+  }
+
+  const { data: linkedRequests, error: requestError } = await supabase
+    .from('requests')
+    .select('square_order_id')
+    .eq('event_name', eventName)
+    .not('square_order_id', 'is', null);
+
+  if (requestError) throw requestError;
+
+  const directOrderIds = new Set((directTickets || []).map((ticket) => ticket.square_order_id).filter(Boolean));
+  const linkedOrderIds = (linkedRequests || [])
+    .map((request) => request.square_order_id)
+    .filter((orderId) => orderId && !directOrderIds.has(orderId));
+
+  if (linkedOrderIds.length === 0) {
+    return toTicketHolderRecipients(directTickets);
+  }
+
+  const { data: linkedTickets, error: linkedError } = await supabase
+    .from('tickets')
+    .select('id,event_id,square_order_id,customer_name,customer_email,created_at')
+    .in('square_order_id', linkedOrderIds)
+    .order('created_at', { ascending: false });
+
+  if (linkedError) throw linkedError;
+
+  return toTicketHolderRecipients([...(directTickets || []), ...(linkedTickets || [])]);
+}
+
+export async function listTicketHolderEmailRecipientsByEventId(eventId) {
+  return listTicketHolderEmailRecipientsByEvent({ id: eventId, name: '' });
 }
 
 export async function listRecentTicketsByEventId(eventId, limit = 8) {

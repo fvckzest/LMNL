@@ -3,7 +3,7 @@ import { AppError } from '../errors.js';
 import { getResendClient } from '../clients.js';
 import { buildTicketHolderBroadcastEmail } from '../email-templates.js';
 import { getEventById } from '../repositories/events.js';
-import { listTicketHolderEmailRecipientsByEventId } from '../repositories/tickets.js';
+import { listTicketHolderEmailRecipientsByEvent } from '../repositories/tickets.js';
 
 function normalizeText(value) {
   return String(value || '').trim();
@@ -46,7 +46,6 @@ export async function sendTicketHolderEmail(payload, deps = {}) {
   }
 
   const loadEvent = deps.getEventById || getEventById;
-  const loadRecipients = deps.listTicketHolderEmailRecipientsByEventId || listTicketHolderEmailRecipientsByEventId;
   const resend = deps.resendClient || getResendClient();
   const event = await loadEvent(eventId);
 
@@ -58,7 +57,14 @@ export async function sendTicketHolderEmail(payload, deps = {}) {
     });
   }
 
-  const recipients = await loadRecipients(eventId);
+  let recipients;
+  if (deps.listTicketHolderEmailRecipientsByEvent) {
+    recipients = await deps.listTicketHolderEmailRecipientsByEvent(event);
+  } else if (deps.listTicketHolderEmailRecipientsByEventId) {
+    recipients = await deps.listTicketHolderEmailRecipientsByEventId(eventId);
+  } else {
+    recipients = await listTicketHolderEmailRecipientsByEvent(event);
+  }
   if (recipients.length === 0) {
     throw new AppError('No ticket holder emails were found for this event.', {
       code: 'NO_RECIPIENTS',
