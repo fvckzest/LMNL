@@ -29,6 +29,15 @@ const MANAGED_METADATA_KEYS = new Set([
   'wallet_time_zone',
 ]);
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isPlaceholderEmail(email) {
+  const normalized = normalizeEmail(email);
+  return !normalized || normalized.endsWith('@example.com');
+}
+
  export default function EventsTab({
    events,
    tickets,
@@ -70,11 +79,19 @@ const MANAGED_METADATA_KEYS = new Set([
   const [showArchivedEvents, setShowArchivedEvents] = useState(false);
   const [showArchivedRequests, setShowArchivedRequests] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [newTraitKey, setNewTraitKey] = useState('');
   const [newTraitValue, setNewTraitValue] = useState('');
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [expandedTicketIds, setExpandedTicketIds] = useState({});
+  const [ticketEmailForm, setTicketEmailForm] = useState({
+    eventId: '',
+    subject: '',
+    content: '',
+    plainTextOnly: false,
+  });
   const activeEventCount = events.filter((event) => event.status !== 'archived').length;
   const activeRequestCount = requests.filter((request) => !request.is_archived).length;
 
@@ -454,6 +471,67 @@ const MANAGED_METADATA_KEYS = new Set([
     }, {});
   }, [ticketRecords]);
 
+  const ticketRecipientCountsByEventId = useMemo(() => {
+    return ticketRecords.reduce((acc, ticket) => {
+      if (!ticket.resolvedEventId || isPlaceholderEmail(ticket.customer_email)) return acc;
+      if (!acc[ticket.resolvedEventId]) acc[ticket.resolvedEventId] = new Set();
+      acc[ticket.resolvedEventId].add(normalizeEmail(ticket.customer_email));
+      return acc;
+    }, {});
+  }, [ticketRecords]);
+
+  const selectedEmailEvent = useMemo(() => {
+    return (events || []).find((event) => event.id === ticketEmailForm.eventId) || null;
+  }, [events, ticketEmailForm.eventId]);
+
+  const selectedEmailRecipientCount = ticketEmailForm.eventId
+    ? ticketRecipientCountsByEventId[ticketEmailForm.eventId]?.size || 0
+    : 0;
+
+  function openTicketEmailModal(event = null) {
+    const initialEvent = event || (events || []).find((entry) => entry.status !== 'archived') || events?.[0] || null;
+    setTicketEmailForm({
+      eventId: initialEvent?.id || '',
+      subject: initialEvent ? `Update for ${initialEvent.name}` : '',
+      content: '',
+      plainTextOnly: false,
+    });
+    setIsEmailModalOpen(true);
+  }
+
+  async function handleTicketEmailSubmit(e) {
+    e.preventDefault();
+
+    if (!ticketEmailForm.eventId) {
+      showToast('Select an event first.', 'error');
+      return;
+    }
+
+    if (!ticketEmailForm.subject.trim() || !ticketEmailForm.content.trim()) {
+      showToast('Add a subject and email content before sending.', 'error');
+      return;
+    }
+
+    if (selectedEmailRecipientCount === 0) {
+      showToast('No ticket holder emails found for that event.', 'error');
+      return;
+    }
+
+    triggerConfirm(`Send this email to ${selectedEmailRecipientCount} ticket holder${selectedEmailRecipientCount === 1 ? '' : 's'} for ${selectedEmailEvent?.name || 'this event'}?`, async () => {
+      setEmailSending(true);
+      try {
+        const result = await apiPost('/api/email-ticket-holders', ticketEmailForm, { auth: true });
+        setIsEmailModalOpen(false);
+        showToast(`Email sent to ${result.sentCount} ticket holder${result.sentCount === 1 ? '' : 's'}.`);
+      } catch (error) {
+        console.error('Error emailing ticket holders:', error);
+        showToast('Failed to send email: ' + error.message, 'error');
+      } finally {
+        setEmailSending(false);
+      }
+    });
+  }
+
   function toggleExpandedEvent(eventId) {
     setExpandedEventId(current => current === eventId ? null : eventId);
   }
@@ -530,6 +608,14 @@ const MANAGED_METADATA_KEYS = new Set([
                   style={{ marginRight: '10px' }}
                 >
                   {showArchivedEvents ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'} ({events.filter(e => e.status === 'archived').length})
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn"
+                  onClick={() => openTicketEmailModal()}
+                  disabled={events.length === 0}
+                >
+                  EMAIL TICKET HOLDERS
                 </button>
                 <button className="admin-btn approve" onClick={() => openEditModal()}>+ ADD EVENT</button>
               </div>
@@ -1237,6 +1323,93 @@ const MANAGED_METADATA_KEYS = new Set([
 
               <div className="modal-actions">
                 <button type="submit" className="admin-btn approve wide">SAVE EVENT</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEmailModalOpen && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal ticket-email-modal">
+            <div className="modal-header">
+              <h3>EMAIL TICKET HOLDERS</h3>
+              <button className="close-modal" onClick={() => setIsEmailModalOpen(false)}>×</button>
+            </div>
+
+            <form onSubmit={handleTicketEmailSubmit} className="modal-form">
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label>EVENT</label>
+                  <select
+                    required
+                    value={ticketEmailForm.eventId}
+                    onChange={(e) => {
+                      const nextEvent = events.find((event) => event.id === e.target.value);
+                      setTicketEmailForm({
+                        ...ticketEmailForm,
+                        eventId: e.target.value,
+                        subject: nextEvent ? `Update for ${nextEvent.name}` : ticketEmailForm.subject,
+                      });
+                    }}
+                  >
+                    <option value="">-- SELECT EVENT --</option>
+                    {events.map((event) => {
+                      const recipientCount = ticketRecipientCountsByEventId[event.id]?.size || 0;
+                      return (
+                        <option key={event.id} value={event.id}>
+                          {event.name} ({recipientCount} email{recipientCount === 1 ? '' : 's'})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="form-help">
+                    {ticketEmailForm.eventId
+                      ? `${selectedEmailRecipientCount} unique ticket holder email${selectedEmailRecipientCount === 1 ? '' : 's'} found.`
+                      : 'Choose the event whose ticket holders should receive this.'}
+                  </p>
+                </div>
+
+                <div className="form-group full">
+                  <label>SUBJECT</label>
+                  <input
+                    required
+                    type="text"
+                    value={ticketEmailForm.subject}
+                    onChange={(e) => setTicketEmailForm({ ...ticketEmailForm, subject: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label>EMAIL CONTENT</label>
+                  <textarea
+                    required
+                    rows="10"
+                    value={ticketEmailForm.content}
+                    onChange={(e) => setTicketEmailForm({ ...ticketEmailForm, content: e.target.value })}
+                    placeholder="Write the message ticket holders should receive."
+                  />
+                </div>
+
+                <div className="form-group checkbox">
+                  <input
+                    type="checkbox"
+                    id="plain_text_ticket_email"
+                    checked={ticketEmailForm.plainTextOnly}
+                    onChange={(e) => setTicketEmailForm({ ...ticketEmailForm, plainTextOnly: e.target.checked })}
+                  />
+                  <label htmlFor="plain_text_ticket_email">PLAIN TEXT ONLY</label>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="submit"
+                  className="admin-btn approve wide"
+                  disabled={emailSending || selectedEmailRecipientCount === 0}
+                >
+                  {emailSending ? 'SENDING...' : `SEND TO ${selectedEmailRecipientCount} TICKET HOLDER${selectedEmailRecipientCount === 1 ? '' : 'S'}`}
+                </button>
               </div>
             </form>
           </div>

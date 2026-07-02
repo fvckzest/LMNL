@@ -7,6 +7,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function renderPlainTextAsHtml(value) {
+  return escapeHtml(value)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n/g, '<br />');
+}
+
 function renderEmailShell({
   accentColor = '#000000',
   logoUrl = 'https://lmnl.art/lmnl-logo-black.png',
@@ -205,6 +212,30 @@ export function buildTicketEmail({ eventName, ticketUrl, customerName, logoUrl }
   ].filter(Boolean).join('\n');
 
   return { subject, html: rendered.html, previewHtml: rendered.previewHtml, text };
+}
+
+export function buildTicketHolderBroadcastEmail({ eventName, subject, content, logoUrl }) {
+  const safeEventName = eventName || 'LMNL Event';
+  const safeSubject = subject || `Update for ${safeEventName}`;
+  const safeContent = content || '';
+  const rendered = renderEmailShell({
+    accentColor: '#004ffa',
+    logoUrl,
+    title: 'Event Update',
+    intro: renderPlainTextAsHtml(safeContent),
+    details: [
+      { label: 'Event', value: safeEventName },
+    ],
+    footer: 'You are receiving this because you have a ticket for this LMNL event. Reply to this email if you need help.',
+  });
+  const text = [
+    safeSubject,
+    `Event: ${safeEventName}`,
+    '',
+    safeContent,
+  ].filter((line, index) => index < 2 || line !== '').join('\n');
+
+  return { subject: safeSubject, html: rendered.html, previewHtml: rendered.previewHtml, text };
 }
 
 export function buildInquiryNotificationEmail({ name, email, notes, selectedServices, logoUrl }) {

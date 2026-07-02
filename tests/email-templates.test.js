@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildApprovalEmail, buildTicketEmail } from '../shared/emailTemplates.js';
+import { buildApprovalEmail, buildTicketEmail, buildTicketHolderBroadcastEmail } from '../shared/emailTemplates.js';
 
 test('buildApprovalEmail includes subject, CTA, and fallback link text', () => {
   const email = buildApprovalEmail({
@@ -29,4 +29,17 @@ test('buildTicketEmail includes guest, event, and ticket link', () => {
   assert.match(email.html, /View Ticket/);
   assert.match(email.text, /https:\/\/lmnl\.art\/ticket\/tkt_42A91/);
   assert.doesNotMatch(email.html, /Local Preview/);
+});
+
+test('buildTicketHolderBroadcastEmail escapes content and preserves line breaks', () => {
+  const email = buildTicketHolderBroadcastEmail({
+    eventName: 'PRSM Listening Session',
+    subject: 'Important update',
+    content: 'Doors move to 8pm\nBring <ID>',
+  });
+
+  assert.equal(email.subject, 'Important update');
+  assert.match(email.html, /Doors move to 8pm<br \/>Bring &lt;ID&gt;/);
+  assert.match(email.html, /PRSM Listening Session/);
+  assert.match(email.text, /Bring <ID>/);
 });

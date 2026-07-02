@@ -90,6 +90,39 @@ export async function listTickets() {
   return data || [];
 }
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isPlaceholderEmail(email) {
+  const normalized = normalizeEmail(email);
+  return !normalized || normalized.endsWith('@example.com');
+}
+
+export async function listTicketHolderEmailRecipientsByEventId(eventId) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('id,event_id,customer_name,customer_email,created_at')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const recipientsByEmail = new Map();
+  (data || []).forEach((ticket) => {
+    const email = normalizeEmail(ticket.customer_email);
+    if (isPlaceholderEmail(email) || recipientsByEmail.has(email)) return;
+    recipientsByEmail.set(email, {
+      email,
+      name: ticket.customer_name || 'Guest',
+      ticketId: ticket.id,
+    });
+  });
+
+  return [...recipientsByEmail.values()];
+}
+
 export async function listRecentTicketsByEventId(eventId, limit = 8) {
   const supabase = getAdminSupabase();
   const safeLimit = Math.max(Number(limit) || 8, 1);

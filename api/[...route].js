@@ -26,6 +26,7 @@ import {
 import { getCommunityDashboard } from './_lib/services/community-dashboard.js';
 import { confirmCheckInTicket, getCheckInTicketView, getTicketView } from './_lib/services/tickets.js';
 import { processSquareOrderUpdate, reconcileApprovedRequestTicket } from './_lib/services/webhook-fulfillment.js';
+import { sendTicketHolderEmail } from './_lib/services/ticket-holder-email.js';
 import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { getSiteActivityHistory } from './_lib/services/site-activity.js';
 import { getSpaceDonationActivity } from './_lib/services/space-donations.js';
@@ -520,6 +521,14 @@ async function handleAdminTickets(req, res) {
   allowMethods(req, ['GET']);
   await requireAdminUser(req);
   const data = await listTickets();
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleEmailTicketHolders(req, res) {
+  allowMethods(req, ['POST']);
+  await requireAdminUser(req);
+  const body = await parseJsonBody(req);
+  const data = await sendTicketHolderEmail(body);
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -1196,6 +1205,7 @@ const handlers = {
   'check-in-ticket': handleCheckInTicket,
   'admin-session': handleAdminSession,
   'admin-tickets': handleAdminTickets,
+  'email-ticket-holders': handleEmailTicketHolders,
   preorders: handlePreorders,
   requests: handleRequests,
   'artist-interest': handleArtistInterest,
