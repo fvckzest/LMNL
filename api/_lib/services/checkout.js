@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { getSquareClient, getSquareLocationId } from '../clients.js';
-import { getBaseConfig } from '../env.js';
+import { getBaseConfig, getSquareConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getPreorderById } from '../repositories/preorders.js';
 import { createAccessRequest, attachOrderIdToRequest, getRequestById } from '../repositories/requests.js';
@@ -81,6 +81,76 @@ function buildPrePopulatedData(buyer) {
   };
 }
 
+function normalizeDonationAmount(amount) {
+  const numeric = Number(amount);
+  const allowedAmounts = new Set([10, 20, 50, 100]);
+
+  if (!Number.isFinite(numeric) || !allowedAmounts.has(numeric)) {
+    throw new AppError('Invalid donation amount.', {
+      code: 'INVALID_DONATION_AMOUNT',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return numeric;
+}
+
+function readCatalogObjects(response = {}) {
+  return [
+    ...(response.objects || response.result?.objects || []),
+    ...(response.relatedObjects || response.result?.relatedObjects || []),
+  ];
+}
+
+function normalizeName(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function resolveDonationVariationId(amount, deps = {}) {
+  const config = (deps.getSquareConfig || getSquareConfig)();
+  const amountCents = amount * 100;
+  const configuredVariationId = config.donationVariationIds?.[amount];
+
+  if (configuredVariationId) {
+    return configuredVariationId;
+  }
+
+  const squareClient = deps.squareClient || getSquareClient();
+  const response = await squareClient.catalog.search({
+    includeRelatedObjects: true,
+    objectTypes: ['ITEM', 'ITEM_VARIATION'],
+  });
+  const objects = readCatalogObjects(response);
+  const items = objects.filter((object) => object.type === 'ITEM' && !object.isDeleted);
+  const itemName = normalizeName(config.donationItemName || 'DONATION');
+  const item = items.find((candidate) => (
+    (config.donationItemId && candidate.id === config.donationItemId)
+    || normalizeName(candidate.itemData?.name) === itemName
+  ));
+
+  if (!item) {
+    throw new AppError('Square donation item was not found.', {
+      code: 'SQUARE_DONATION_ITEM_NOT_FOUND',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  const variation = (item.itemData?.variations || [])
+    .find((candidate) => Number(candidate.itemVariationData?.priceMoney?.amount) === amountCents);
+
+  if (!variation?.id) {
+    throw new AppError(`Square donation variation for $${amount} was not found.`, {
+      code: 'SQUARE_DONATION_VARIATION_NOT_FOUND',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  return variation.id;
+}
+
 export async function createCheckoutForPreorder(preorderId, deps = {}) {
   const loadPreorder = deps.getPreorderById || getPreorderById;
   const resolveSquareVariationId = deps.resolveVariationId || resolveVariationId;
@@ -155,6 +225,71 @@ export async function createCheckoutForPreorder(preorderId, deps = {}) {
     checkoutUrl: paymentLink.url,
     orderId: paymentLink.orderId || null,
     variationId,
+  };
+}
+
+export async function createCheckoutForDonation(amount, deps = {}) {
+  const donationAmount = normalizeDonationAmount(amount);
+  const variationId = await (deps.resolveDonationVariationId || resolveDonationVariationId)(donationAmount, deps);
+  const locationId = await (deps.getSquareLocationId || getSquareLocationId)();
+
+  if (!locationId) {
+    throw new AppError('No active Square location found.', {
+      code: 'SQUARE_LOCATION_MISSING',
+      status: 500,
+      expose: true,
+    });
+  }
+
+  const { siteUrl } = (deps.getBaseConfig || getBaseConfig)();
+  const squareClient = deps.squareClient || getSquareClient();
+  let response;
+
+  try {
+    response = await squareClient.checkout.paymentLinks.create({
+      idempotencyKey: crypto.randomUUID(),
+      order: {
+        locationId,
+        referenceId: `space-donation-${donationAmount}`,
+        metadata: {
+          type: 'space_donation',
+          label: 'feed the horse',
+          amount: String(donationAmount),
+        },
+        lineItems: [{
+          quantity: '1',
+          catalogObjectId: variationId,
+        }],
+      },
+      checkoutOptions: {
+        redirectUrl: `${siteUrl}/space?donation=success&amount=${donationAmount}`,
+        enableCoupon: false,
+      },
+      paymentNote: `Feed the horse donation - $${donationAmount}`,
+    });
+  } catch (error) {
+    throw new AppError(extractSquareErrorMessage(error, 'Square could not create a donation checkout link.'), {
+      code: 'SQUARE_CHECKOUT_FAILED',
+      status: 502,
+      details: error,
+      expose: true,
+    });
+  }
+
+  const paymentLink = response.paymentLink || response.result?.paymentLink;
+  if (!paymentLink?.url) {
+    throw new AppError('Square did not return a checkout URL.', {
+      code: 'SQUARE_CHECKOUT_FAILED',
+      status: 502,
+      expose: true,
+    });
+  }
+
+  return {
+    checkoutUrl: paymentLink.url,
+    orderId: paymentLink.orderId || null,
+    variationId,
+    amount: donationAmount,
   };
 }
 
