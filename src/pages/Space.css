@@ -470,11 +470,18 @@ html[data-theme='dark'] .request-modal {
   padding: 12px;
   border: var(--lmnl-border-medium);
   background: var(--terminal-panel-bg);
+  color: inherit;
+  cursor: pointer;
   font-family: var(--lmnl-font-mono);
   font-size: calc(16px * 1.25);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.donation-choice:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .donation-choice:hover,

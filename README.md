@@ -59,6 +59,13 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 SUPABASE_PORTFOLIO_BUCKET=portfolio-media
 SQUARE_ACCESS_TOKEN=your_square_access_token
 SQUARE_WEBHOOK_SIGNATURE_KEY=your_webhook_signature
+SQUARE_DONATION_ITEM_NAME=DONATION
+# Optional: use these if the donation item name changes or you want to pin exact Square variations.
+SQUARE_DONATION_ITEM_ID=your_square_donation_item_id
+SQUARE_DONATION_VARIATION_ID_10=your_10_dollar_variation_id
+SQUARE_DONATION_VARIATION_ID_20=your_20_dollar_variation_id
+SQUARE_DONATION_VARIATION_ID_50=your_50_dollar_variation_id
+SQUARE_DONATION_VARIATION_ID_100=your_100_dollar_variation_id
 SITE_URL=https://lmnl.space (or your domain)
 RESEND_API_KEY=your_resend_api_key
 DISCORD_APPLICATION_ID=your_discord_application_id

@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from '../api/_lib/services/checkout.js';
+import {
+  createCheckoutForDonation,
+  createCheckoutForEvent,
+  createCheckoutForPreorder,
+  createCheckoutForRequest,
+} from '../api/_lib/services/checkout.js';
 
 test('createCheckoutForPreorder builds checkout URL from preorder and variation', async () => {
   const payloads = [];
@@ -35,6 +40,42 @@ test('createCheckoutForPreorder rejects missing preorder', async () => {
       getPreorderById: async () => null,
     }),
     /Preorder not found/
+  );
+});
+
+test('createCheckoutForDonation creates Square-hosted checkout from donation variation', async () => {
+  const checkoutPayloads = [];
+  const result = await createCheckoutForDonation(20, {
+    resolveDonationVariationId: async () => 'donation_var_20',
+    getSquareLocationId: async () => 'loc_1',
+    getBaseConfig: () => ({ siteUrl: 'https://lmnl.art' }),
+    squareClient: {
+      checkout: {
+        paymentLinks: {
+          create: async (payload) => {
+            checkoutPayloads.push(payload);
+            return {
+              paymentLink: { url: 'https://square.test/donation', orderId: 'order_donation_20' },
+            };
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(result.checkoutUrl, 'https://square.test/donation');
+  assert.equal(result.orderId, 'order_donation_20');
+  assert.equal(result.amount, 20);
+  assert.equal(result.variationId, 'donation_var_20');
+  assert.equal(checkoutPayloads[0].order.lineItems[0].catalogObjectId, 'donation_var_20');
+  assert.equal(checkoutPayloads[0].order.metadata.type, 'space_donation');
+  assert.equal(checkoutPayloads[0].checkoutOptions.redirectUrl, 'https://lmnl.art/space?donation=success&amount=20');
+});
+
+test('createCheckoutForDonation rejects unsupported amounts', async () => {
+  await assert.rejects(
+    createCheckoutForDonation(15, {}),
+    /Invalid donation amount/
   );
 });
 

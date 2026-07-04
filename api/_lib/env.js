@@ -75,6 +75,14 @@ export function getSquareConfig() {
     token,
     applicationId,
     locationId: readEnv('SQUARE_LOCATION_ID'),
+    donationItemId: readEnv('SQUARE_DONATION_ITEM_ID'),
+    donationItemName: readEnv('SQUARE_DONATION_ITEM_NAME') || 'DONATION',
+    donationVariationIds: {
+      10: readEnv('SQUARE_DONATION_VARIATION_ID_10'),
+      20: readEnv('SQUARE_DONATION_VARIATION_ID_20'),
+      50: readEnv('SQUARE_DONATION_VARIATION_ID_50'),
+      100: readEnv('SQUARE_DONATION_VARIATION_ID_100'),
+    },
     webhookSignatureKey: readEnv('SQUARE_WEBHOOK_SIGNATURE_KEY'),
   };
 }

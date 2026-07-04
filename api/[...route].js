@@ -4,7 +4,12 @@ import { requireAdminUser } from './_lib/auth.js';
 import { requireCommunityUser } from './_lib/auth-community.js';
 import { getAdminSupabase, getSquareClient } from './_lib/clients.js';
 import handleDiscordInteractions from './discord-interactions.js';
-import { createCheckoutForEvent, createCheckoutForPreorder, createCheckoutForRequest } from './_lib/services/checkout.js';
+import {
+  createCheckoutForDonation,
+  createCheckoutForEvent,
+  createCheckoutForPreorder,
+  createCheckoutForRequest,
+} from './_lib/services/checkout.js';
 import { getCheckoutSuccessView, getCheckoutSuccessViewByTicketId } from './_lib/services/checkout-success.js';
 import { getVariationInventory } from './_lib/services/inventory.js';
 import { generateTicketPass } from './_lib/services/passkit.js';
@@ -200,6 +205,13 @@ async function handleCreateRequestCheckout(req, res) {
   const data = await createCheckoutForRequest(requestId, {
     buyer: body.buyer || {},
   });
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handleCreateDonationCheckout(req, res) {
+  allowMethods(req, ['POST']);
+  const body = await parseJsonBody(req);
+  const data = await createCheckoutForDonation(body.amount);
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -1180,6 +1192,7 @@ const handlers = {
   'check-inventory': handleCheckInventory,
   'confirm-ticket': handleConfirmTicket,
   'create-checkout': handleCreateCheckout,
+  'create-donation-checkout': handleCreateDonationCheckout,
   'create-event-checkout': handleCreateEventCheckout,
   'create-request-checkout': handleCreateRequestCheckout,
   'app-dashboard': handleAppDashboard,

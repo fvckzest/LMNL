@@ -13,20 +13,10 @@ import {
   fetchSpaceTicketActivity,
   mergeSpaceActivity,
 } from '../lib/siteData';
-import { createHorseFeedSiteHistoryItem, publishSiteHistoryActivity } from '../lib/siteHistoryEvents';
 import './Space.css';
 
 const ACTIVITY_LIMIT = 12;
 const LOCAL_ACTIVITY_PREFIX = 'local-horse-feed';
-
-function createHorseFeedActivity() {
-  return {
-    id: `${LOCAL_ACTIVITY_PREFIX}-${Date.now()}`,
-    customerName: 'Anonymous supporter',
-    activityLabel: 'horse fed',
-    createdAt: new Date().toISOString(),
-  };
-}
 
 function mergeActivityItems(remoteItems, currentItems = []) {
   const localItems = currentItems.filter((item) => String(item?.id || '').startsWith(LOCAL_ACTIVITY_PREFIX));
@@ -63,6 +53,8 @@ export default function Space() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [purchaseStatus, setPurchaseStatus] = useState('idle');
+  const [donationStatus, setDonationStatus] = useState('idle');
+  const [donationAmount, setDonationAmount] = useState(null);
   const [requestStatus, setRequestStatus] = useState('idle'); // idle, loading, success, error
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [activityItems, setActivityItems] = useState([]);
@@ -85,13 +77,6 @@ export default function Space() {
       />
     </span>
   );
-
-  const DONATION_LINKS = {
-    10: 'https://square.link/u/wS5ae9vZ',
-    20: 'https://square.link/u/CNarEY3J',
-    50: 'https://square.link/u/koJMBswI',
-    100: 'https://square.link/u/p7Z5v7zW',
-  };
 
   useEffect(() => {
     async function loadEvent() {
@@ -239,15 +224,22 @@ export default function Space() {
   };
 
   const handleDonate = () => {
-    const horseFeedActivity = createHorseFeedActivity();
-
-    setActivityItems((currentItems) => mergeActivityItems([], [
-      horseFeedActivity,
-      ...currentItems,
-    ]));
-    publishSiteHistoryActivity(createHorseFeedSiteHistoryItem(horseFeedActivity));
-    setActivityLive(true);
+    setDonationStatus('idle');
+    setDonationAmount(null);
     setShowDonationModal(true);
+  };
+
+  const handleDonationCheckout = async (amount) => {
+    setDonationStatus('loading');
+    setDonationAmount(amount);
+
+    try {
+      const result = await apiPost('/api/create-donation-checkout', { amount });
+      window.location.assign(result.checkoutUrl);
+    } catch (error) {
+      console.error('Error creating donation checkout:', error);
+      setDonationStatus('error');
+    }
   };
 
   return (
@@ -392,26 +384,38 @@ export default function Space() {
       )}
 
       {showDonationModal && (
-        <div className="request-modal-overlay" onClick={() => setShowDonationModal(false)}>
+        <div className="request-modal-overlay" onClick={() => {
+          setShowDonationModal(false);
+          setDonationStatus('idle');
+          setDonationAmount(null);
+        }}>
           <div className="request-modal donation-modal" onClick={e => e.stopPropagation()}>
-            <button className="close-modal" onClick={() => setShowDonationModal(false)}>×</button>
+            <button className="close-modal" onClick={() => {
+              setShowDonationModal(false);
+              setDonationStatus('idle');
+              setDonationAmount(null);
+            }}>×</button>
             <h2>FEED THE HORSE</h2>
             <p className="request-subtitle">SELECT DONATION AMOUNT</p>
 
             <div className="donation-choices">
-              <a href={DONATION_LINKS[10]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                <span className="amount">$10</span>
-              </a>
-              <a href={DONATION_LINKS[20]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                <span className="amount">$20</span>
-              </a>
-              <a href={DONATION_LINKS[50]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                <span className="amount">$50</span>
-              </a>
-              <a href={DONATION_LINKS[100]} target="_blank" rel="noopener noreferrer" className="donation-choice">
-                <span className="amount">$100</span>
-              </a>
+              {[10, 20, 50, 100].map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  className="donation-choice"
+                  onClick={() => handleDonationCheckout(amount)}
+                  disabled={donationStatus === 'loading'}
+                >
+                  <span className="amount">
+                    {donationStatus === 'loading' && donationAmount === amount ? 'OPENING...' : `$${amount}`}
+                  </span>
+                </button>
+              ))}
             </div>
+            {donationStatus === 'error' && (
+              <p className="error-message">Unable to open donation checkout right now. Please try again.</p>
+            )}
           </div>
         </div>
       )}
