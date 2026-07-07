@@ -1,0 +1,138 @@
+.feed-the-horse-page {
+  --theme-copy-width: none;
+}
+
+.feed-the-horse-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lmnl-layout-gap);
+  align-items: start;
+}
+
+.feed-the-horse-copy {
+  display: grid;
+  gap: 14px;
+  padding: var(--lmnl-panel-padding);
+}
+
+.feed-the-horse-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.feed-the-horse-donation-panel .system-panel__header {
+  display: none;
+}
+
+.feed-the-horse-wallets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.feed-the-horse-wallet-form {
+  display: grid;
+  margin: 0;
+  min-width: 0;
+}
+
+.feed-the-horse-wallet {
+  --theme-button-width: 100%;
+  --theme-button-height: 44px;
+  --theme-button-font: var(--lmnl-font-mono);
+}
+
+.feed-the-horse-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  color: var(--lmnl-color-text-muted);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feed-the-horse-divider::before,
+.feed-the-horse-divider::after {
+  content: "";
+  height: var(--lmnl-line-width);
+  background: var(--terminal-line-soft);
+}
+
+.feed-the-horse-amounts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.feed-the-horse-amount {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: var(--lmnl-border-medium);
+  background: var(--terminal-panel-bg);
+  color: inherit;
+  text-decoration: none;
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(15px * 1.25);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color var(--lmnl-transition-standard),
+    border-color var(--lmnl-transition-standard),
+    color var(--lmnl-transition-standard);
+}
+
+.feed-the-horse-amount:hover,
+.feed-the-horse-amount:focus-visible {
+  background: var(--page-color);
+  border-color: var(--page-color);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.feed-the-horse-amount:focus-visible {
+  outline: none;
+}
+
+.feed-the-horse-amount:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.feed-the-horse-error {
+  margin: 0;
+  color: var(--lmnl-color-text);
+  font-family: var(--lmnl-font-mono);
+  font-size: calc(10px * 1.25);
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .feed-the-horse-amounts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .feed-the-horse-copy {
+    padding: 16px;
+  }
+
+  .feed-the-horse-wallets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feed-the-horse-amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

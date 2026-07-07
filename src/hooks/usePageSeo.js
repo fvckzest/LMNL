@@ -182,6 +182,14 @@ const routeSeo = [
     },
   },
   {
+    pattern: '/feedthehorse',
+    metadata: {
+      title: 'LMNL | FEED THE HORSE',
+      description: 'Support LMNL as a bootstrapped, community-powered creative platform.',
+      image: '/seo/community-seo.png',
+    },
+  },
+  {
     pattern: '/shop',
     metadata: {
       title: 'LMNL | SHOP',

@@ -102,6 +102,15 @@ export const routes = [
     canonicalPath: '/community/share',
   },
   {
+    path: 'feedthehorse',
+    title: 'LMNL | FEED THE HORSE',
+    description: 'Support LMNL as a bootstrapped, community-powered creative platform.',
+    image: '/seo/community-seo.png',
+    changefreq: 'monthly',
+    priority: '0.6',
+    indexable: true,
+  },
+  {
     path: 'app',
     title: 'LMNL | APP',
     description: 'Access the LMNL community app and member tools.',
