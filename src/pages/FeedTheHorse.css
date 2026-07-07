@@ -68,6 +68,12 @@
   gap: 8px;
 }
 
+.feed-the-horse-amount-form {
+  display: grid;
+  margin: 0;
+  min-width: 0;
+}
+
 .feed-the-horse-amount {
   appearance: none;
   display: grid;
@@ -100,21 +106,6 @@
 
 .feed-the-horse-amount:focus-visible {
   outline: none;
-}
-
-.feed-the-horse-amount:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.feed-the-horse-error {
-  margin: 0;
-  color: var(--lmnl-color-text);
-  font-family: var(--lmnl-font-mono);
-  font-size: calc(10px * 1.25);
-  letter-spacing: 0.12em;
-  line-height: 1.6;
-  text-transform: uppercase;
 }
 
 @media (max-width: 720px) {

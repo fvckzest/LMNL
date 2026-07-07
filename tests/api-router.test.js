@@ -58,3 +58,20 @@ test('api router falls back to pathname parsing', async () => {
   assert.equal(res.body.success, false);
   assert.equal(res.body.error.code, 'NOT_FOUND');
 });
+
+test('donation checkout route rejects unsupported get amount before Square lookup', async () => {
+  const req = {
+    method: 'GET',
+    url: '/api/create-donation-checkout?amount=15',
+    query: { amount: '15' },
+    body: {},
+    headers: {},
+  };
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.success, false);
+  assert.equal(res.body.error.code, 'INVALID_DONATION_AMOUNT');
+});
