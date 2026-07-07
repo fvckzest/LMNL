@@ -44,6 +44,7 @@ const Services = lazyWithRetry(() => import('./pages/Services'));
 const Portfolio = lazyWithRetry(() => import('./pages/Portfolio'));
 const Community = lazyWithRetry(() => import('./pages/Community'));
 const ArtistInterest = lazyWithRetry(() => import('./pages/ArtistInterest'));
+const FeedTheHorse = lazyWithRetry(() => import('./pages/FeedTheHorse'));
 const Shop = lazyWithRetry(() => import('./pages/Shop'));
 const Blog = lazyWithRetry(() => import('./pages/Blog'));
 const BlogPostView = lazyWithRetry(() => import('./pages/BlogPostView'));
@@ -468,6 +469,7 @@ function App() {
               <Route path="/community" element={<Community />} />
               <Route path="/community/share" element={<ArtistInterest />} />
               <Route path="/share-your-work" element={<Navigate to="/community/share" replace />} />
+              <Route path="/feedthehorse" element={<FeedTheHorse />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPostView />} />
