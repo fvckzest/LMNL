@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import ContentPageShell from '../components/ContentPageShell';
 import SystemPanel from '../components/SystemPanel';
-import { apiPost } from '../lib/api';
 import './FeedTheHorse.css';
 
 const paymentLinks = {
@@ -17,31 +15,6 @@ const donationAmounts = [
 ];
 
 export default function FeedTheHorse() {
-  const [checkoutStatus, setCheckoutStatus] = useState('idle');
-  const [activeAmount, setActiveAmount] = useState(null);
-
-  async function handleDonationCheckout(amount) {
-    setCheckoutStatus('loading');
-    setActiveAmount(amount);
-    const checkoutWindow = window.open('', '_blank', 'noopener,noreferrer');
-
-    try {
-      const result = await apiPost('/api/create-donation-checkout', { amount });
-      if (checkoutWindow) {
-        checkoutWindow.location.href = result.checkoutUrl;
-      } else {
-        window.open(result.checkoutUrl, '_blank', 'noopener,noreferrer');
-      }
-    } catch (error) {
-      console.error('Error creating donation checkout:', error);
-      if (checkoutWindow) {
-        checkoutWindow.close();
-      }
-      setCheckoutStatus('error');
-      setActiveAmount(null);
-    }
-  }
-
   return (
     <ContentPageShell
       title="FEED THE HORSE"
@@ -89,23 +62,21 @@ export default function FeedTheHorse() {
 
             <div className="feed-the-horse-amounts" aria-label="Square donation amounts">
               {donationAmounts.map((amount) => (
-                <button
+                <form
                   key={amount.label}
-                  type="button"
-                  className="feed-the-horse-amount"
-                  onClick={() => handleDonationCheckout(amount.value)}
-                  disabled={checkoutStatus === 'loading'}
+                  className="feed-the-horse-amount-form"
+                  action="/api/create-donation-checkout"
+                  method="get"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  {checkoutStatus === 'loading' && activeAmount === amount.value ? 'Opening' : amount.label}
-                </button>
+                  <input type="hidden" name="amount" value={amount.value} />
+                  <button type="submit" className="feed-the-horse-amount">
+                    {amount.label}
+                  </button>
+                </form>
               ))}
             </div>
-
-            {checkoutStatus === 'error' ? (
-              <p className="feed-the-horse-error">
-                Unable to open Square checkout right now. Please try again.
-              </p>
-            ) : null}
           </div>
         </SystemPanel>
       </div>

@@ -209,9 +209,21 @@ async function handleCreateRequestCheckout(req, res) {
 }
 
 async function handleCreateDonationCheckout(req, res) {
-  allowMethods(req, ['POST']);
-  const body = await parseJsonBody(req);
-  const data = await createCheckoutForDonation(body.amount);
+  allowMethods(req, ['GET', 'POST']);
+  const amount = req.method === 'GET'
+    ? req.query?.amount
+    : (await parseJsonBody(req)).amount;
+  const data = await createCheckoutForDonation(amount);
+
+  if (req.method === 'GET') {
+    res.status(303);
+    res.setHeader('Location', data.checkoutUrl);
+    if (typeof res.end === 'function') {
+      return res.end();
+    }
+    return res.send('');
+  }
+
   return sendJson(res, 200, { success: true, data });
 }
 
