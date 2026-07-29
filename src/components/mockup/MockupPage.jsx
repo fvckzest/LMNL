@@ -24,9 +24,6 @@ function ScreenshotFrame({ image }) {
         loading={image.loading}
         decoding="async"
       />
-      <figcaption className="mockup-frame__caption">
-        <p>{image.summary}</p>
-      </figcaption>
     </figure>
   );
 }
@@ -35,13 +32,22 @@ function ExplanationPanel({ label, content }) {
   return (
     <article className={`mockup-explanation mockup-explanation--${label}`}>
       <div className="mockup-explanation__body">
-        <h3>{content.heading}</h3>
         <p className="mockup-explanation__copy">{content.copy}</p>
         <ul>
           {content.points.map((point) => <li key={point}>{point}</li>)}
         </ul>
       </div>
     </article>
+  );
+}
+
+function ComparisonRow({ image, label, content }) {
+  return (
+    <div className="mockup-comparison-row">
+      <ScreenshotFrame image={image} />
+      <h3 className="mockup-comparison-row__heading">{content.heading}</h3>
+      <ExplanationPanel label={label} content={content} />
+    </div>
   );
 }
 
@@ -77,17 +83,10 @@ export default function MockupPage({ project }) {
             index="01"
             label="before + after"
             title="the concept in view"
-            copy="Each row pairs a full-page preview with the experience it is designed to communicate."
           />
           <div className="mockup-comparison">
-            <div className="mockup-comparison-row">
-              <ScreenshotFrame image={project.images.current} />
-              <ExplanationPanel label="current" content={project.currentExperience} />
-            </div>
-            <div className="mockup-comparison-row">
-              <ScreenshotFrame image={project.images.proposed} />
-              <ExplanationPanel label="proposed" content={project.proposedDirection} />
-            </div>
+            <ComparisonRow image={project.images.current} label="current" content={project.currentExperience} />
+            <ComparisonRow image={project.images.proposed} label="proposed" content={project.proposedDirection} />
           </div>
         </section>
 
@@ -96,37 +95,41 @@ export default function MockupPage({ project }) {
           <ol className="mockup-change-list">
             {project.keyChanges.map((change, index) => (
               <li key={change.title}>
-                <span className="mockup-change-list__number">{String(index + 1).padStart(2, '0')}</span>
-                <div>
+                <div className="mockup-change-list__heading">
+                  <span className="mockup-change-list__number">{String(index + 1).padStart(2, '0')}</span>
                   <h3>{change.title}</h3>
-                  <p>{change.copy}</p>
                 </div>
+                <p>{change.copy}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        <section className="mockup-disclaimer theme-panel" aria-labelledby="mockup-disclaimer-title">
-          <div className="mockup-disclaimer__content">
-            <p className="mockup-kicker">03 / project status</p>
-            <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
-            {project.disclaimer.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          </div>
-        </section>
+        <div className="mockup-labeled-section">
+          <p className="mockup-kicker">03 / project status</p>
+          <section className="mockup-disclaimer theme-panel" aria-labelledby="mockup-disclaimer-title">
+            <div className="mockup-disclaimer__content">
+              <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
+              {project.disclaimer.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            </div>
+          </section>
+        </div>
 
-        <section className="mockup-cta" aria-labelledby="mockup-cta-title">
-          <div>
-            <p className="mockup-kicker">04 / next step</p>
-            <h2 id="mockup-cta-title">{project.cta.heading}</h2>
-            <p>{project.cta.copy}</p>
-          </div>
-          <div className="mockup-cta__actions">
-            <Link to={project.cta.href} className="theme-button">{project.cta.label}</Link>
-            {project.fullMockupLink ? (
-              <a href={project.fullMockupLink} className="mockup-text-link">open full mockup <span aria-hidden="true">↗</span></a>
-            ) : null}
-          </div>
-        </section>
+        <div className="mockup-labeled-section">
+          <p className="mockup-kicker">04 / next step</p>
+          <section className="mockup-cta" aria-labelledby="mockup-cta-title">
+            <div>
+              <h2 id="mockup-cta-title">{project.cta.heading}</h2>
+              <p>{project.cta.copy}</p>
+            </div>
+            <div className="mockup-cta__actions">
+              <Link to={project.cta.href} className="theme-button">{project.cta.label}</Link>
+              {project.fullMockupLink ? (
+                <a href={project.fullMockupLink} className="mockup-text-link">open full mockup <span aria-hidden="true">↗</span></a>
+              ) : null}
+            </div>
+          </section>
+        </div>
       </div>
     </ContentPageShell>
   );

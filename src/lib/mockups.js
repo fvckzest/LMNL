@@ -12,7 +12,6 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       width: 2218,
       height: 2653,
       loading: 'eager',
-      summary: 'The existing site provides the essential information, but the experience is difficult to scan and gives the restaurant’s atmosphere less room to lead.',
     },
     proposed: {
       src: '/mockups/firecreek/proposed-direction.png',
@@ -20,11 +19,10 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       width: 1857,
       height: 3089,
       loading: 'eager',
-      summary: 'The concept brings the restaurant’s warmth, food, daily relevance, and neighborhood identity forward in a clearer structure.',
     },
   },
   currentExperience: {
-    heading: 'the current experience',
+    heading: 'your current website',
     copy: 'the existing website provides the essential information, but its structure and presentation do not fully communicate the personality of fire creek. the visual hierarchy is limited, key information competes for attention, and the overall experience feels disconnected from the atmosphere people encounter inside the restaurant.',
     points: [
       'weak visual hierarchy',
