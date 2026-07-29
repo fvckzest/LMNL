@@ -7,7 +7,6 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
   supportingCopy: 'this is an independent design mockup created by lmnl to demonstrate a possible direction. it is not an official fire creek website or a finished production design.',
   images: {
     current: {
-      label: 'current website',
       src: '/mockups/firecreek/current-site.png',
       alt: 'Long-page screenshot of the current Fire Creek Grill and Ale House website.',
       width: 2218,
@@ -16,7 +15,6 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       summary: 'The existing site provides the essential information, but the experience is difficult to scan and gives the restaurant’s atmosphere less room to lead.',
     },
     proposed: {
-      label: 'proposed direction',
       src: '/mockups/firecreek/proposed-direction.png',
       alt: 'Long-page screenshot of an independent Fire Creek website redesign concept by LMNL.',
       width: 1857,

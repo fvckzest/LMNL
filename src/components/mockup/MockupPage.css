@@ -40,7 +40,6 @@
 .mockup-section-heading__label,
 .mockup-hero__aside-label,
 .mockup-hero__aside-value,
-.mockup-frame__label,
 .mockup-text-link {
   font-family: var(--lmnl-font-mono);
   font-size: calc(var(--lmnl-text-mono-xs) * 1.25);
@@ -156,7 +155,6 @@
   margin: 0;
 }
 
-.mockup-frame__header,
 .mockup-cta__actions {
   display: flex;
   align-items: baseline;
@@ -165,26 +163,8 @@
   flex-wrap: wrap;
 }
 
-.mockup-frame__label,
 .mockup-frame__caption p {
   margin: 0;
-}
-
-.mockup-frame__label {
-  color: var(--mockup-accent);
-}
-
-.mockup-frame__surface {
-  min-width: 0;
-  padding: 10px;
-  border: var(--lmnl-border-medium);
-  background: color-mix(in srgb, var(--lmnl-color-text) 5%, var(--lmnl-color-surface));
-}
-
-.mockup-frame__preview {
-  height: auto;
-  overflow: visible;
-  background: var(--lmnl-color-surface);
 }
 
 .mockup-frame__image {

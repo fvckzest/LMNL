@@ -15,22 +15,15 @@ function SectionHeading({ id, index, label, title, copy }) {
 function ScreenshotFrame({ image }) {
   return (
     <figure className="mockup-frame">
-      <div className="mockup-frame__header">
-        <p className="mockup-frame__label">{image.label}</p>
-      </div>
-      <div className="mockup-frame__surface">
-        <div className="mockup-frame__preview">
-          <img
-            src={image.src}
-            alt={image.alt}
-            width={image.width}
-            height={image.height}
-            className="mockup-frame__image"
-            loading={image.loading}
-            decoding="async"
-          />
-        </div>
-      </div>
+      <img
+        src={image.src}
+        alt={image.alt}
+        width={image.width}
+        height={image.height}
+        className="mockup-frame__image"
+        loading={image.loading}
+        decoding="async"
+      />
       <figcaption className="mockup-frame__caption">
         <p>{image.summary}</p>
       </figcaption>
