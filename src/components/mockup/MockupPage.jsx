@@ -45,8 +45,10 @@ function ComparisonRow({ image, label, content }) {
   return (
     <div className="mockup-comparison-row">
       <ScreenshotFrame image={image} />
-      <h3 className="mockup-comparison-row__heading">{content.heading}</h3>
-      <ExplanationPanel label={label} content={content} />
+      <div className="mockup-comparison-row__details">
+        <h3 className="mockup-comparison-row__heading">{content.heading}</h3>
+        <ExplanationPanel label={label} content={content} />
+      </div>
     </div>
   );
 }

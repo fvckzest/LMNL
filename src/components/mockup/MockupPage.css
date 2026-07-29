@@ -150,7 +150,6 @@
   gap: var(--lmnl-layout-gap);
   align-items: start;
   grid-template-areas:
-    "preview heading"
     "preview details";
 }
 
@@ -163,6 +162,14 @@
   grid-area: preview;
   min-width: 0;
   margin: 0;
+}
+
+.mockup-comparison-row__details {
+  display: grid;
+  grid-area: details;
+  align-content: start;
+  gap: 0;
+  min-width: 0;
 }
 
 .mockup-cta__actions {
@@ -180,7 +187,6 @@
 }
 
 .mockup-comparison-row__heading {
-  grid-area: heading;
   margin: 0;
   font-family: var(--lmnl-font-title);
   font-size: clamp(24px, 3vw, 38px);
@@ -211,7 +217,6 @@
 }
 
 .mockup-explanation {
-  grid-area: details;
   display: grid;
   gap: 20px;
   min-width: 0;
@@ -364,6 +369,18 @@
       "heading"
       "preview"
       "details";
+  }
+
+  .mockup-comparison-row__details {
+    display: contents;
+  }
+
+  .mockup-comparison-row__heading {
+    grid-area: heading;
+  }
+
+  .mockup-explanation {
+    grid-area: details;
   }
 }
 
