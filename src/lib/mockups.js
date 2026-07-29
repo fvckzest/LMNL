@@ -62,11 +62,11 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       copy: 'specials, events, hours, and other changing information are treated as active content rather than secondary details.',
     },
     {
-      title: 'better use of imagery',
+      title: 'better imagery',
       copy: 'food and atmosphere become central parts of the experience instead of decorative additions.',
     },
     {
-      title: 'mobile-first usability',
+      title: 'mobile-first',
       copy: 'the structure should remain clear and useful on a phone, where many customers will first encounter the restaurant.',
     },
   ],

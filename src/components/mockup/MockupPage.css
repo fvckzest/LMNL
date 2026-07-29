@@ -370,6 +370,22 @@
     font-size: clamp(42px, 14vw, 68px);
   }
 
+  .mockup-section-heading h2,
+  .mockup-disclaimer h2,
+  .mockup-cta h2,
+  .mockup-comparison-row__heading,
+  .mockup-change-list h3 {
+    white-space: nowrap;
+  }
+
+  .mockup-section-heading h2,
+  .mockup-disclaimer h2,
+  .mockup-cta h2,
+  .mockup-comparison-row__heading,
+  .mockup-change-list h3 {
+    font-size: clamp(22px, 6vw, 34px);
+  }
+
   .mockup-change-list li {
     grid-template-columns: 1fr;
     gap: 10px;

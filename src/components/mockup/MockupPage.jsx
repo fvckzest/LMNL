@@ -91,7 +91,7 @@ export default function MockupPage({ project }) {
         </section>
 
         <section className="mockup-changes-section" aria-labelledby="mockup-changes-title">
-          <SectionHeading id="mockup-changes-title" index="02" label="key changes" title="the most important differences" />
+          <SectionHeading id="mockup-changes-title" index="02" label="key changes" title="the important differences" />
           <ol className="mockup-change-list">
             {project.keyChanges.map((change, index) => (
               <li key={change.title}>
