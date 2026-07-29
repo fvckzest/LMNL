@@ -79,7 +79,7 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
     ],
   },
   cta: {
-    heading: 'interested in taking it further?',
+    heading: 'interested?',
     copy: 'if this direction feels right for fire creek, lmnl would be glad to walk through the concept, learn more about the restaurant’s needs, and discuss what a complete redesign could include.',
     label: 'talk with lmnl',
     href: '/contact',

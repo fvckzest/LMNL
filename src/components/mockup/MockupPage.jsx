@@ -56,9 +56,8 @@ export default function MockupPage({ project }) {
     <ContentPageShell
       title="MOCKUPS"
       color="#ff9300"
-      introLabel="LMNL / WEBSITE CONCEPT"
       introTitle={project.businessName.toUpperCase()}
-      introCopy="INDEPENDENT DESIGN DIRECTION / EARLY VISUAL CONCEPT"
+      introCopy="EARLY VISUAL CONCEPT"
       contentClassName="mockup-route-content"
     >
       <div className="mockup-page">
@@ -107,7 +106,7 @@ export default function MockupPage({ project }) {
 
         <div className="mockup-labeled-section">
           <p className="mockup-kicker">03 / project status</p>
-          <section className="mockup-disclaimer theme-panel" aria-labelledby="mockup-disclaimer-title">
+          <section className="mockup-disclaimer" aria-labelledby="mockup-disclaimer-title">
             <div className="mockup-disclaimer__content">
               <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
               {project.disclaimer.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
