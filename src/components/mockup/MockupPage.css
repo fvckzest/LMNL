@@ -371,6 +371,13 @@
   --theme-button-hover-color: #ffffff;
 }
 
+@media (min-width: 1281px) {
+  .mockup-comparison-row + .mockup-comparison-row {
+    grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+    grid-template-areas: "details preview";
+  }
+}
+
 @media (max-width: 1280px) {
   .mockup-hero,
   .mockup-cta {
