@@ -85,11 +85,7 @@ export default function MockupPage({ project }) {
           </section>
         ) : null}
 
-        <section className="mockup-comparison-section" aria-labelledby="mockup-comparison-title">
-          <SectionHeading
-            id="mockup-comparison-title"
-            title="the concept in view"
-          />
+        <section className="mockup-comparison-section" aria-label="Website comparison">
           <div className="mockup-comparison">
             <ComparisonRow image={project.images.current} label="current" content={project.currentExperience} />
             <ComparisonRow image={project.images.proposed} label="proposed" content={project.proposedDirection} />

@@ -460,10 +460,6 @@
     font-size: clamp(42px, 14vw, 68px);
   }
 
-  .mockup-comparison-section > .mockup-section-heading {
-    display: none;
-  }
-
   .mockup-section-heading h2,
   .mockup-disclaimer h2,
   .mockup-cta h2,
