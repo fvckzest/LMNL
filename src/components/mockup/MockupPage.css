@@ -41,9 +41,7 @@
 .mockup-hero__aside-label,
 .mockup-hero__aside-value,
 .mockup-frame__label,
-.mockup-text-link,
-.mockup-frame__open,
-.mockup-lightbox__header {
+.mockup-text-link {
   font-family: var(--lmnl-font-mono);
   font-size: calc(var(--lmnl-text-mono-xs) * 1.25);
   letter-spacing: var(--lmnl-tracking-ui-wider);
@@ -159,7 +157,6 @@
 }
 
 .mockup-frame__header,
-.mockup-frame__caption,
 .mockup-cta__actions {
   display: flex;
   align-items: baseline;
@@ -190,40 +187,17 @@
   background: var(--lmnl-color-surface);
 }
 
-.mockup-frame__trigger {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: zoom-in;
-}
-
-.mockup-frame__trigger:focus-visible {
-  outline: 3px solid var(--mockup-accent);
-  outline-offset: -3px;
-}
-
-.mockup-frame__image,
-.mockup-lightbox__image {
+.mockup-frame__image {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.mockup-frame__caption {
-  align-items: flex-start;
-}
-
 .mockup-frame__caption p {
-  flex: 1 1 240px;
   color: var(--lmnl-color-text-muted);
   font-size: calc(12px * 1.25);
 }
 
-.mockup-frame__open,
 .mockup-text-link {
   flex: 0 0 auto;
   padding: 0;
@@ -235,14 +209,11 @@
   transition: color var(--lmnl-transition-standard);
 }
 
-.mockup-frame__open:hover,
-.mockup-frame__open:focus-visible,
 .mockup-text-link:hover,
 .mockup-text-link:focus-visible {
   color: var(--mockup-accent);
 }
 
-.mockup-frame__open:focus-visible,
 .mockup-text-link:focus-visible {
   outline: 2px solid var(--mockup-accent);
   outline-offset: 4px;
@@ -387,71 +358,6 @@
   --theme-button-hover-border: var(--lmnl-color-text);
 }
 
-.mockup-lightbox {
-  position: fixed;
-  z-index: var(--lmnl-z-modal);
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.86);
-}
-
-.mockup-lightbox__dialog {
-  display: grid;
-  width: min(1200px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
-  border: 2px solid #ffffff;
-  background: #111111;
-  color: #ffffff;
-}
-
-.mockup-lightbox__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-}
-
-.mockup-lightbox__header p,
-.mockup-lightbox__close {
-  margin: 0;
-  color: #ffffff;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-}
-
-.mockup-lightbox__close {
-  padding: 4px 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.mockup-lightbox__close:hover,
-.mockup-lightbox__close:focus-visible {
-  color: var(--mockup-accent);
-}
-
-.mockup-lightbox__close:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 4px;
-}
-
-.mockup-lightbox__media {
-  overflow: auto;
-  padding: 12px;
-  background: #202020;
-}
-
-.mockup-lightbox__image {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
 @media (max-width: 1280px) {
   .mockup-hero,
   .mockup-cta {
@@ -481,17 +387,4 @@
     gap: 10px;
   }
 
-  .mockup-lightbox {
-    padding: 10px;
-  }
-
-  .mockup-lightbox__dialog {
-    max-height: calc(100vh - 20px);
-  }
-
-  .mockup-lightbox__header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
 }

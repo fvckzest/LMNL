@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ContentPageShell from '../ContentPageShell';
 import './MockupPage.css';
@@ -13,77 +12,7 @@ function SectionHeading({ id, index, label, title, copy }) {
   );
 }
 
-function ImageLightbox({ image, isOpen, onClose }) {
-  const closeButtonRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="mockup-lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="mockup-lightbox-title"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="mockup-lightbox__dialog">
-        <div className="mockup-lightbox__header">
-          <p id="mockup-lightbox-title">{image.label}</p>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className="mockup-lightbox__close"
-            onClick={onClose}
-          >
-            close preview <span aria-hidden="true">×</span>
-          </button>
-        </div>
-        <div className="mockup-lightbox__media">
-          <img
-            src={image.src}
-            alt={image.alt}
-            width={image.width}
-            height={image.height}
-            className="mockup-lightbox__image"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ScreenshotFrame({ image }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const triggerRef = useRef(null);
-
-  const closePreview = () => {
-    setIsExpanded(false);
-    triggerRef.current?.focus();
-  };
-
   return (
     <figure className="mockup-frame">
       <div className="mockup-frame__header">
@@ -91,32 +20,20 @@ function ScreenshotFrame({ image }) {
       </div>
       <div className="mockup-frame__surface">
         <div className="mockup-frame__preview">
-          <button
-            ref={triggerRef}
-            type="button"
-            className="mockup-frame__trigger"
-            aria-label={`Expand ${image.label}`}
-            onClick={() => setIsExpanded(true)}
-          >
-            <img
-              src={image.src}
-              alt={image.alt}
-              width={image.width}
-              height={image.height}
-              className="mockup-frame__image"
-              loading={image.loading}
-              decoding="async"
-            />
-          </button>
+          <img
+            src={image.src}
+            alt={image.alt}
+            width={image.width}
+            height={image.height}
+            className="mockup-frame__image"
+            loading={image.loading}
+            decoding="async"
+          />
         </div>
       </div>
       <figcaption className="mockup-frame__caption">
         <p>{image.summary}</p>
-        <button type="button" className="mockup-frame__open" onClick={() => setIsExpanded(true)}>
-          open full preview <span aria-hidden="true">↗</span>
-        </button>
       </figcaption>
-      <ImageLightbox image={image} isOpen={isExpanded} onClose={closePreview} />
     </figure>
   );
 }
@@ -167,7 +84,7 @@ export default function MockupPage({ project }) {
             index="01"
             label="before + after"
             title="the concept in view"
-            copy="Each row pairs a full-page preview with the experience it is designed to communicate. Open either preview to inspect the details at full size."
+            copy="Each row pairs a full-page preview with the experience it is designed to communicate."
           />
           <div className="mockup-comparison">
             <div className="mockup-comparison-row">
