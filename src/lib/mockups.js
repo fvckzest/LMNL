@@ -17,7 +17,7 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       src: '/mockups/firecreek/proposed-direction.png',
       alt: 'Long-page screenshot of an independent Fire Creek website redesign concept by LMNL.',
       width: 1857,
-      height: 3089,
+      height: 3113,
       loading: 'eager',
     },
   },
