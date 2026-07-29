@@ -81,8 +81,9 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
   cta: {
     heading: 'interested?',
     copy: 'if this direction feels right for fire creek, lmnl would be glad to walk through the concept, learn more about the restaurant’s needs, and discuss what a complete redesign could include.',
-    label: 'talk with lmnl',
-    href: '/contact',
+    replyPrompt: 'reply to the email you got this in',
+    label: 'send an email',
+    href: 'mailto:4evr@lmnl.art',
   },
   seo: {
     title: 'fire creek website concept | lmnl',

@@ -2,14 +2,21 @@ import { Link } from 'react-router-dom';
 import ContentPageShell from '../ContentPageShell';
 import './MockupPage.css';
 
-function SectionHeading({ id, index, label, title, copy }) {
+function SectionHeading({ id, title, copy }) {
   return (
     <div className="mockup-section-heading">
-      <p className="mockup-section-heading__label">{index} / {label}</p>
       <h2 id={id}>{title}</h2>
       {copy ? <p className="mockup-section-heading__copy">{copy}</p> : null}
     </div>
   );
+}
+
+function CtaLink({ href, children }) {
+  if (href.startsWith('mailto:')) {
+    return <a href={href} className="theme-button">{children}</a>;
+  }
+
+  return <Link to={href} className="theme-button">{children}</Link>;
 }
 
 function ScreenshotFrame({ image }) {
@@ -81,8 +88,6 @@ export default function MockupPage({ project }) {
         <section className="mockup-comparison-section" aria-labelledby="mockup-comparison-title">
           <SectionHeading
             id="mockup-comparison-title"
-            index="01"
-            label="before + after"
             title="the concept in view"
           />
           <div className="mockup-comparison">
@@ -92,7 +97,7 @@ export default function MockupPage({ project }) {
         </section>
 
         <section className="mockup-changes-section" aria-labelledby="mockup-changes-title">
-          <SectionHeading id="mockup-changes-title" index="02" label="key changes" title="the important differences" />
+          <SectionHeading id="mockup-changes-title" title="the important differences" />
           <ol className="mockup-change-list">
             {project.keyChanges.map((change, index) => (
               <li key={change.title}>
@@ -107,7 +112,6 @@ export default function MockupPage({ project }) {
         </section>
 
         <div className="mockup-labeled-section">
-          <p className="mockup-kicker">03 / project status</p>
           <section className="mockup-disclaimer" aria-labelledby="mockup-disclaimer-title">
             <div className="mockup-disclaimer__content">
               <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
@@ -117,17 +121,24 @@ export default function MockupPage({ project }) {
         </div>
 
         <div className="mockup-labeled-section">
-          <p className="mockup-kicker">04 / next step</p>
           <section className="mockup-cta" aria-labelledby="mockup-cta-title">
-            <div>
+            <div className="mockup-cta__heading">
               <h2 id="mockup-cta-title">{project.cta.heading}</h2>
-              <p>{project.cta.copy}</p>
             </div>
-            <div className="mockup-cta__actions">
-              <Link to={project.cta.href} className="theme-button">{project.cta.label}</Link>
-              {project.fullMockupLink ? (
-                <a href={project.fullMockupLink} className="mockup-text-link">open full mockup <span aria-hidden="true">↗</span></a>
-              ) : null}
+            <div className="mockup-cta__body">
+              <p>{project.cta.copy}</p>
+              <div className="mockup-cta__actions">
+                {project.cta.replyPrompt ? (
+                  <p className="mockup-cta__reply-prompt">
+                    {project.cta.replyPrompt}<br />
+                    <span>or</span>
+                  </p>
+                ) : null}
+                <CtaLink href={project.cta.href}>{project.cta.label}</CtaLink>
+                {project.fullMockupLink ? (
+                  <a href={project.fullMockupLink} className="mockup-text-link">open full mockup <span aria-hidden="true">↗</span></a>
+                ) : null}
+              </div>
             </div>
           </section>
         </div>
