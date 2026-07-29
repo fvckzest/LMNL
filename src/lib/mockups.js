@@ -1,6 +1,7 @@
 const FIRE_CREEK_MOCKUP = Object.freeze({
   slug: 'firecreek',
   businessName: 'Fire Creek',
+  showIntroduction: false,
   projectTitle: 'a new digital direction for fire creek',
   intro: 'this concept explores how fire creek’s website could better reflect the warmth, energy, food, and neighborhood character of the restaurant itself.',
   supportingCopy: 'this is an independent design mockup created by lmnl to demonstrate a possible direction. it is not an official fire creek website or a finished production design.',

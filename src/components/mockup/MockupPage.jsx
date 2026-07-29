@@ -88,7 +88,6 @@ function ScreenshotFrame({ image }) {
     <figure className="mockup-frame">
       <div className="mockup-frame__header">
         <p className="mockup-frame__label">{image.label}</p>
-        <span className="mockup-frame__hint">scroll / inspect</span>
       </div>
       <div className="mockup-frame__surface">
         <div className="mockup-frame__preview">
@@ -122,11 +121,10 @@ function ScreenshotFrame({ image }) {
   );
 }
 
-function ExplanationPanel({ index, label, content }) {
+function ExplanationPanel({ label, content }) {
   return (
     <article className={`mockup-explanation mockup-explanation--${label}`}>
       <div className="mockup-explanation__topline">
-        <span>{index}</span>
         <p>{label === 'current' ? 'before' : 'after'}</p>
       </div>
       <div className="mockup-explanation__body">
@@ -151,18 +149,20 @@ export default function MockupPage({ project }) {
       contentClassName="mockup-route-content"
     >
       <div className="mockup-page">
-        <section className="mockup-hero theme-surface" aria-labelledby="mockup-page-title">
-          <div className="mockup-hero__main">
-            <p className="mockup-kicker">{project.businessName} / WEBSITE CONCEPT</p>
-            <h2 id="mockup-page-title">{project.projectTitle}</h2>
-            <p className="mockup-hero__intro">{project.intro}</p>
-          </div>
-          <aside className="mockup-hero__aside" aria-label="Concept status">
-            <p className="mockup-hero__aside-label">concept status</p>
-            <p className="mockup-hero__aside-value">early direction</p>
-            <p className="mockup-hero__supporting-copy">{project.supportingCopy}</p>
-          </aside>
-        </section>
+        {project.showIntroduction !== false ? (
+          <section className="mockup-hero theme-surface" aria-labelledby="mockup-page-title">
+            <div className="mockup-hero__main">
+              <p className="mockup-kicker">{project.businessName} / WEBSITE CONCEPT</p>
+              <h2 id="mockup-page-title">{project.projectTitle}</h2>
+              <p className="mockup-hero__intro">{project.intro}</p>
+            </div>
+            <aside className="mockup-hero__aside" aria-label="Concept status">
+              <p className="mockup-hero__aside-label">concept status</p>
+              <p className="mockup-hero__aside-value">early direction</p>
+              <p className="mockup-hero__supporting-copy">{project.supportingCopy}</p>
+            </aside>
+          </section>
+        ) : null}
 
         <section className="mockup-comparison-section" aria-labelledby="mockup-comparison-title">
           <SectionHeading
@@ -170,7 +170,7 @@ export default function MockupPage({ project }) {
             index="01"
             label="before + after"
             title="the concept in view"
-            copy="Compare the current experience with the proposed direction. Each frame preserves the full-page context; scroll inside a frame or open the full preview to inspect the details."
+            copy="Compare the current experience with the proposed direction. Both frames preserve the full-page context; open the full preview to inspect the details."
           />
           <div className="mockup-comparison">
             <ScreenshotFrame image={project.images.current} />
@@ -187,8 +187,8 @@ export default function MockupPage({ project }) {
             copy="The redesign is less about adding decoration and more about making the restaurant’s character and practical information easier to feel, understand, and use."
           />
           <div className="mockup-explanation-grid">
-            <ExplanationPanel index="01" label="current" content={project.currentExperience} />
-            <ExplanationPanel index="02" label="proposed" content={project.proposedDirection} />
+            <ExplanationPanel label="current" content={project.currentExperience} />
+            <ExplanationPanel label="proposed" content={project.proposedDirection} />
           </div>
         </section>
 
@@ -208,7 +208,6 @@ export default function MockupPage({ project }) {
         </section>
 
         <section className="mockup-disclaimer theme-panel" aria-labelledby="mockup-disclaimer-title">
-          <div className="mockup-disclaimer__marker" aria-hidden="true" />
           <div className="mockup-disclaimer__content">
             <p className="mockup-kicker">04 / project status</p>
             <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
@@ -216,7 +215,7 @@ export default function MockupPage({ project }) {
           </div>
         </section>
 
-        <section className="mockup-cta theme-surface" aria-labelledby="mockup-cta-title">
+        <section className="mockup-cta" aria-labelledby="mockup-cta-title">
           <div>
             <p className="mockup-kicker">05 / next step</p>
             <h2 id="mockup-cta-title">{project.cta.heading}</h2>
