@@ -50,6 +50,7 @@ const Blog = lazyWithRetry(() => import('./pages/Blog'));
 const BlogPostView = lazyWithRetry(() => import('./pages/BlogPostView'));
 const EmailLab = lazyWithRetry(() => import('./pages/EmailLab'));
 const About = lazyWithRetry(() => import('./pages/About'));
+const Mockup = lazyWithRetry(() => import('./pages/Mockup'));
 const AppLogin = lazyWithRetry(() => import('./pages/AppLogin'));
 const AuthCallback = lazyWithRetry(() => import('./pages/AuthCallback'));
 const AppHome = lazyWithRetry(() => import('./pages/AppHome'));
@@ -476,6 +477,8 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/intake" element={<Intake />} />
               <Route path="/prsm" element={<PrsmPage />} />
+              <Route path="/mockup" element={<Navigate to="/mockup/firecreek" replace />} />
+              <Route path="/mockup/:slug" element={<Mockup />} />
             </Route>
 
             {showAdmin ? (

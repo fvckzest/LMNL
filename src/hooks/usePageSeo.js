@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { matchPath } from 'react-router-dom';
+import { getMockupProject } from '../lib/mockups';
 
 export const SITE_URL = 'https://lmnl.art';
 export const ADMIN_SITE_URL = 'https://admin.lmnl.art';
@@ -347,6 +348,17 @@ export function getRouteSeo(pathname, hostname = '') {
       ...match.metadata,
       path: pathname,
     };
+  }
+
+  const mockupMatch = matchPath({ path: '/mockup/:slug', end: true }, pathname);
+  if (mockupMatch) {
+    const project = getMockupProject(mockupMatch.params.slug);
+    if (project) {
+      return {
+        ...project.seo,
+        path: pathname,
+      };
+    }
   }
 
   if (pathname.startsWith('/community/u/')) {

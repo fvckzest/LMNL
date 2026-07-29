@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { MOCKUP_PROJECTS } from '../src/lib/mockups.js';
 
 const distDir = path.resolve(process.cwd(), 'dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
@@ -218,6 +219,16 @@ export const routes = [
     priority: '0.8',
     indexable: true,
   },
+  ...Object.values(MOCKUP_PROJECTS).map((project) => ({
+    path: `mockup/${project.slug}`,
+    title: project.seo.title,
+    description: project.seo.description,
+    image: project.seo.image,
+    changefreq: 'monthly',
+    priority: '0.3',
+    indexable: project.seo.indexable ?? false,
+    robots: project.seo.robots,
+  })),
 ];
 
 function escapeRegExp(value) {
@@ -327,7 +338,7 @@ async function generateSeoPages() {
     modifiedHtml = replaceMetaTag(
       modifiedHtml,
       'name="robots"',
-      `<meta name="robots" content="${route.indexable ? 'index, follow' : 'noindex, nofollow'}" />`,
+      `<meta name="robots" content="${route.robots || (route.indexable ? 'index, follow' : 'noindex, nofollow')}" />`,
     );
     modifiedHtml = replaceMetaTag(modifiedHtml, 'property="og:url"', `<meta property="og:url" content="${canonicalUrl}" />`);
     modifiedHtml = replaceMetaTag(modifiedHtml, 'property="og:title"', `<meta property="og:title" content="${route.title}" />`);
