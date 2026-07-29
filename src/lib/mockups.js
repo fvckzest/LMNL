@@ -10,7 +10,7 @@ const FIRE_CREEK_MOCKUP = Object.freeze({
       src: '/mockups/firecreek/current-site.png',
       alt: 'Long-page screenshot of the current Fire Creek Grill and Ale House website.',
       width: 2218,
-      height: 2653,
+      height: 3275,
       loading: 'eager',
     },
     proposed: {
