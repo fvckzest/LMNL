@@ -41,7 +41,6 @@
 .mockup-hero__aside-label,
 .mockup-hero__aside-value,
 .mockup-frame__label,
-.mockup-explanation__topline,
 .mockup-text-link,
 .mockup-frame__open,
 .mockup-lightbox__header {
@@ -264,18 +263,6 @@
 
 .mockup-explanation--proposed {
   --explanation-accent: var(--mockup-accent);
-}
-
-.mockup-explanation__topline {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: 12px;
-  color: var(--explanation-accent);
-}
-
-.mockup-explanation__topline p {
-  margin: 0;
 }
 
 .mockup-explanation__body {

@@ -124,9 +124,6 @@ function ScreenshotFrame({ image }) {
 function ExplanationPanel({ label, content }) {
   return (
     <article className={`mockup-explanation mockup-explanation--${label}`}>
-      <div className="mockup-explanation__topline">
-        <p>{label === 'current' ? 'before' : 'after'}</p>
-      </div>
       <div className="mockup-explanation__body">
         <h3>{content.heading}</h3>
         <p className="mockup-explanation__copy">{content.copy}</p>
