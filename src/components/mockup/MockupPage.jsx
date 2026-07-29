@@ -170,30 +170,22 @@ export default function MockupPage({ project }) {
             index="01"
             label="before + after"
             title="the concept in view"
-            copy="Compare the current experience with the proposed direction. Both frames preserve the full-page context; open the full preview to inspect the details."
+            copy="Each row pairs a full-page preview with the experience it is designed to communicate. Open either preview to inspect the details at full size."
           />
           <div className="mockup-comparison">
-            <ScreenshotFrame image={project.images.current} />
-            <ScreenshotFrame image={project.images.proposed} />
-          </div>
-        </section>
-
-        <section className="mockup-explanation-section" aria-labelledby="mockup-explanation-title">
-          <SectionHeading
-            id="mockup-explanation-title"
-            index="02"
-            label="reading the shift"
-            title="what changes in the experience"
-            copy="The redesign is less about adding decoration and more about making the restaurant’s character and practical information easier to feel, understand, and use."
-          />
-          <div className="mockup-explanation-grid">
-            <ExplanationPanel label="current" content={project.currentExperience} />
-            <ExplanationPanel label="proposed" content={project.proposedDirection} />
+            <div className="mockup-comparison-row">
+              <ScreenshotFrame image={project.images.current} />
+              <ExplanationPanel label="current" content={project.currentExperience} />
+            </div>
+            <div className="mockup-comparison-row">
+              <ScreenshotFrame image={project.images.proposed} />
+              <ExplanationPanel label="proposed" content={project.proposedDirection} />
+            </div>
           </div>
         </section>
 
         <section className="mockup-changes-section" aria-labelledby="mockup-changes-title">
-          <SectionHeading id="mockup-changes-title" index="03" label="key changes" title="the most important differences" />
+          <SectionHeading id="mockup-changes-title" index="02" label="key changes" title="the most important differences" />
           <ol className="mockup-change-list">
             {project.keyChanges.map((change, index) => (
               <li key={change.title}>
@@ -209,7 +201,7 @@ export default function MockupPage({ project }) {
 
         <section className="mockup-disclaimer theme-panel" aria-labelledby="mockup-disclaimer-title">
           <div className="mockup-disclaimer__content">
-            <p className="mockup-kicker">04 / project status</p>
+            <p className="mockup-kicker">03 / project status</p>
             <h2 id="mockup-disclaimer-title">{project.disclaimer.heading}</h2>
             {project.disclaimer.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
@@ -217,7 +209,7 @@ export default function MockupPage({ project }) {
 
         <section className="mockup-cta" aria-labelledby="mockup-cta-title">
           <div>
-            <p className="mockup-kicker">05 / next step</p>
+            <p className="mockup-kicker">04 / next step</p>
             <h2 id="mockup-cta-title">{project.cta.heading}</h2>
             <p>{project.cta.copy}</p>
           </div>
