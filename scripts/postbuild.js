@@ -57,6 +57,15 @@ export const routes = [
     indexable: true,
   },
   {
+    path: 'events/space',
+    title: 'LMNL | SPACE EVENT',
+    description: 'See event details and ticket availability for Space by LMNL.',
+    image: '/seo/space-seo.png',
+    changefreq: 'daily',
+    priority: '0.9',
+    indexable: true,
+  },
+  {
     path: 'services',
     title: 'LMNL | SERVICES',
     description: 'See LMNL creative services, consulting, production, and digital systems work.',

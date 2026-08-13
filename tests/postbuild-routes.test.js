@@ -16,3 +16,11 @@ test('postbuild route list keeps password reset as a direct-hit entry point', as
   assert.ok(resetRoute, 'expected /reset-password to be generated as a static entry point');
   assert.equal(resetRoute.indexable, false);
 });
+
+test('postbuild route list keeps the Space event page as a direct-hit entry point', async () => {
+  const { routes } = await import('../scripts/postbuild.js');
+  const eventRoute = routes.find((route) => route.path === 'events/space');
+
+  assert.ok(eventRoute, 'expected /events/space to be generated as a static entry point');
+  assert.equal(eventRoute.indexable, true);
+});

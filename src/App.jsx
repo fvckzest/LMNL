@@ -34,6 +34,7 @@ const Intake = lazyWithRetry(() => import('./pages/Intake'));
 const GenericPage = lazyWithRetry(() => import('./pages/GenericPage'));
 const Space = lazyWithRetry(() => import('./pages/Space'));
 const Events = lazyWithRetry(() => import('./pages/Events'));
+const EventPage = lazyWithRetry(() => import('./pages/EventPage'));
 const Admin = lazyWithRetry(() => import('./pages/Admin'));
 const CheckIn = lazyWithRetry(() => import('./pages/CheckIn'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
@@ -463,6 +464,7 @@ function App() {
               <Route path="/ticket/:ticketId" element={<Ticket />} />
               <Route path="/success" element={<Success />} />
               <Route path="/events" element={<Events />} />
+              <Route path="/events/:slug" element={<EventPage />} />
               <Route path="/space" element={<Space />} />
               <Route path="/about" element={<About />} />
               <Route path="/services" element={<Services />} />
