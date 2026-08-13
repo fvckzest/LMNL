@@ -2,7 +2,7 @@
 
 **Research date:** August 13, 2026
 
-**Scope:** What LMNL can evidence with its own Square account for one Washington **Pilot Event**. This is technical research from Square's official documentation, not a determination that LMNL may use Square for the proposed seller/settlement model. The [legal and tax research in PR #14](https://github.com/fvckzest/LMNL/pull/14) makes Square's written seller-structure confirmation a no-sales gate.
+**Scope:** What LMNL can evidence with its own Square account for one Washington **Pilot Event**. This is technical research from Square's official documentation, not a determination that LMNL may use Square for the proposed seller/settlement model. The [pilot-boundary research in PR #14](https://github.com/fvckzest/LMNL/pull/14) makes Square's written seller-structure confirmation a no-sales gate.
 
 ## Bottom line
 
@@ -58,10 +58,10 @@ Square webhooks must be treated as prompts to retrieve current Square state, not
 Use an event-level worksheet whose rows are immutable Square IDs, not dashboard totals or payment-link counts:
 
 1. **Identify ticket transactions:** start from the event's LMNL request/order IDs, retrieve the associated Payments, and verify the Order's `metadata.eventId`. A report can also start from payout entries, but must join `payment_id → Payment.order_id → Order.metadata.eventId` before inclusion.
-2. **Completed ticket payments:** include only Payments with `status = COMPLETED`; retain gross `amount_money`/`total_money`, Order tax fields, and receipt URLs. A Payment can still be `COMPLETED` after a partial/full refund, so subtract completed `PaymentRefund.amount_money` (or use `Payment.refunded_money` as a cross-check). [Refund Payments](https://developer.squareup.com/docs/payments-api/refund-payments).
+2. **Completed ticket payments:** include only Payments with `status = COMPLETED`; retain gross `amount_money`/`total_money`, receipt URLs, and any tax amount already present on the Square Order. A Payment can still be `COMPLETED` after a partial/full refund, so subtract completed `PaymentRefund.amount_money` (or use `Payment.refunded_money` as a cross-check). [Refund Payments](https://developer.squareup.com/docs/payments-api/refund-payments).
 3. **Processing fees:** start with the per-payment `processing_fee`, then reconcile against Payout Entries. Retain `FEE` and `PROCESSING_FEE` adjustments that arrive later; do not assume an initial payment fee is the final cash-balance impact. Square specifically warns that those entry types update a previous fee. [Payouts guide](https://developer.squareup.com/docs/payouts-api/overview).
 4. **Disputes:** record a dispute when opened and its payout-entry effect when it hits the balance. Only a final lost/accepted outcome belongs as an actual chargeback deduction. The statement must retain the unresolved-dispute reserve or explicitly say the Recipient Share remains recoverable under the agreement.
-5. **Taxes:** preserve Order `total_tax_money` separately. It is neither LMNL Fee nor Recipient Share and must be removed/remitted according to the CPA's classification; the Square evidence supports the calculation but does not decide the tax result.
+5. **One pilot tax setting:** before sales, record a single event-specific answer—tax applies or it does not—and configure the Square price accordingly. If Square collects tax, preserve Order `total_tax_money` separately from the LMNL Fee and Recipient Share. The pilot does not need a tax engine, marketplace-tax architecture, or automated filing workflow.
 6. **Square payout:** attach any Payout and entries that include pilot payments as bank-reconciliation evidence. Do not require a single clean payout—Square says typical payouts batch a business-day window and may include all LMNL activity. [Payouts overview](https://developer.squareup.com/docs/payouts-api/overview).
 7. **Recipient Settlement:** after the event, attach the independently issued settlement statement and the manual bank-transfer proof. Its reference must be separate from Square's `payout.id`/`end_to_end_id` unless it is actually the LMNL bank deposit reference.
 
@@ -74,11 +74,11 @@ For each settlement, retain:
 - fixed event/agreement/terms version and event identifier;
 - Square Order, Payment, Refund, Dispute, Payout, and PayoutEntry exports/snapshots keyed by their immutable Square IDs;
 - the event-to-order-to-payment-to-payout-entry join table, including pagination/watermark time and API version used;
-- the calculation showing gross completed payments, separately handled taxes, completed refunds, final chargebacks, all fee adjustments, 10% LMNL Fee, and Recipient Share;
+- the calculation showing gross completed payments, any tax Square collected, completed refunds, final chargebacks, all fee adjustments, 10% LMNL Fee, and Recipient Share;
 - Square webhook delivery/event IDs and any retry/out-of-order handling record;
 - ticket issuance/check-in evidence and buyer communications needed for a dispute response; and
 - the LMNL-to-Settlement-Recipient transfer approval and bank confirmation.
 
 ## Source limits
 
-Only official Square developer documentation and API reference were used. API capability is not authorization to use LMNL's account as a third-party funds conduit; that question remains subject to Square's written confirmation and the legal/tax gates already recorded for the pilot.
+Only official Square developer documentation and API reference were used. API capability is not authorization to use LMNL's account as a third-party funds conduit; that question remains subject to Square's written confirmation and the pilot launch gates already recorded.
