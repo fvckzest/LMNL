@@ -49,6 +49,18 @@ export async function getRequestById(id) {
   return data;
 }
 
+export async function updateRequestCustomer(id, customer) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('requests')
+    .update(customer)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updateRequestStatus(id, status) {
   const supabase = getAdminSupabase();
   const { data, error } = await supabase

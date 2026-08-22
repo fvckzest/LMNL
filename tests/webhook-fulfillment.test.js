@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
-import { processSquareOrderUpdate, resolveCustomer, sendTicketEmail } from '../api/_lib/services/webhook-fulfillment.js';
+import {
+  fulfillTicketForSquareOrder,
+  processSquareOrderUpdate,
+  resolveCustomer,
+  sendTicketEmail,
+} from '../api/_lib/services/webhook-fulfillment.js';
 
 test('processSquareOrderUpdate returns replay when ticket already exists', async () => {
   const result = await processSquareOrderUpdate(
@@ -296,6 +301,7 @@ test('processSquareOrderUpdate fulfills completed payment.updated events', async
         return { id: 'ticket_payment', ...payload };
       },
       sendTicketEmail: async () => {},
+      updateRequestCustomer: async () => {},
     }
   );
 
@@ -416,6 +422,256 @@ test('resolveCustomer falls back to request email when Square provides placehold
   assert.equal(customer.customerEmail, 'real@example.org');
 });
 
+test('resolveCustomer uses the email entered in Square checkout from the associated payment', async () => {
+  const customer = await resolveCustomer(
+    {
+      metadata: { requestId: 'req_square_email' },
+      tenders: [{ id: 'payment_square_email' }],
+    },
+    'order_square_email',
+    {
+      getRequestCustomerById: async () => ({
+        customer_name: 'Guest',
+        customer_email: 'guest-placeholder@example.com',
+      }),
+      getRequestCustomerByOrderId: async () => null,
+      squareClient: {
+        customers: { get: async () => ({ customer: null }) },
+        payments: {
+          get: async ({ paymentId }) => ({
+            payment: {
+              id: paymentId,
+              buyerEmailAddress: 'buyer@real-domain.test',
+              cardDetails: {
+                card: { cardholderName: 'Jordan Lee' },
+              },
+            },
+          }),
+        },
+      },
+    }
+  );
+
+  assert.equal(customer.customerName, 'Jordan Lee');
+  assert.equal(customer.customerEmail, 'buyer@real-domain.test');
+});
+
+test('resolveCustomer preserves the submitted identity for private invite checkout', async () => {
+  const customer = await resolveCustomer(
+    {
+      metadata: { requestId: 'req_private_invite' },
+      tenders: [{ id: 'payment_private_invite' }],
+    },
+    'order_private_invite',
+    {
+      getRequestCustomerById: async () => ({
+        customer_name: 'Mara Rivera',
+        customer_email: 'mara@example.org',
+      }),
+      getRequestCustomerByOrderId: async () => null,
+      squareClient: {
+        customers: { get: async () => ({ customer: null }) },
+        payments: {
+          get: async () => ({
+            payment: {
+              buyerEmailAddress: 'different-card-email@example.org',
+              cardDetails: {
+                card: { cardholderName: 'Different Cardholder' },
+              },
+            },
+          }),
+        },
+      },
+    }
+  );
+
+  assert.deepEqual(customer, {
+    customerName: 'Mara Rivera',
+    customerEmail: 'mara@example.org',
+  });
+});
+
+test('resolveCustomer prefers the Square customer profile name over the cardholder fallback', async () => {
+  const customer = await resolveCustomer(
+    {
+      metadata: { requestId: 'req_square_profile' },
+      tenders: [{ id: 'payment_square_profile' }],
+    },
+    'order_square_profile',
+    {
+      getRequestCustomerById: async () => ({
+        customer_name: 'Guest',
+        customer_email: 'guest-profile@example.com',
+      }),
+      getRequestCustomerByOrderId: async () => null,
+      squareClient: {
+        payments: {
+          get: async () => ({
+            payment: {
+              customerId: 'customer_square_profile',
+              buyerEmailAddress: 'profile@example.org',
+              cardDetails: {
+                card: { cardholderName: 'Cardholder Fallback' },
+              },
+            },
+          }),
+        },
+        customers: {
+          get: async () => ({
+            customer: {
+              givenName: 'Jordan',
+              familyName: 'Lee',
+              emailAddress: 'profile@example.org',
+            },
+          }),
+        },
+      },
+    }
+  );
+
+  assert.deepEqual(customer, {
+    customerName: 'Jordan Lee',
+    customerEmail: 'profile@example.org',
+  });
+});
+
+test('fulfillTicketForSquareOrder recovers email delivery for an existing placeholder ticket', async () => {
+  const emails = [];
+  const ticketUpdates = [];
+  const requestUpdates = [];
+
+  const result = await fulfillTicketForSquareOrder('order_recover_email', {
+    findTicketBySquareOrderId: async () => ({
+      id: 'ticket_recover_email',
+      event_id: 'event_recover_email',
+      square_order_id: 'order_recover_email',
+      customer_name: 'Guest',
+      customer_email: 'guest-old@example.com',
+    }),
+    squareClient: {
+      orders: {
+        get: async () => ({
+          order: {
+            id: 'order_recover_email',
+            state: 'COMPLETED',
+            metadata: { requestId: 'req_recover_email', eventId: 'event_recover_email' },
+            tenders: [{ id: 'payment_recover_email' }],
+          },
+        }),
+      },
+      payments: {
+        get: async () => ({
+          payment: {
+            buyerEmailAddress: 'buyer@real-domain.test',
+            cardDetails: {
+              card: { cardholderName: 'Jordan Lee' },
+            },
+          },
+        }),
+      },
+      customers: { get: async () => ({ customer: null }) },
+    },
+    getRequestCustomerById: async () => ({
+      customer_name: 'Guest',
+      customer_email: 'guest-old@example.com',
+    }),
+    getRequestCustomerByOrderId: async () => null,
+    getEventById: async () => ({ id: 'event_recover_email', name: 'Shareholder Meeting' }),
+    sendTicketEmail: async (ticket, event, email) => {
+      emails.push({ ticketId: ticket.id, eventName: event.name, email });
+      return { id: 'email_recovered' };
+    },
+    updateTicketCustomer: async (ticketId, customer) => {
+      ticketUpdates.push({ ticketId, customer });
+      return { id: ticketId, ...customer };
+    },
+    updateRequestCustomer: async (requestId, customer) => {
+      requestUpdates.push({ requestId, customer });
+      return { id: requestId, ...customer };
+    },
+  });
+
+  assert.deepEqual(result, {
+    replay: true,
+    recovered: true,
+    ticketId: 'ticket_recover_email',
+  });
+  assert.deepEqual(emails, [{
+    ticketId: 'ticket_recover_email',
+    eventName: 'Shareholder Meeting',
+    email: 'buyer@real-domain.test',
+  }]);
+  assert.equal(ticketUpdates[0].customer.customer_name, 'Jordan Lee');
+  assert.equal(ticketUpdates[0].customer.customer_email, 'buyer@real-domain.test');
+  assert.equal(requestUpdates[0].customer.customer_name, 'Jordan Lee');
+  assert.equal(requestUpdates[0].customer.customer_email, 'buyer@real-domain.test');
+});
+
+test('fulfillTicketForSquareOrder repairs a Guest name without resending an already delivered ticket', async () => {
+  let emailSendCount = 0;
+  const ticketUpdates = [];
+  const requestUpdates = [];
+
+  const result = await fulfillTicketForSquareOrder('order_recover_name', {
+    findTicketBySquareOrderId: async () => ({
+      id: 'ticket_recover_name',
+      event_id: 'event_recover_name',
+      square_order_id: 'order_recover_name',
+      customer_name: 'Guest',
+      customer_email: 'buyer@example.org',
+    }),
+    squareClient: {
+      orders: {
+        get: async () => ({
+          order: {
+            id: 'order_recover_name',
+            state: 'COMPLETED',
+            metadata: { requestId: 'req_recover_name', eventId: 'event_recover_name' },
+            tenders: [{ id: 'payment_recover_name' }],
+          },
+        }),
+      },
+      payments: {
+        get: async () => ({
+          payment: {
+            buyerEmailAddress: 'buyer@example.org',
+            cardDetails: {
+              card: { cardholderName: 'Jordan Lee' },
+            },
+          },
+        }),
+      },
+      customers: { get: async () => ({ customer: null }) },
+    },
+    getRequestCustomerById: async () => ({
+      customer_name: 'Guest',
+      customer_email: 'guest-old@example.com',
+    }),
+    getRequestCustomerByOrderId: async () => null,
+    sendTicketEmail: async () => {
+      emailSendCount += 1;
+    },
+    updateTicketCustomer: async (ticketId, customer) => {
+      ticketUpdates.push({ ticketId, customer });
+      return { id: ticketId, ...customer };
+    },
+    updateRequestCustomer: async (requestId, customer) => {
+      requestUpdates.push({ requestId, customer });
+      return { id: requestId, ...customer };
+    },
+  });
+
+  assert.deepEqual(result, {
+    replay: true,
+    recovered: true,
+    ticketId: 'ticket_recover_name',
+  });
+  assert.equal(emailSendCount, 0);
+  assert.equal(ticketUpdates[0].customer.customer_name, 'Jordan Lee');
+  assert.equal(ticketUpdates[0].customer.customer_email, 'buyer@example.org');
+  assert.equal(requestUpdates[0].customer.customer_name, 'Jordan Lee');
+});
+
 test('sendTicketEmail keeps the branded sender when retrying a minimal payload', async () => {
   const resendCalls = [];
   process.env.RESEND_API_KEY = 're_test';
@@ -434,7 +690,7 @@ test('sendTicketEmail keeps the branded sender when retrying a minimal payload',
   const result = await sendTicketEmail(
     { id: 'ticket_1' },
     { name: 'Launch' },
-    'ada@example.com',
+    'ada@example.org',
     'Ada',
     {
       resendClient,
@@ -445,9 +701,32 @@ test('sendTicketEmail keeps the branded sender when retrying a minimal payload',
   assert.equal(resendCalls.length, 2);
   assert.equal(resendCalls[0].from, 'LMNL <tickets@lmnl.art>');
   assert.equal(resendCalls[1].from, 'LMNL <tickets@lmnl.art>');
-  assert.equal(resendCalls[1].to, 'ada@example.com');
+  assert.equal(resendCalls[1].to, 'ada@example.org');
   assert.equal(resendCalls[0].replyTo, 'hi@lmnl.art');
   assert.deepEqual(result, { id: 'email_123' });
+});
+
+test('sendTicketEmail never sends to an internal placeholder address', async () => {
+  let sendCount = 0;
+  const result = await sendTicketEmail(
+    { id: 'ticket_placeholder' },
+    { name: 'Shareholder Meeting' },
+    'guest-placeholder@example.com',
+    'Guest',
+    {
+      resendClient: {
+        emails: {
+          send: async () => {
+            sendCount += 1;
+            return { data: { id: 'should_not_send' } };
+          },
+        },
+      },
+    }
+  );
+
+  assert.equal(sendCount, 0);
+  assert.deepEqual(result, { skipped: true, reason: 'Missing customer email.' });
 });
 
 test('sendTicketEmail still sends when pass generation throws', async () => {
@@ -457,7 +736,7 @@ test('sendTicketEmail still sends when pass generation throws', async () => {
   const result = await sendTicketEmail(
     { id: 'ticket_2', square_order_id: 'order_4' },
     { name: 'Launch' },
-    'ada@example.com',
+    'ada@example.org',
     'Ada',
     {
       resendClient: {

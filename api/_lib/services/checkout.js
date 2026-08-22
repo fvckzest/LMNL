@@ -315,7 +315,7 @@ async function loadEventOrThrow(eventId, deps = {}) {
   return event;
 }
 
-async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
+async function createHostedTicketLink({ request, event, buyer, idempotencyKey, deps = {} }) {
   const squareClient = deps.squareClient || getSquareClient();
   const locationId = await (deps.getSquareLocationId || getSquareLocationId)();
 
@@ -332,7 +332,7 @@ async function createHostedTicketLink({ request, event, buyer, deps = {} }) {
 
   try {
     response = await squareClient.checkout.paymentLinks.create({
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: idempotencyKey || crypto.randomUUID(),
       order: {
         locationId,
         referenceId: String(request.id),
@@ -436,20 +436,57 @@ export async function createCheckoutForRequestRecord(request, payload = {}, deps
 export async function createCheckoutForEvent(eventId, payload = {}, deps = {}) {
   const event = await loadEventOrThrow(eventId, deps);
   const buyer = normalizeBuyer(payload.buyer);
+  const suppliedPurchaseIntentId = readString(payload.purchaseIntentId);
+  if (suppliedPurchaseIntentId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(suppliedPurchaseIntentId)) {
+    throw new AppError('Invalid purchase intent ID.', {
+      code: 'INVALID_INPUT',
+      status: 400,
+      expose: true,
+    });
+  }
+
+  const purchaseIntentId = suppliedPurchaseIntentId || crypto.randomUUID();
   const requestBuyer = {
     fullName: buyer.fullName || 'Guest',
     email: buyer.email || `guest-${crypto.randomUUID()}@example.com`,
     phone: buyer.phone,
   };
 
-  const request = await (deps.createAccessRequest || createAccessRequest)({
+  const requestPayload = {
+    id: purchaseIntentId,
     event_name: event.name,
     customer_name: requestBuyer.fullName,
     customer_email: requestBuyer.email,
     status: 'approved',
+  };
+
+  const checkout = await createHostedTicketLink({
+    request: requestPayload,
+    event,
+    buyer,
+    idempotencyKey: purchaseIntentId,
+    deps: { ...deps, persistOrderId: false },
   });
 
-  return createHostedTicketLink({ request, event, buyer: requestBuyer, deps });
+  const persistRequest = deps.createAccessRequest || createAccessRequest;
+  const loadRequest = deps.getRequestById || getRequestById;
+  try {
+    await persistRequest({
+      ...requestPayload,
+      square_order_id: checkout.orderId,
+    });
+  } catch (error) {
+    if (error?.code !== '23505' && !/duplicate/i.test(error?.message || '')) {
+      throw error;
+    }
+
+    const existingRequest = await loadRequest(purchaseIntentId);
+    if (!existingRequest || existingRequest.event_name !== event.name) {
+      throw error;
+    }
+  }
+
+  return checkout;
 }
 
 export async function createCheckoutForRequest(requestId, payload = {}, deps = {}) {

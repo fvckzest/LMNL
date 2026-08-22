@@ -36,6 +36,7 @@ import { getAdminCatalogView } from './_lib/services/catalog.js';
 import { getSiteActivityHistory } from './_lib/services/site-activity.js';
 import { getSpaceDonationActivity } from './_lib/services/space-donations.js';
 import { getSpaceTicketActivity } from './_lib/services/space-activity.js';
+import { getPublicEventPage } from './_lib/services/public-event-page.js';
 import { generatePortfolioPreview } from './_lib/services/portfolio-previews.js';
 import {
   countApprovedRequestsByEventName,
@@ -194,6 +195,7 @@ async function handleCreateEventCheckout(req, res) {
   const eventId = requireValue(body.eventId, 'eventId is required.');
   const data = await createCheckoutForEvent(eventId, {
     buyer: body.buyer || {},
+    purchaseIntentId: body.purchaseIntentId,
   });
   return sendJson(res, 200, { success: true, data });
 }
@@ -262,6 +264,13 @@ async function handleGetEventCheckout(req, res) {
   allowMethods(req, ['GET']);
   const eventId = requireValue(req.query?.eventId, 'eventId is required.');
   const data = await getEventCheckoutView(eventId);
+  return sendJson(res, 200, { success: true, data });
+}
+
+async function handlePublicEvent(req, res) {
+  allowMethods(req, ['GET']);
+  const slug = requireValue(req.query?.slug, 'slug is required.');
+  const data = await getPublicEventPage(slug);
   return sendJson(res, 200, { success: true, data });
 }
 
@@ -1217,6 +1226,7 @@ const handlers = {
   'space-activity': handleSpaceActivity,
   'space-donations': handleSpaceDonations,
   'event-checkout': handleGetEventCheckout,
+  'public-event': handlePublicEvent,
   'request-checkout': handleGetRequestCheckout,
   'pay-event': handlePayEvent,
   'pay-preorder': handlePayPreorder,
