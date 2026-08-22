@@ -2,12 +2,10 @@ import { AppError, asAppError } from './_lib/errors.js';
 import { getBaseConfig } from './_lib/env.js';
 import { buildPublicEventSeoPage } from './_lib/services/event-seo-page.js';
 
-async function loadShellHtml() {
-  const { siteUrl } = getBaseConfig();
-  const assetOrigin = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : siteUrl;
-  const response = await fetch(`${assetOrigin.replace(/\/$/, '')}/index.html`);
+export async function loadShellHtml(deps = {}) {
+  const siteUrl = deps.siteUrl || getBaseConfig().siteUrl;
+  const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  const response = await fetchImpl(`${siteUrl.replace(/\/$/, '')}/index.html`);
 
   if (!response.ok) {
     throw new AppError('Event page shell is unavailable.', {
@@ -17,7 +15,16 @@ async function loadShellHtml() {
     });
   }
 
-  return response.text();
+  const html = await response.text();
+  if (!/<div[^>]*\sid=["']root["'][^>]*>/i.test(html)) {
+    throw new AppError('Event page shell is invalid.', {
+      code: 'EVENT_PAGE_SHELL_INVALID',
+      status: 502,
+      expose: true,
+    });
+  }
+
+  return html;
 }
 
 export default async function handler(req, res) {
@@ -29,7 +36,7 @@ export default async function handler(req, res) {
   try {
     const { siteUrl } = getBaseConfig();
     const html = await buildPublicEventSeoPage(req.query?.slug, {
-      loadShellHtml,
+      loadShellHtml: () => loadShellHtml({ siteUrl }),
       siteUrl,
     });
 
