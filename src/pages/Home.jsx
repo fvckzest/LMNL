@@ -79,49 +79,6 @@ export default function Home() {
     >
       <div className="page-hero-grid">
         <div className="page-hero-grid__main">
-          <section className="home-company-box" aria-label="Company introduction">
-            <h1 className="sr-only">LMNL</h1>
-            <p className="home-company-box__copy">
-              LMNL is a Tacoma-based art and culture platform building events, creative services, digital tools, and community experiences that bring people together.
-            </p>
-            <p className="home-company-box__copy">
-              Visit one of our events, explore our services, and join our community.
-            </p>
-          </section>
-
-          <div className="page-panel theme-accent-panel">
-            <div className="page-command-strip" aria-label="Terminal shortcuts">
-              <Link
-                to="/events"
-                className="page-command-strip__item"
-                style={{ '--command-accent': '#004ffa' }}
-              >
-                <span>View programs</span>
-              </Link>
-              <Link
-                to="/community"
-                className="page-command-strip__item"
-                style={{ '--command-accent': '#ff5bb8' }}
-              >
-                <span>Enter network</span>
-              </Link>
-              <Link
-                to="/services"
-                className="page-command-strip__item"
-                style={{ '--command-accent': '#7b52d6' }}
-              >
-                <span>Explore Services</span>
-              </Link>
-              <Link
-                to="/shop"
-                className="page-command-strip__item"
-                style={{ '--command-accent': '#ff0000' }}
-              >
-                <span>View artifacts</span>
-              </Link>
-            </div>
-          </div>
-
           <div className="upcoming-event-section">
             <div className="upcoming-glow" />
             <div className="upcoming-content">
@@ -196,6 +153,50 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          <section className="home-company-box" aria-label="Company introduction">
+            <h1 className="sr-only">LMNL</h1>
+            <p className="home-company-box__copy">
+              LMNL is a Tacoma-based art and culture platform building events, creative services, digital tools, and community experiences that bring people together.
+            </p>
+            <p className="home-company-box__copy">
+              Visit one of our events, explore our services, and join our community.
+            </p>
+          </section>
+
+          <div className="page-panel theme-accent-panel">
+            <div className="page-command-strip" aria-label="Terminal shortcuts">
+              <Link
+                to="/events"
+                className="page-command-strip__item"
+                style={{ '--command-accent': '#004ffa' }}
+              >
+                <span>View programs</span>
+              </Link>
+              <Link
+                to="/community"
+                className="page-command-strip__item"
+                style={{ '--command-accent': '#ff5bb8' }}
+              >
+                <span>Enter network</span>
+              </Link>
+              <Link
+                to="/services"
+                className="page-command-strip__item"
+                style={{ '--command-accent': '#7b52d6' }}
+              >
+                <span>Explore Services</span>
+              </Link>
+              <Link
+                to="/shop"
+                className="page-command-strip__item"
+                style={{ '--command-accent': '#ff0000' }}
+              >
+                <span>View artifacts</span>
+              </Link>
+            </div>
+          </div>
+
         </div>
       </div>
     </ContentPageShell>
