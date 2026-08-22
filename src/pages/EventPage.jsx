@@ -201,7 +201,7 @@ export default function EventPage() {
             </article>
           )}
 
-          <PoweredByLmnl showcase={page.showcase} />
+          {isShareholderMeeting ? null : <PoweredByLmnl showcase={page.showcase} />}
         </>
       ) : null}
     </ContentPageShell>

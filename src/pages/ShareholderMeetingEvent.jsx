@@ -88,7 +88,6 @@ export default function ShareholderMeetingEvent({ event, checkoutState, onChecko
 
         <div className="shareholder-notice__ticketing">
           <div>
-            <span>ONLINE TICKET DESK</span>
             <strong>{event.availability}</strong>
           </div>
           <button
