@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { countApprovedRequestsByEventName, updateRequestArchiveState } from '../api/_lib/repositories/requests.js';
+import {
+  archiveRequestsByEventName,
+  countApprovedRequestsByEventName,
+  updateRequestArchiveState,
+} from '../api/_lib/repositories/requests.js';
 
 test('countApprovedRequestsByEventName returns the approved count for an event', async () => {
   const seenFilters = [];
@@ -308,4 +312,37 @@ test('updateRequestArchiveState restores legacy fulfilled status when an issued 
     archived_at: null,
   });
   assert.deepEqual(updates[1], { status: 'fulfilled' });
+});
+
+test('archiveRequestsByEventName falls back to legacy archived status', async () => {
+  const updates = [];
+  const filters = [];
+  const supabase = {
+    from: (table) => {
+      assert.equal(table, 'requests');
+      return {
+        update: (payload) => {
+          updates.push(payload);
+          return {
+            eq: async (column, value) => {
+              filters.push([column, value]);
+              return Object.prototype.hasOwnProperty.call(payload, 'is_archived')
+                ? { error: { code: '42703', message: 'column "is_archived" does not exist' } }
+                : { error: null };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  await archiveRequestsByEventName('SPACE', { supabase });
+
+  assert.equal(updates[0].is_archived, true);
+  assert.match(updates[0].archived_at, /\d{4}-\d{2}-\d{2}T/);
+  assert.deepEqual(updates[1], { status: 'archived' });
+  assert.deepEqual(filters, [
+    ['event_name', 'SPACE'],
+    ['event_name', 'SPACE'],
+  ]);
 });

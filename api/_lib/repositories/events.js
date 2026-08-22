@@ -1,4 +1,5 @@
 import { getAdminSupabase } from '../clients.js';
+import { archiveRequestsByEventName } from './requests.js';
 
 const SPACE_EVENT_NAME_ALIASES = new Set([
   'space',
@@ -92,11 +93,15 @@ export async function listPublicEvents() {
   return data || [];
 }
 
-export async function upsertEvent(eventPayload) {
-  const supabase = getAdminSupabase();
+export async function upsertEvent(eventPayload, deps = {}) {
+  const supabase = deps.supabase || getAdminSupabase();
   const { id, previousName, ...data } = eventPayload;
 
   if (id) {
+    if (data.status === 'archived') {
+      await archiveRequestsByEventName(previousName || data.name, { supabase });
+    }
+
     const { data: updated, error } = await supabase
       .from('events')
       .update(data)
@@ -138,15 +143,7 @@ export async function updateEventStatus(id, status, deps = {}) {
     if (eventLookupError) throw eventLookupError;
     if (!event) throw new Error('Event not found.');
 
-    const { error: requestArchiveError } = await supabase
-      .from('requests')
-      .update({
-        is_archived: true,
-        archived_at: new Date().toISOString(),
-      })
-      .eq('event_name', event.name);
-
-    if (requestArchiveError) throw requestArchiveError;
+    await archiveRequestsByEventName(event.name, { supabase });
   }
 
   const { data, error } = await supabase
