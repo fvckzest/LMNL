@@ -130,7 +130,9 @@ export default function EventPage() {
       title={event?.name || 'EVENT'}
       color="#004ffa"
       introTitle={event?.name || 'EVENT'}
-      introCopy={event?.organizerCredit ? `ORGANIZED BY ${event.organizerCredit}` : 'PUBLIC EVENT PAGE'}
+      introCopy={isShareholderMeeting
+        ? ''
+        : event?.organizerCredit ? `ORGANIZED BY ${event.organizerCredit}` : 'PUBLIC EVENT PAGE'}
       contentClassName="public-event-content page-stack"
     >
       {state === 'loading' ? <PageStatus>RETRIEVING EVENT...</PageStatus> : null}
