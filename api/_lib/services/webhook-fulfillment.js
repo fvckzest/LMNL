@@ -53,6 +53,10 @@ function isPlaceholderEmail(email) {
   return normalized.endsWith('@example.com');
 }
 
+function readString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function normalizeWebhookUrl(url) {
   if (!url) return '';
   return String(url).trim().replace(/\/+$/, '');
@@ -119,6 +123,11 @@ export async function resolveCustomer(order, squareOrderId, deps = {}) {
   const squareClient = deps.squareClient || getSquareClient();
   const loadRequestCustomerById = deps.getRequestCustomerById || getRequestCustomerById;
   const loadRequestCustomerByOrderId = deps.getRequestCustomerByOrderId || getRequestCustomerByOrderId;
+  const requestCustomerById = order.metadata?.requestId
+    ? await loadRequestCustomerById(order.metadata.requestId)
+    : null;
+  const canUseSquarePaymentName = !requestCustomerById
+    || isPlaceholderEmail(requestCustomerById.customer_email);
 
   const recipient = order.fulfillments?.[0]?.pickupDetails?.recipient
     || order.fulfillments?.[0]?.shipmentDetails?.recipient
@@ -146,23 +155,48 @@ export async function resolveCustomer(order, squareOrderId, deps = {}) {
     }
   }
 
-  if (!customerEmail) {
-    const paymentId = order.tenders?.find((tender) => tender?.id)?.id;
-    if (paymentId && squareClient.payments?.get) {
-      try {
-        const response = await squareClient.payments.get({ paymentId });
-        const payment = response.payment || response.result?.payment;
+  if (!customerEmail && requestCustomerById && !isPlaceholderEmail(requestCustomerById.customer_email)) {
+    customerName = requestCustomerById.customer_name || customerName;
+    customerEmail = requestCustomerById.customer_email;
+  }
+
+  const paymentId = order.tenders?.find((tender) => tender?.id)?.id;
+  if (paymentId && squareClient.payments?.get) {
+    try {
+      const response = await squareClient.payments.get({ paymentId });
+      const payment = response.payment || response.result?.payment;
+      if (!customerEmail) {
         customerEmail = isPlaceholderEmail(payment?.buyerEmailAddress)
           ? ''
           : (payment?.buyerEmailAddress || '');
-      } catch (error) {
-        console.warn('[webhook] payment lookup failed', error);
       }
+
+      let paymentCustomerName = '';
+      if (payment?.customerId) {
+        try {
+          const customerResponse = await squareClient.customers.get({ customerId: payment.customerId });
+          const paymentCustomer = customerResponse.customer || customerResponse.result?.customer;
+          paymentCustomerName = `${paymentCustomer?.givenName || ''} ${paymentCustomer?.familyName || ''}`.trim();
+          if (!customerEmail && !isPlaceholderEmail(paymentCustomer?.emailAddress)) {
+            customerEmail = paymentCustomer.emailAddress;
+          }
+        } catch (error) {
+          console.warn('[webhook] payment customer lookup failed', error);
+        }
+      }
+
+      if (canUseSquarePaymentName) {
+        customerName = paymentCustomerName
+          || readString(payment?.cardDetails?.card?.cardholderName)
+          || customerName;
+      }
+    } catch (error) {
+      console.warn('[webhook] payment lookup failed', error);
     }
   }
 
   if (!customerEmail && order.metadata?.requestId) {
-    const requestCustomer = await loadRequestCustomerById(order.metadata.requestId);
+    const requestCustomer = requestCustomerById;
     customerName = requestCustomer?.customer_name || customerName;
     customerEmail = isPlaceholderEmail(requestCustomer?.customer_email)
       ? customerEmail

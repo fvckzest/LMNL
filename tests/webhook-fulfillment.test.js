@@ -442,6 +442,9 @@ test('resolveCustomer uses the email entered in Square checkout from the associa
             payment: {
               id: paymentId,
               buyerEmailAddress: 'buyer@real-domain.test',
+              cardDetails: {
+                card: { cardholderName: 'Jordan Lee' },
+              },
             },
           }),
         },
@@ -449,7 +452,87 @@ test('resolveCustomer uses the email entered in Square checkout from the associa
     }
   );
 
+  assert.equal(customer.customerName, 'Jordan Lee');
   assert.equal(customer.customerEmail, 'buyer@real-domain.test');
+});
+
+test('resolveCustomer preserves the submitted identity for private invite checkout', async () => {
+  const customer = await resolveCustomer(
+    {
+      metadata: { requestId: 'req_private_invite' },
+      tenders: [{ id: 'payment_private_invite' }],
+    },
+    'order_private_invite',
+    {
+      getRequestCustomerById: async () => ({
+        customer_name: 'Mara Rivera',
+        customer_email: 'mara@example.org',
+      }),
+      getRequestCustomerByOrderId: async () => null,
+      squareClient: {
+        customers: { get: async () => ({ customer: null }) },
+        payments: {
+          get: async () => ({
+            payment: {
+              buyerEmailAddress: 'different-card-email@example.org',
+              cardDetails: {
+                card: { cardholderName: 'Different Cardholder' },
+              },
+            },
+          }),
+        },
+      },
+    }
+  );
+
+  assert.deepEqual(customer, {
+    customerName: 'Mara Rivera',
+    customerEmail: 'mara@example.org',
+  });
+});
+
+test('resolveCustomer prefers the Square customer profile name over the cardholder fallback', async () => {
+  const customer = await resolveCustomer(
+    {
+      metadata: { requestId: 'req_square_profile' },
+      tenders: [{ id: 'payment_square_profile' }],
+    },
+    'order_square_profile',
+    {
+      getRequestCustomerById: async () => ({
+        customer_name: 'Guest',
+        customer_email: 'guest-profile@example.com',
+      }),
+      getRequestCustomerByOrderId: async () => null,
+      squareClient: {
+        payments: {
+          get: async () => ({
+            payment: {
+              customerId: 'customer_square_profile',
+              buyerEmailAddress: 'profile@example.org',
+              cardDetails: {
+                card: { cardholderName: 'Cardholder Fallback' },
+              },
+            },
+          }),
+        },
+        customers: {
+          get: async () => ({
+            customer: {
+              givenName: 'Jordan',
+              familyName: 'Lee',
+              emailAddress: 'profile@example.org',
+            },
+          }),
+        },
+      },
+    }
+  );
+
+  assert.deepEqual(customer, {
+    customerName: 'Jordan Lee',
+    customerEmail: 'profile@example.org',
+  });
 });
 
 test('fulfillTicketForSquareOrder recovers email delivery for an existing placeholder ticket', async () => {
@@ -478,7 +561,12 @@ test('fulfillTicketForSquareOrder recovers email delivery for an existing placeh
       },
       payments: {
         get: async () => ({
-          payment: { buyerEmailAddress: 'buyer@real-domain.test' },
+          payment: {
+            buyerEmailAddress: 'buyer@real-domain.test',
+            cardDetails: {
+              card: { cardholderName: 'Jordan Lee' },
+            },
+          },
         }),
       },
       customers: { get: async () => ({ customer: null }) },
@@ -513,7 +601,9 @@ test('fulfillTicketForSquareOrder recovers email delivery for an existing placeh
     eventName: 'Shareholder Meeting',
     email: 'buyer@real-domain.test',
   }]);
+  assert.equal(ticketUpdates[0].customer.customer_name, 'Jordan Lee');
   assert.equal(ticketUpdates[0].customer.customer_email, 'buyer@real-domain.test');
+  assert.equal(requestUpdates[0].customer.customer_name, 'Jordan Lee');
   assert.equal(requestUpdates[0].customer.customer_email, 'buyer@real-domain.test');
 });
 
