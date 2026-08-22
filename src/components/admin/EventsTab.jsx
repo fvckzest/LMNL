@@ -388,7 +388,10 @@ function toCsvFilenamePart(value) {
       }, { auth: true });
       setIsModalOpen(false);
       fetchEvents();
-      if (editingEvent && eventForm.name !== editingEvent.name) {
+      if (editingEvent && (
+        eventForm.status === 'archived'
+        || eventForm.name !== editingEvent.name
+      )) {
         fetchRequests();
       }
     } catch (error) {
