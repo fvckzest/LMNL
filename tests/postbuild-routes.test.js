@@ -17,20 +17,19 @@ test('postbuild route list keeps password reset as a direct-hit entry point', as
   assert.equal(resetRoute.indexable, false);
 });
 
-test('postbuild route list keeps the Space event page as a direct-hit entry point', async () => {
+test('postbuild leaves public event slugs to the dynamic SEO route', async () => {
   const { routes } = await import('../scripts/postbuild.js');
-  const eventRoute = routes.find((route) => route.path === 'events/space');
+  const eventRoutes = routes.filter((route) => route.path.startsWith('events/'));
 
-  assert.ok(eventRoute, 'expected /events/space to be generated as a static entry point');
-  assert.equal(eventRoute.indexable, true);
+  assert.deepEqual(eventRoutes, []);
 });
 
-test('postbuild route list keeps the shareholder meeting as a direct-hit entry point', async () => {
-  const { routes } = await import('../scripts/postbuild.js');
-  const eventRoute = routes.find((route) => route.path === 'events/shareholder-meeting');
+test('vercel routes every public event slug through dynamic SEO HTML', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
 
-  assert.ok(eventRoute, 'expected /events/shareholder-meeting to be generated as a static entry point');
-  assert.equal(eventRoute.title, 'LMNL | 2026 ANNUAL SHAREHOLDER MEETING');
-  assert.equal(eventRoute.image, '/seo/shareholder-meeting.png');
-  assert.equal(eventRoute.indexable, true);
+  assert.deepEqual(config.rewrites[0], {
+    source: '/events/:slug',
+    destination: '/api/event-page?slug=:slug',
+  });
 });

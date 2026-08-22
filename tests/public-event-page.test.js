@@ -120,6 +120,24 @@ test('getPublicEventPage uses current Square inventory for availability and pric
   assert.equal(page.event.ticketAction.enabled, false);
 });
 
+test('getPublicEventPage can skip live inventory for metadata-only event rendering', async () => {
+  let inventoryLookupCount = 0;
+  const page = await getPublicEventPage('space', {
+    includeInventory: false,
+    listPublicEvents: async () => [{
+      ...spaceEvent,
+      square_variation_id: 'variation_space',
+    }],
+    getVariationInventory: async () => {
+      inventoryLookupCount += 1;
+      return { available: 0, price: 3000 };
+    },
+  });
+
+  assert.equal(inventoryLookupCount, 0);
+  assert.equal(page.event.name, 'SPACE');
+});
+
 test('getPublicEventPage shows only explicitly approved Powered by LMNL events', async () => {
   const approved = {
     ...spaceEvent,
