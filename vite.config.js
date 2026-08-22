@@ -2,6 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+export const navigationFallbackDenylist = [
+  /^\/api\//,
+  /^\/events(?:\/|$)/,
+  /^\/robots\.txt$/,
+  /^\/sitemap\.xml$/,
+]
+
 // https://vite.dev/config/
 export default defineConfig({
   optimizeDeps: {
@@ -13,11 +20,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        navigateFallbackDenylist: [
-          /^\/api\//,
-          /^\/robots\.txt$/,
-          /^\/sitemap\.xml$/,
-        ],
+        navigateFallbackDenylist: navigationFallbackDenylist,
         skipWaiting: true,
       },
       registerType: 'autoUpdate',
