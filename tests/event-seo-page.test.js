@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { loadShellHtml } from '../api/event-page.js';
 import { buildPublicEventSeoPage } from '../api/_lib/services/event-seo-page.js';
 
 const shellHtml = `<!doctype html>
@@ -19,6 +20,44 @@ const shellHtml = `<!doctype html>
   <meta property="twitter:image" content="https://lmnl.art/seo/home-seo.png" />
 </head>
 </html>`;
+
+test('loadShellHtml uses the public site shell instead of the protected deployment URL', async () => {
+  const previousVercelUrl = process.env.VERCEL_URL;
+  process.env.VERCEL_URL = 'lmnl-protected-preview.vercel.app';
+  const requestedUrls = [];
+
+  try {
+    const html = await loadShellHtml({
+      siteUrl: 'https://lmnl.art',
+      fetchImpl: async (url) => {
+        requestedUrls.push(url);
+        return {
+          ok: true,
+          text: async () => '<!doctype html><div id="root"></div>',
+        };
+      },
+    });
+
+    assert.equal(html, '<!doctype html><div id="root"></div>');
+    assert.deepEqual(requestedUrls, ['https://lmnl.art/index.html']);
+  } finally {
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL;
+    else process.env.VERCEL_URL = previousVercelUrl;
+  }
+});
+
+test('loadShellHtml rejects a successful response that is not the LMNL app shell', async () => {
+  await assert.rejects(
+    () => loadShellHtml({
+      siteUrl: 'https://lmnl.art',
+      fetchImpl: async () => ({
+        ok: true,
+        text: async () => '<!doctype html><title>Log in to Vercel</title>',
+      }),
+    }),
+    (error) => error?.code === 'EVENT_PAGE_SHELL_INVALID',
+  );
+});
 
 test('buildPublicEventSeoPage renders the current event title as the complete link-preview title', async () => {
   const html = await buildPublicEventSeoPage('shareholder-meeting', {
