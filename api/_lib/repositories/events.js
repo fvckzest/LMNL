@@ -125,8 +125,30 @@ export async function upsertEvent(eventPayload) {
   return inserted;
 }
 
-export async function updateEventStatus(id, status) {
-  const supabase = getAdminSupabase();
+export async function updateEventStatus(id, status, deps = {}) {
+  const supabase = deps.supabase || getAdminSupabase();
+
+  if (status === 'archived') {
+    const { data: event, error: eventLookupError } = await supabase
+      .from('events')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (eventLookupError) throw eventLookupError;
+    if (!event) throw new Error('Event not found.');
+
+    const { error: requestArchiveError } = await supabase
+      .from('requests')
+      .update({
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+      })
+      .eq('event_name', event.name);
+
+    if (requestArchiveError) throw requestArchiveError;
+  }
+
   const { data, error } = await supabase
     .from('events')
     .update({ status })

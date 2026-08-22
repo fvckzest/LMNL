@@ -136,7 +136,10 @@ function toCsvFilenamePart(value) {
   async function updateEventStatus(id, newStatus) {
     try {
       await apiPost('/api/events', { action: 'update-status', id, status: newStatus }, { auth: true });
-      fetchEvents();
+      await Promise.all([
+        fetchEvents(),
+        newStatus === 'archived' ? fetchRequests() : Promise.resolve(),
+      ]);
     } catch (error) {
       console.error('Error updating event status:', error);
       showToast('Failed to update event status: ' + error.message, 'error');
