@@ -69,8 +69,7 @@ export default function ShareholderMeetingEvent({ event, checkoutState, onChecko
             <DataRow label="time">&quot;{eventTime} Pacific&quot;,</DataRow>
             <DataRow label="price">[&quot;{event.displayPrice} online&quot;, &quot;$15 at door&quot;],</DataRow>
             <DataRow label="location">&quot;{venue}&quot;,</DataRow>
-            <DataRow label="address">&quot;{address}&quot;,</DataRow>
-            <DataRow label="availability">&quot;{event.availability}&quot;</DataRow>
+            <DataRow label="address">&quot;{address}&quot;</DataRow>
           </dl>
           <span aria-hidden="true">{'}'}</span>
         </section>
