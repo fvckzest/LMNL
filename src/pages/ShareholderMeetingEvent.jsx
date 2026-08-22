@@ -1,17 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatEventTime } from '../utils/eventDisplay';
 
-const SIGNAL_COLORS = [
-  '#004ffa',
-  '#742bdc',
-  '#ff3b8d',
-  '#ed1c24',
-  '#ff8a00',
-  '#ffd21a',
-  '#75d329',
-  '#000000',
-];
-
 function formatNoticeDate(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return value || 'TBA';
@@ -53,13 +42,6 @@ export default function ShareholderMeetingEvent({ event, checkoutState, onChecko
   return (
     <article className="shareholder-notice" aria-labelledby="shareholder-notice-title">
       <h1 className="sr-only" id="shareholder-notice-title">{eventName}</h1>
-      <header className="shareholder-notice__brand-row">
-        <img src="/lmnl-logo-black.png" alt="LMNL" />
-        <div className="shareholder-notice__signals" aria-hidden="true">
-          {SIGNAL_COLORS.map((color) => <span key={color} style={{ backgroundColor: color }} />)}
-        </div>
-      </header>
-
       <dl className="shareholder-notice__envelope">
         <EnvelopeRow label="from">Investor Relations &lt;4evr@lmnl.art&gt;</EnvelopeRow>
         <EnvelopeRow label="to">Shareholders</EnvelopeRow>
