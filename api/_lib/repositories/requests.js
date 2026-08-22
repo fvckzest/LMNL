@@ -130,6 +130,30 @@ export async function updateRequestArchiveState(id, isArchived, deps = {}) {
   return legacyRestoredRequest;
 }
 
+export async function archiveRequestsByEventName(eventName, deps = {}) {
+  const supabase = deps.supabase || getAdminSupabase();
+  const payload = {
+    is_archived: true,
+    archived_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('requests')
+    .update(payload)
+    .eq('event_name', eventName);
+
+  if (!error) return true;
+  if (!isMissingArchiveColumnsError(error)) throw error;
+
+  const { error: legacyArchiveError } = await supabase
+    .from('requests')
+    .update({ status: 'archived' })
+    .eq('event_name', eventName);
+
+  if (legacyArchiveError) throw legacyArchiveError;
+  return true;
+}
+
 export async function deleteRequestById(id) {
   const supabase = getAdminSupabase();
   const { error } = await supabase.from('requests').delete().eq('id', id);
