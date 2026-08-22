@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ContentPageShell, { PageEmptyState, PageStatus } from '../components/ContentPageShell';
 import { usePageColor } from '../hooks/usePageColor';
@@ -69,6 +69,7 @@ export default function EventPage() {
   const [page, setPage] = useState(null);
   const [state, setState] = useState('loading');
   const [checkoutState, setCheckoutState] = useState('idle');
+  const purchaseIntentIdRef = useRef('');
 
   usePageColor('#004ffa');
 
@@ -115,9 +116,14 @@ export default function EventPage() {
 
     setCheckoutState('loading');
     try {
+      if (!purchaseIntentIdRef.current) {
+        purchaseIntentIdRef.current = crypto.randomUUID();
+      }
       const result = await apiPost(event.ticketAction.endpoint, {
         eventId: event.ticketAction.eventId,
+        purchaseIntentId: purchaseIntentIdRef.current,
       });
+      purchaseIntentIdRef.current = '';
       window.location.assign(result.checkoutUrl);
     } catch (error) {
       console.error('Failed to start event checkout:', error);

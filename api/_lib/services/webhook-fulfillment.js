@@ -3,7 +3,7 @@ import { getBaseConfig } from '../env.js';
 import { AppError } from '../errors.js';
 import { getResendClient, getSquareClient } from '../clients.js';
 import { buildTicketEmail } from '../email-templates.js';
-import { getEventBySquareVariationIds, getLatestEventByName } from '../repositories/events.js';
+import { getEventById, getEventBySquareVariationIds, getLatestEventByName } from '../repositories/events.js';
 import {
   fulfillApprovedRequestById,
   fulfillApprovedRequestByOrderId,
@@ -11,8 +11,9 @@ import {
   getRequestByOrderId,
   getRequestCustomerById,
   getRequestCustomerByOrderId,
+  updateRequestCustomer,
 } from '../repositories/requests.js';
-import { createTicket, findTicketBySquareOrderId } from '../repositories/tickets.js';
+import { createTicket, findTicketBySquareOrderId, updateTicketCustomer } from '../repositories/tickets.js';
 import { sendDiscordTicketNotification } from './discord.js';
 import { generateTicketPass } from './passkit.js';
 
@@ -145,23 +146,42 @@ export async function resolveCustomer(order, squareOrderId, deps = {}) {
     }
   }
 
+  if (!customerEmail) {
+    const paymentId = order.tenders?.find((tender) => tender?.id)?.id;
+    if (paymentId && squareClient.payments?.get) {
+      try {
+        const response = await squareClient.payments.get({ paymentId });
+        const payment = response.payment || response.result?.payment;
+        customerEmail = isPlaceholderEmail(payment?.buyerEmailAddress)
+          ? ''
+          : (payment?.buyerEmailAddress || '');
+      } catch (error) {
+        console.warn('[webhook] payment lookup failed', error);
+      }
+    }
+  }
+
   if (!customerEmail && order.metadata?.requestId) {
     const requestCustomer = await loadRequestCustomerById(order.metadata.requestId);
     customerName = requestCustomer?.customer_name || customerName;
-    customerEmail = requestCustomer?.customer_email || customerEmail;
+    customerEmail = isPlaceholderEmail(requestCustomer?.customer_email)
+      ? customerEmail
+      : requestCustomer.customer_email;
   }
 
   if (!customerEmail) {
     const requestCustomer = await loadRequestCustomerByOrderId(squareOrderId);
     customerName = requestCustomer?.customer_name || customerName;
-    customerEmail = requestCustomer?.customer_email || customerEmail;
+    customerEmail = isPlaceholderEmail(requestCustomer?.customer_email)
+      ? customerEmail
+      : requestCustomer.customer_email;
   }
 
   return { customerName, customerEmail };
 }
 
 export async function sendTicketEmail(ticket, event, customerEmail, customerName, deps = {}) {
-  if (!customerEmail) {
+  if (isPlaceholderEmail(customerEmail)) {
     console.warn('[webhook] ticket email skipped: missing customer email', {
       ticketId: ticket?.id || null,
       squareOrderId: ticket?.square_order_id || null,
@@ -308,9 +328,14 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const insertTicket = deps.createTicket || createTicket;
   const sendEmail = deps.sendTicketEmail || sendTicketEmail;
   const sendDiscordNotification = deps.sendDiscordTicketNotification || sendDiscordTicketNotification;
+  const persistTicketCustomer = deps.updateTicketCustomer || updateTicketCustomer;
+  const persistRequestCustomer = deps.updateRequestCustomer || updateRequestCustomer;
 
   const existingTicket = await loadTicketByOrderId(squareOrderId);
-  if (existingTicket) {
+  const existingTicketNeedsEmailRecovery = existingTicket
+    && Object.hasOwn(existingTicket, 'customer_email')
+    && isPlaceholderEmail(existingTicket.customer_email);
+  if (existingTicket && !existingTicketNeedsEmailRecovery) {
     return { replay: true, ticketId: existingTicket.id };
   }
 
@@ -328,6 +353,34 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
 
   if (!isFulfillableOrder(order)) {
     return { ignored: true, reason: `Order state ${order.state} is not fulfillable` };
+  }
+
+  if (existingTicketNeedsEmailRecovery) {
+    const customer = await loadCustomer(order, squareOrderId, deps);
+    if (isPlaceholderEmail(customer.customerEmail)) {
+      return { replay: true, deliveryPending: true, ticketId: existingTicket.id };
+    }
+
+    const eventId = existingTicket.event_id || order.metadata?.eventId || order.metadata?.event_id || null;
+    const event = eventId
+      ? await (deps.getEventById || getEventById)(eventId)
+      : null;
+
+    try {
+      await sendEmail(existingTicket, event, customer.customerEmail, customer.customerName, deps);
+      const customerUpdate = {
+        customer_name: customer.customerName,
+        customer_email: customer.customerEmail,
+      };
+      await persistTicketCustomer(existingTicket.id, customerUpdate);
+      if (order.metadata?.requestId) {
+        await persistRequestCustomer(order.metadata.requestId, customerUpdate);
+      }
+      return { replay: true, recovered: true, ticketId: existingTicket.id };
+    } catch (error) {
+      console.error('[webhook] existing ticket email recovery failed', error);
+      return { replay: true, deliveryPending: true, ticketId: existingTicket.id };
+    }
   }
 
   let lockedRequest = null;
@@ -392,6 +445,17 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
     await sendEmail(ticket, event, customer.customerEmail, customer.customerName, deps);
   } catch (error) {
     console.error('[webhook] post-ticket email flow failed', error);
+  }
+
+  if (!isPlaceholderEmail(customer.customerEmail) && lockedRequest?.id) {
+    try {
+      await persistRequestCustomer(lockedRequest.id, {
+        customer_name: customer.customerName,
+        customer_email: customer.customerEmail,
+      });
+    } catch (error) {
+      console.error('[webhook] request customer update failed', error);
+    }
   }
 
   try {

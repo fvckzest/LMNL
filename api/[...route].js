@@ -195,6 +195,7 @@ async function handleCreateEventCheckout(req, res) {
   const eventId = requireValue(body.eventId, 'eventId is required.');
   const data = await createCheckoutForEvent(eventId, {
     buyer: body.buyer || {},
+    purchaseIntentId: body.purchaseIntentId,
   });
   return sendJson(res, 200, { success: true, data });
 }
