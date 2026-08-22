@@ -359,6 +359,11 @@
 
   .shareholder-notice__ticketing {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .shareholder-notice__ticketing strong {
+    font-size: 1.25em;
   }
 
   .shareholder-notice__ticket-button {
