@@ -125,6 +125,14 @@ const routeSeo = [
     },
   },
   {
+    pattern: '/events/:slug',
+    metadata: {
+      title: 'LMNL | EVENT',
+      description: 'See LMNL event details and current ticket availability.',
+      image: '/seo/events-seo.png',
+    },
+  },
+  {
     pattern: '/space',
     metadata: {
       title: 'LMNL | SPACE',
