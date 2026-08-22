@@ -5,6 +5,7 @@ import { usePageColor } from '../hooks/usePageColor';
 import { buildTextDescription, usePageSeo } from '../hooks/usePageSeo';
 import { apiGet, apiPost } from '../lib/api';
 import { formatEventDate, formatEventTime } from '../utils/eventDisplay';
+import ShareholderMeetingEvent from './ShareholderMeetingEvent';
 import './EventPage.css';
 
 function EventMetadata({ event }) {
@@ -98,10 +99,13 @@ export default function EventPage() {
   }, [slug]);
 
   const event = page?.event;
+  const isShareholderMeeting = slug === 'shareholder-meeting';
   usePageSeo({
     title: event?.name ? `LMNL | ${event.name.toUpperCase()}` : 'LMNL | EVENT',
     description: buildTextDescription(event?.description, 'See LMNL event details and current ticket availability.'),
-    image: event?.artworkUrl || '/seo/events-seo.png',
+    image: isShareholderMeeting
+      ? '/seo/shareholder-meeting.png'
+      : event?.artworkUrl || '/seo/events-seo.png',
     path: `/events/${slug}`,
     robots: state === 'not-found' ? 'noindex, nofollow' : 'index, follow',
   });
@@ -142,7 +146,14 @@ export default function EventPage() {
 
       {state === 'ready' && event ? (
         <>
-          <article className="public-event-hero">
+          {isShareholderMeeting ? (
+            <ShareholderMeetingEvent
+              event={event}
+              checkoutState={checkoutState}
+              onCheckout={startCheckout}
+            />
+          ) : (
+            <article className="public-event-hero">
             <div className="public-event-artwork page-panel">
               {event.artworkUrl ? (
                 <img src={event.artworkUrl} alt={`${event.name} event artwork`} />
@@ -185,7 +196,8 @@ export default function EventPage() {
                 <p className="public-event-error">Checkout is not available. Try again.</p>
               ) : null}
             </div>
-          </article>
+            </article>
+          )}
 
           <PoweredByLmnl showcase={page.showcase} />
         </>

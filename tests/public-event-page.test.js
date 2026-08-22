@@ -39,6 +39,31 @@ test('getPublicEventPage resolves Space from the existing published event record
   });
 });
 
+test('getPublicEventPage resolves the shareholder meeting from its CRUD event link', async () => {
+  const shareholderMeeting = {
+    ...spaceEvent,
+    id: 'event_shareholder_meeting',
+    name: '2026 Annual Shareholder Meeting',
+    event_date: '2026-10-03',
+    event_time: '19:00',
+    location_name: 'Mad Hat Tea',
+    address: '924 Broadway, Tacoma, Washington',
+    price: 1000,
+    metadata: {
+      event_link: '/events/shareholder-meeting',
+    },
+  };
+
+  const page = await getPublicEventPage('shareholder-meeting', {
+    listPublicEvents: async () => [shareholderMeeting],
+  });
+
+  assert.equal(page.event.id, 'event_shareholder_meeting');
+  assert.equal(page.event.slug, 'shareholder-meeting');
+  assert.equal(page.event.displayPrice, '$10.00');
+  assert.equal(page.event.ticketAction.eventId, 'event_shareholder_meeting');
+});
+
 test('getPublicEventPage returns not found for unknown, draft, archived, or private slugs', async () => {
   const hiddenEvents = [
     { ...spaceEvent, id: 'draft', name: 'Draft', status: 'draft', metadata: { event_slug: 'draft' } },

@@ -24,3 +24,13 @@ test('postbuild route list keeps the Space event page as a direct-hit entry poin
   assert.ok(eventRoute, 'expected /events/space to be generated as a static entry point');
   assert.equal(eventRoute.indexable, true);
 });
+
+test('postbuild route list keeps the shareholder meeting as a direct-hit entry point', async () => {
+  const { routes } = await import('../scripts/postbuild.js');
+  const eventRoute = routes.find((route) => route.path === 'events/shareholder-meeting');
+
+  assert.ok(eventRoute, 'expected /events/shareholder-meeting to be generated as a static entry point');
+  assert.equal(eventRoute.title, 'LMNL | 2026 ANNUAL SHAREHOLDER MEETING');
+  assert.equal(eventRoute.image, '/seo/shareholder-meeting.png');
+  assert.equal(eventRoute.indexable, true);
+});

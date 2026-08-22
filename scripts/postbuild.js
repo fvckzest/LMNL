@@ -66,6 +66,15 @@ export const routes = [
     indexable: true,
   },
   {
+    path: 'events/shareholder-meeting',
+    title: 'LMNL | 2026 ANNUAL SHAREHOLDER MEETING',
+    description: 'Join the LMNL network at Mad Hat Tea in Tacoma on October 3, 2026, for connection, networking, and strategic cultural deployment.',
+    image: '/seo/shareholder-meeting.png',
+    changefreq: 'daily',
+    priority: '0.9',
+    indexable: true,
+  },
+  {
     path: 'services',
     title: 'LMNL | SERVICES',
     description: 'See LMNL creative services, consulting, production, and digital systems work.',
