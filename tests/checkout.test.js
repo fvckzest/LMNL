@@ -83,7 +83,12 @@ test('createCheckoutForEvent creates approved request and Square-hosted checkout
   const requestPayloads = [];
   const attached = [];
   const checkoutPayloads = [];
-  const result = await createCheckoutForEvent('event_1', {}, {
+  const result = await createCheckoutForEvent('event_1', {
+    buyer: {
+      fullName: 'Ada Lovelace',
+      email: 'ada@example.org',
+    },
+  }, {
     getEventById: async () => ({
       id: 'event_1',
       name: 'Open Night',
@@ -117,10 +122,58 @@ test('createCheckoutForEvent creates approved request and Square-hosted checkout
 
   assert.equal(result.checkoutUrl, 'https://square.test/event');
   assert.equal(result.requestId, 'req_1');
-  assert.equal(requestPayloads[0].customer_name, 'Guest');
-  assert.match(requestPayloads[0].customer_email, /^guest-.*@example\.com$/);
+  assert.equal(requestPayloads[0].customer_name, 'Ada Lovelace');
+  assert.equal(requestPayloads[0].customer_email, 'ada@example.org');
   assert.equal(attached[0].orderId, 'order_event_1');
   assert.equal(checkoutPayloads[0].checkoutOptions.redirectUrl, 'https://lmnl.art/success?requestId=req_1');
+  assert.equal(checkoutPayloads[0].prePopulatedData.buyerEmail, 'ada@example.org');
+});
+
+test('createCheckoutForEvent keeps anonymous request correlation without sending a synthetic email to Square', async () => {
+  const requestPayloads = [];
+  const checkoutPayloads = [];
+
+  const result = await createCheckoutForEvent('event_anon', {}, {
+    getEventById: async () => ({
+      id: 'event_anon',
+      name: 'Shareholder Meeting',
+      price: 1000,
+      is_private: false,
+      square_variation_id: 'var_shareholder',
+    }),
+    getSquareLocationId: async () => 'loc_1',
+    getBaseConfig: () => ({ siteUrl: 'https://lmnl.art' }),
+    createAccessRequest: async (payload) => {
+      requestPayloads.push(payload);
+      return { id: 'req_anon', ...payload };
+    },
+    attachOrderIdToRequest: async () => {},
+    squareClient: {
+      checkout: {
+        paymentLinks: {
+          create: async (payload) => {
+            checkoutPayloads.push(payload);
+            if (payload.prePopulatedData.buyerEmail?.endsWith('@example.com')) {
+              const error = new Error('Invalid email address.');
+              error.errors = [{
+                code: 'INVALID_EMAIL_ADDRESS',
+                field: 'pre_populated_data.buyer_email',
+                detail: 'Invalid email address.',
+              }];
+              throw error;
+            }
+            return {
+              paymentLink: { url: 'https://square.test/anonymous-event', orderId: 'order_anon' },
+            };
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(result.checkoutUrl, 'https://square.test/anonymous-event');
+  assert.match(requestPayloads[0].customer_email, /^guest-.*@example\.com$/);
+  assert.equal(checkoutPayloads[0].prePopulatedData.buyerEmail, undefined);
 });
 
 test('createCheckoutForRequest creates Square-hosted checkout link for approved invite', async () => {

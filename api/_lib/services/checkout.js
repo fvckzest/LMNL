@@ -449,7 +449,7 @@ export async function createCheckoutForEvent(eventId, payload = {}, deps = {}) {
     status: 'approved',
   });
 
-  return createHostedTicketLink({ request, event, buyer: requestBuyer, deps });
+  return createHostedTicketLink({ request, event, buyer, deps });
 }
 
 export async function createCheckoutForRequest(requestId, payload = {}, deps = {}) {
