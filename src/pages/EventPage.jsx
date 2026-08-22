@@ -102,7 +102,7 @@ export default function EventPage() {
   const event = page?.event;
   const isShareholderMeeting = slug === 'shareholder-meeting';
   usePageSeo({
-    title: event?.name ? `LMNL | ${event.name.toUpperCase()}` : 'LMNL | EVENT',
+    title: event?.name || 'LMNL | EVENT',
     description: buildTextDescription(event?.description, 'See LMNL event details and current ticket availability.'),
     image: isShareholderMeeting
       ? '/seo/shareholder-meeting.png'

@@ -175,7 +175,7 @@ export async function getPublicEventPage(slug, deps = {}) {
   if (!event) throw notFoundError();
 
   let resolvedEvent = event;
-  if (event.square_variation_id) {
+  if (event.square_variation_id && deps.includeInventory !== false) {
     try {
       const loadInventory = deps.getVariationInventory || loadVariationInventory;
       const inventory = await loadInventory(event.square_variation_id);
