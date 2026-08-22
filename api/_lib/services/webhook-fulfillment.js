@@ -57,6 +57,11 @@ function readString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function isPlaceholderName(name) {
+  const normalized = readString(name).toLowerCase();
+  return !normalized || normalized === 'guest';
+}
+
 function normalizeWebhookUrl(url) {
   if (!url) return '';
   return String(url).trim().replace(/\/+$/, '');
@@ -369,7 +374,12 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
   const existingTicketNeedsEmailRecovery = existingTicket
     && Object.hasOwn(existingTicket, 'customer_email')
     && isPlaceholderEmail(existingTicket.customer_email);
-  if (existingTicket && !existingTicketNeedsEmailRecovery) {
+  const existingTicketNeedsNameRecovery = existingTicket
+    && Object.hasOwn(existingTicket, 'customer_name')
+    && isPlaceholderName(existingTicket.customer_name);
+  const existingTicketNeedsIdentityRecovery = existingTicketNeedsEmailRecovery
+    || existingTicketNeedsNameRecovery;
+  if (existingTicket && !existingTicketNeedsIdentityRecovery) {
     return { replay: true, ticketId: existingTicket.id };
   }
 
@@ -389,22 +399,37 @@ export async function fulfillTicketForSquareOrder(squareOrderId, deps = {}) {
     return { ignored: true, reason: `Order state ${order.state} is not fulfillable` };
   }
 
-  if (existingTicketNeedsEmailRecovery) {
+  if (existingTicketNeedsIdentityRecovery) {
     const customer = await loadCustomer(order, squareOrderId, deps);
-    if (isPlaceholderEmail(customer.customerEmail)) {
+    const recoveredEmail = isPlaceholderEmail(customer.customerEmail)
+      ? existingTicket.customer_email
+      : customer.customerEmail;
+    const recoveredName = isPlaceholderName(customer.customerName)
+      ? existingTicket.customer_name
+      : customer.customerName;
+
+    if (existingTicketNeedsEmailRecovery && isPlaceholderEmail(recoveredEmail)) {
       return { replay: true, deliveryPending: true, ticketId: existingTicket.id };
     }
+    if (existingTicketNeedsNameRecovery && isPlaceholderName(recoveredName)) {
+      return { replay: true, identityPending: true, ticketId: existingTicket.id };
+    }
 
-    const eventId = existingTicket.event_id || order.metadata?.eventId || order.metadata?.event_id || null;
-    const event = eventId
-      ? await (deps.getEventById || getEventById)(eventId)
-      : null;
+    let event = null;
+    if (existingTicketNeedsEmailRecovery) {
+      const eventId = existingTicket.event_id || order.metadata?.eventId || order.metadata?.event_id || null;
+      event = eventId
+        ? await (deps.getEventById || getEventById)(eventId)
+        : null;
+    }
 
     try {
-      await sendEmail(existingTicket, event, customer.customerEmail, customer.customerName, deps);
+      if (existingTicketNeedsEmailRecovery) {
+        await sendEmail(existingTicket, event, recoveredEmail, recoveredName, deps);
+      }
       const customerUpdate = {
-        customer_name: customer.customerName,
-        customer_email: customer.customerEmail,
+        customer_name: recoveredName,
+        customer_email: recoveredEmail,
       };
       await persistTicketCustomer(existingTicket.id, customerUpdate);
       if (order.metadata?.requestId) {
